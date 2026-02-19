@@ -1,11 +1,12 @@
-import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
-import { upgradeWebSocket } from 'hono/ws';
-import type { WebSocket } from 'ws';
-
-const rooms = new Map<string, Set<WebSocket>>();
+import { createNodeWebSocket } from '@hono/node-ws';
+import { Hono } from 'hono';
 
 const app = new Hono();
+
+const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
+
+const rooms = new Map<string, Set<any>>();
 
 app.get('/', upgradeWebSocket((c) => {
   let room: string | null = null;
@@ -67,7 +68,9 @@ if (portString) {
 
 console.log(`Starting WebSocket signaling server on port ${port}...`);
 
-serve({
+const server = serve({
   fetch: app.fetch,
   port,
 });
+
+injectWebSocket(server);
