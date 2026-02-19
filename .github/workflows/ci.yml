@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ pr/rework ]
   pull_request:
-    branches: [ main ]
+    branches: [ pr/rework ]
 
 jobs:
   test:
