@@ -50,7 +50,9 @@ export abstract class Peer {
 			this.socket = new WebSocket(this.websocketSignalingServer)
 
 			this.socket.onopen = () => {
-				this.socket?.send(JSON.stringify({ type: 'join-room', room: this.room }))
+				this.socket?.send(
+					JSON.stringify({ type: 'join-room', room: this.room }),
+				)
 				this.initializeConnectionAndChannel()
 				resolve()
 			}
