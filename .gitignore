@@ -1,5 +1,6 @@
 /node_modules/
-/dist/
-/storybook-static/
-packages/frontend/dist/
-packages/server/node_modules/
+/packages/frontend/dist/
+/packages/frontend/storybook-static/
+/packages/frontend/node_modules/
+/packages/node_modules/
+/packages/server/node_modules/
