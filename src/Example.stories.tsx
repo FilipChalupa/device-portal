@@ -17,22 +17,27 @@ const room =
 	'storybook'
 localStorage.setItem('room', room)
 
+const websocketSignalingServer = 'ws://localhost:8080'
+
 const InputComponent: FunctionComponent = () => {
 	const ref = useRef<HTMLDivElement>(null)
 	const [value, setState] = useState(1)
-	useDevicePortalInput(room, value.toString(), (value) => {
-		if (value === 'roll') {
-			ref.current?.animate(
-				[
+	useDevicePortalInput(room, value.toString(), {
+		onValueFromOutput: (value) => {
+			if (value === 'roll') {
+				ref.current?.animate(
+					[
+						{
+							transform: 'rotate(1turn)',
+						},
+					],
 					{
-						transform: 'rotate(1turn)',
+						duration: 1000,
 					},
-				],
-				{
-					duration: 1000,
-				},
-			)
-		}
+				)
+			}
+		},
+		websocketSignalingServer,
 	})
 
 	return (
@@ -64,7 +69,9 @@ const InputComponent: FunctionComponent = () => {
 }
 
 const OutputComponent: FunctionComponent = () => {
-	const { value, sendValueToInput } = useDevicePortalOutput(room)
+	const { value, sendValueToInput } = useDevicePortalOutput(room, {
+		websocketSignalingServer,
+	})
 	return (
 		<div>
 			<p>
@@ -90,6 +97,10 @@ export const Input: Story = {
 		return (
 			<div className="wrapper">
 				<h1>Demo input</h1>
+				<p>
+					Note: This demo requires the signaling server to be running. Run{' '}
+					<code>npm run start:server</code> in your terminal.
+				</p>
 				<InputComponent />
 			</div>
 		)
@@ -101,6 +112,10 @@ export const Output: Story = {
 		return (
 			<div className="wrapper">
 				<h1>Demo output</h1>
+				<p>
+					Note: This demo requires the signaling server to be running. Run{' '}
+					<code>npm run start:server</code> in your terminal.
+				</p>
 				<Suspense fallback={<p>Connecting…</p>}>
 					<OutputComponent />
 				</Suspense>

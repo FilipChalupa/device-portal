@@ -1,21 +1,26 @@
 import { Peer } from './Peer'
 
 export class Initiator extends Peer {
-	role = 'initiator' as const
+	protected role = 'initiator' as const
 
-	protected async connect() {
-		this.initializeConnectionAndChannel()
+	protected async connect(): Promise<void> {
 		if (!this.connection) {
-			return
+			this.initializeConnectionAndChannel()
+		}
+		if (!this.connection) {
+			throw new Error('Connection is not initialized')
 		}
 		const offer = await this.connection.createOffer()
 		await this.setAndShareLocalDescription(offer)
-		const answer = await this.getRemoteDescription()
-		if (!answer) {
-			return
-		}
-		this.connection.setRemoteDescription(answer)
+	}
 
-		await this.acquireIceCandidatesLoop()
+	protected handleOffer(offer: RTCSessionDescriptionInit): void {
+		// Initiator does not handle offers
+	}
+
+	protected async handleAnswer(answer: RTCSessionDescriptionInit) {
+		if (this.connection) {
+			await this.connection.setRemoteDescription(answer)
+		}
 	}
 }

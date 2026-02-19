@@ -20,6 +20,9 @@ const responders: {
 
 export const useDevicePortalOutput = (
 	room: string,
+	options?: {
+		websocketSignalingServer?: string
+	},
 ): Pick<State, 'value' | 'sendValueToInput'> => {
 	const [valueState, setValueState] = useState<State | null>(null)
 	const output = useMemo(() => {
@@ -42,6 +45,7 @@ export const useDevicePortalOutput = (
 				firstValueResolve(value)
 			},
 			sendLastValueOnConnectAndReconnect: false,
+			websocketSignalingServer: options?.websocketSignalingServer,
 		})
 		const sendValueToInput = (value: string) => {
 			responder.send(value)

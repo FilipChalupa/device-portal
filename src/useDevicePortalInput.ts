@@ -6,17 +6,21 @@ import { Initiator } from './webrtc/Initiator'
 export const useDevicePortalInput = (
 	room: string,
 	value: string,
-	onValueFromOutput?: (value: string) => void,
+	options?: {
+		onValueFromOutput?: (value: string) => void
+		websocketSignalingServer?: string
+	},
 ) => {
 	const [initiator, setInitiator] = useState<Initiator | null>(null)
-	const onValueFromOutputRef = useRef(onValueFromOutput)
-	onValueFromOutputRef.current = onValueFromOutput
+	const onValueFromOutputRef = useRef(options?.onValueFromOutput)
+	onValueFromOutputRef.current = options?.onValueFromOutput
 
 	useEffect(() => {
 		const initiator = new Initiator(encodeURIComponent(room), {
 			onValue: (value) => {
 				onValueFromOutputRef.current?.(value)
 			},
+			websocketSignalingServer: options?.websocketSignalingServer,
 		})
 		setInitiator(initiator)
 
@@ -24,7 +28,7 @@ export const useDevicePortalInput = (
 			initiator.destroy()
 			setInitiator(null)
 		}
-	}, [room])
+	}, [room, options?.websocketSignalingServer])
 
 	useEffect(() => {
 		initiator?.send(value)

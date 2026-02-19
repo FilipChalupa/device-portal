@@ -2,8 +2,6 @@
 
 [![NPM](https://img.shields.io/npm/v/react-device-portal.svg)](https://www.npmjs.com/package/react-device-portal) ![npm type definitions](https://img.shields.io/npm/types/shared-loading-indicator.svg)
 
-See [Storybook example here](https://filipchalupa.cz/react-device-portal).
-
 ## Install
 
 ```bash
@@ -21,7 +19,9 @@ The first app will be a value provider or `Input`.
 ```jsx
 const AppA = () => {
 	const [value, setValue] = useState(0)
-	useDevicePortalInput('my-test-room', value.toString())
+	useDevicePortalInput('my-test-room', value.toString(), {
+		websocketSignalingServer: 'ws://localhost:8080',
+	})
 
 	return (
 		<>
@@ -45,7 +45,9 @@ The other app will be a value consumer or `Output`. Every time input value in Ap
 
 ```jsx
 const AppB = () => {
-	const { value } = useDevicePortalOutput('my-test-room')
+	const { value } = useDevicePortalOutput('my-test-room', {
+		websocketSignalingServer: 'ws://localhost:8080',
+	})
 
 	return (
 		<>
@@ -58,7 +60,15 @@ const AppB = () => {
 
 ## Server used for WebRTC signaling
 
-[github.com/FilipChalupa/webrtc-signaling-server](https://github.com/FilipChalupa/webrtc-signaling-server)
+This project includes a WebSocket-based signaling server. To run it, you need to have [Deno](https://deno.land/) installed.
+
+Then, you can run the server with the following command:
+
+```sh
+npm run start:server
+```
+
+The server will run on `ws://localhost:8080` by default.
 
 ## Development
 

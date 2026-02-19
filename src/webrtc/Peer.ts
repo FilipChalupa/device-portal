@@ -1,5 +1,6 @@
 import { delay } from '../delay'
 import { settings } from '../settings'
+
 export abstract class Peer {
 	protected isDestroyed = false
 	protected connection: RTCPeerConnection | null = null
@@ -8,55 +9,99 @@ export abstract class Peer {
 	protected value: { value: string } | null = null
 	protected readonly onValue: ((value: string) => void) | undefined
 	protected readonly sendLastValueOnConnectAndReconnect: boolean
-	protected readonly webrtcSignalingServer: string
+	protected readonly websocketSignalingServer: string
 	protected readonly iceServers: Array<RTCIceServer>
+	protected socket: WebSocket | null = null
 
 	constructor(
 		protected readonly room: string,
 		options: {
 			onValue?: (value: string) => void
 			sendLastValueOnConnectAndReconnect?: boolean
-			webrtcSignalingServer?: string
+			websocketSignalingServer?: string
 			iceServers?: Array<RTCIceServer>
 		} = {},
 	) {
 		this.onValue = options.onValue
 		this.sendLastValueOnConnectAndReconnect =
 			options.sendLastValueOnConnectAndReconnect ?? true
-		this.webrtcSignalingServer =
-			options.webrtcSignalingServer ?? settings.webrtcSignalingServer
+		this.websocketSignalingServer =
+			options.websocketSignalingServer ?? 'ws://localhost:8080'
 		this.iceServers = options.iceServers ?? settings.iceServers
 		this.run()
 	}
 
 	protected async run() {
-		let failed = false
 		try {
 			await this.connect()
 		} catch (error) {
-			failed = true
 			queueMicrotask(() => {
 				throw error
 			})
-		} finally {
-			this.close()
 		}
-		if (this.isDestroyed) {
-			return
-		}
-		if (failed) {
-			await delay(Math.random() * 5000 + 1000)
-		}
-		await this.run() // Reestablish new connection
 	}
 
-	protected abstract connect(): Promise<void>
+	protected connect(): Promise<void> {
+		return new Promise((resolve, reject) => {
+			if (this.isDestroyed) {
+				return reject(new Error('Peer is destroyed'))
+			}
+
+			this.socket = new WebSocket(this.websocketSignalingServer)
+
+			this.socket.onopen = () => {
+				this.socket?.send(JSON.stringify({ type: 'join-room', room: this.room }))
+				this.initializeConnectionAndChannel()
+				resolve()
+			}
+
+			this.socket.onmessage = (event) => {
+				const message = JSON.parse(event.data)
+				switch (message.type) {
+					case 'offer':
+						this.handleOffer(message.data)
+						break
+					case 'answer':
+						this.handleAnswer(message.data)
+						break
+					case 'ice-candidate':
+						this.handleIceCandidate(message.data)
+						break
+				}
+			}
+
+			this.socket.onclose = async () => {
+				this.close()
+				if (!this.isDestroyed) {
+					await delay(1000)
+					await this.run() // Reconnect
+				}
+			}
+
+			this.socket.onerror = (error) => {
+				console.error('WebSocket error:', error)
+				this.close()
+				reject(error)
+			}
+		})
+	}
+
+	protected abstract handleOffer(offer: RTCSessionDescriptionInit): void
+	protected abstract handleAnswer(answer: RTCSessionDescriptionInit): void
+
+	protected async handleIceCandidate(candidate: RTCIceCandidateInit) {
+		if (this.connection) {
+			await this.connection.addIceCandidate(new RTCIceCandidate(candidate))
+		}
+	}
 
 	protected close() {
 		this.connection?.close()
 		this.connection = null
 		this.channel?.close()
 		this.channel = null
+		this.socket?.close()
+		this.socket = null
 	}
 
 	public destroy() {
@@ -64,54 +109,10 @@ export abstract class Peer {
 		this.close()
 	}
 
-	protected getOtherPeerRole() {
-		return this.role === 'initiator' ? 'responder' : 'initiator'
-	}
-
-	protected async acquireIceCandidatesLoop() {
-		let lastPeerIceCandidateCreatedAt = null
-		while (!this.isDestroyed) {
-			const response = await fetch(
-				`${this.webrtcSignalingServer}/api/v1/${this.room}/${this.getOtherPeerRole()}/ice-candidate`,
-			)
-			const data = await response.json()
-			if (data.data !== null && data.data.length > 0) {
-				const newCandidates = data.data
-					.filter(
-						(item) =>
-							lastPeerIceCandidateCreatedAt === null ||
-							item.createdAt > lastPeerIceCandidateCreatedAt,
-					)
-					.map(({ payload }) => new RTCIceCandidate(JSON.parse(payload)))
-				for (const candidate of newCandidates) {
-					await this.connection?.addIceCandidate(candidate)
-				}
-				lastPeerIceCandidateCreatedAt = data.data.at(-1).createdAt
-			}
-			await delay(
-				this.connection?.connectionState === 'connected' ? 5000 : 2000,
-			)
-			if (
-				this.connection?.connectionState === 'closed' ||
-				this.connection?.connectionState === 'failed'
-			) {
-				return
-			}
+	protected sendMessage(type: string, data: any) {
+		if (this.socket?.readyState === WebSocket.OPEN) {
+			this.socket.send(JSON.stringify({ type, room: this.room, data }))
 		}
-	}
-
-	protected async getRemoteDescription(): Promise<RTCSessionDescriptionInit | null> {
-		while (!this.isDestroyed) {
-			const response = await fetch(
-				`${this.webrtcSignalingServer}/api/v1/${this.room}/${this.getOtherPeerRole()}/local-description`,
-			)
-			const data = await response.json()
-			if (data.data?.payload) {
-				return JSON.parse(data.data.payload)
-			}
-			await delay(1000)
-		}
-		return null
 	}
 
 	protected async setAndShareLocalDescription(
@@ -121,24 +122,12 @@ export abstract class Peer {
 			throw new Error('Connection is not initialized')
 		}
 		await this.connection.setLocalDescription(description)
-		await fetch(
-			`${this.webrtcSignalingServer}/api/v1/${this.room}/${this.role}/local-description`,
-			{
-				method: 'POST',
-				body: JSON.stringify(description),
-			},
-		)
+		this.sendMessage(description.type, description)
 	}
 
-	protected async shareNewIceCandidate(event: RTCPeerConnectionIceEvent) {
+	protected shareNewIceCandidate(event: RTCPeerConnectionIceEvent) {
 		if (event.candidate) {
-			await fetch(
-				`${this.webrtcSignalingServer}/api/v1/${this.room}/${this.role}/ice-candidate`,
-				{
-					method: 'POST',
-					body: JSON.stringify(event.candidate.toJSON()),
-				},
-			)
+			this.sendMessage('ice-candidate', event.candidate.toJSON())
 		}
 	}
 
@@ -150,19 +139,34 @@ export abstract class Peer {
 	}
 
 	protected initializeConnectionAndChannel() {
-		this.connection = new RTCPeerConnection()
+		this.connection = new RTCPeerConnection({ iceServers: this.iceServers })
 		this.connection.onicecandidate = this.shareNewIceCandidate.bind(this)
-		this.channel = this.connection.createDataChannel(settings.channel.label, {
-			negotiated: true,
-			id: settings.channel.id,
-		})
-		this.channel.onopen = () => {
-			if (this.value && this.sendLastValueOnConnectAndReconnect) {
-				this.channel?.send(this.value.value)
+
+		if (this.role === 'initiator') {
+			this.channel = this.connection.createDataChannel(settings.channel.label, {
+				negotiated: true,
+				id: settings.channel.id,
+			})
+			this.channel.onopen = () => {
+				if (this.value && this.sendLastValueOnConnectAndReconnect) {
+					this.channel?.send(this.value.value)
+				}
 			}
-		}
-		this.channel.onmessage = (event) => {
-			this.onValue?.(event.data)
+			this.channel.onmessage = (event) => {
+				this.onValue?.(event.data)
+			}
+		} else {
+			this.connection.ondatachannel = (event) => {
+				this.channel = event.channel
+				this.channel.onopen = () => {
+					if (this.value && this.sendLastValueOnConnectAndReconnect) {
+						this.channel?.send(this.value.value)
+					}
+				}
+				this.channel.onmessage = (event) => {
+					this.onValue?.(event.data)
+				}
+			}
 		}
 	}
 }
