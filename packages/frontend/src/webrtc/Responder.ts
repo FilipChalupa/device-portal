@@ -15,7 +15,10 @@ export class Responder extends Peer {
 		// Responder logic for when a peer leaves (usually its own server connection closing handles this)
 	}
 
-	protected async handleOffer(offer: RTCSessionDescriptionInit, fromPeerId: string) {
+	protected async handleOffer(
+		offer: RTCSessionDescriptionInit,
+		fromPeerId: string,
+	) {
 		console.log(`[Responder] Handling offer from ${fromPeerId}`)
 		this.initializeConnectionAndChannel()
 		if (!this.connection) {
@@ -28,7 +31,10 @@ export class Responder extends Peer {
 		await this.setAndShareLocalDescription(answer, fromPeerId)
 	}
 
-	protected handleAnswer(answer: RTCSessionDescriptionInit, fromPeerId: string): void {
+	protected handleAnswer(
+		answer: RTCSessionDescriptionInit,
+		fromPeerId: string,
+	): void {
 		// Responder does not handle answers
 	}
 }

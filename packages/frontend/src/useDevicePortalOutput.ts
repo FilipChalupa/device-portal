@@ -28,7 +28,9 @@ export const useDevicePortalOutput = (
 
 	const currentOutput = useMemo(() => {
 		if (!responders[room]) {
-			console.log(`[useDevicePortalOutput] Creating new Responder for room: ${room}`)
+			console.log(
+				`[useDevicePortalOutput] Creating new Responder for room: ${room}`,
+			)
 			const withResolvers = () => {
 				let resolve: (value: string) => void
 				let reject: (reason?: any) => void

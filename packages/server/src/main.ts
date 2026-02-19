@@ -86,7 +86,9 @@ app.get(
 					// Notify other peers in the room that a peer has left
 					for (const client of roomPeers) {
 						if (client.readyState === 1 /* WebSocket.OPEN */) {
-							client.send(JSON.stringify({ type: 'peer-left', data: { peerId } }))
+							client.send(
+								JSON.stringify({ type: 'peer-left', data: { peerId } }),
+							)
 						}
 					}
 

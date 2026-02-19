@@ -143,7 +143,9 @@ export abstract class Peer {
 			return
 		}
 		if (this.candidatesQueue.length > 0) {
-			console.log(`[Peer] Processing ${this.candidatesQueue.length} queued ICE candidates`)
+			console.log(
+				`[Peer] Processing ${this.candidatesQueue.length} queued ICE candidates`,
+			)
 		}
 		while (this.candidatesQueue.length > 0) {
 			const candidate = this.candidatesQueue.shift()!
@@ -171,7 +173,9 @@ export abstract class Peer {
 
 	protected sendMessage(type: string, data: any, to?: string) {
 		if (this.socket?.readyState === WebSocket.OPEN) {
-			console.log(`[Peer] Sending signaling message: ${type}${to ? ` to ${to}` : ''}`)
+			console.log(
+				`[Peer] Sending signaling message: ${type}${to ? ` to ${to}` : ''}`,
+			)
 			this.socket.send(JSON.stringify({ type, room: this.room, data, to }))
 		} else {
 			console.warn(`[Peer] Cannot send message ${type}, WebSocket not open`)
@@ -213,7 +217,9 @@ export abstract class Peer {
 		this.connection = new RTCPeerConnection({ iceServers: this.iceServers })
 		this.connection.onicecandidate = this.shareNewIceCandidate.bind(this)
 		this.connection.oniceconnectionstatechange = () => {
-			console.log(`ICE connection state: ${this.connection?.iceConnectionState}`)
+			console.log(
+				`ICE connection state: ${this.connection?.iceConnectionState}`,
+			)
 		}
 		this.connection.onconnectionstatechange = () => {
 			console.log(`Connection state: ${this.connection?.connectionState}`)
