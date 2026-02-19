@@ -7,9 +7,10 @@
 	"scripts": {
 		"start": "npm run start:server",
 		"build": "npm run build:frontend && npm run build:storybook",
-		"start:frontend": "npm run -w @device-portal/react start",
-		"build:frontend": "npm run -w @device-portal/react build",
-		"start:storybook": "npm run -w @device-portal/react start:storybook",
+		"dev": "npm run -w @device-portal/react dev",
+		"dev:package": "npm run -w @device-portal/react dev:package",
+		"build:package": "npm run -w @device-portal/react build:package",
+		"dev:storybook": "npm run -w @device-portal/react dev:storybook",
 		"build:storybook": "npm run -w @device-portal/react build:storybook",
 		"start:server": "npm run -w @device-portal/server start",
 		"dev:server": "npm run -w @device-portal/server dev",

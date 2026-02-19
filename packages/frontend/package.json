@@ -6,11 +6,11 @@
 	"main": "./dist/index.js",
 	"types": "./dist/index.d.ts",
 	"scripts": {
-		"start": "rollup -c -w",
-		"dev": "npm start",
-		"build": "rollup -c",
-		"prepare": "npm run build",
-		"start:storybook": "storybook dev -p 6006",
+		"dev": "npm run dev:storybook",
+		"build": "npm run build:package && npm run build:storybook",
+		"dev:package": "rollup -c -w",
+		"build:package": "rollup -c",
+		"dev:storybook": "storybook dev -p 6006",
 		"build:storybook": "storybook build"
 	},
 	"repository": {
