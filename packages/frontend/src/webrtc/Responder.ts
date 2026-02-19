@@ -12,13 +12,11 @@ export class Responder extends Peer {
 	}
 
 	protected async handleOffer(offer: RTCSessionDescriptionInit) {
-		if (!this.connection) {
-			this.initializeConnectionAndChannel()
-		}
+		console.log('[Responder] Handling offer')
+		this.initializeConnectionAndChannel()
 		if (!this.connection) {
 			throw new Error('Connection is not initialized')
 		}
-		console.log('[Responder] Handling offer')
 		await this.connection.setRemoteDescription(offer)
 		await this.processCandidatesQueue()
 		console.log('[Responder] Creating answer')

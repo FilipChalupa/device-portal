@@ -10,6 +10,7 @@ export class Initiator extends Peer {
 
 	protected async handlePeerJoined() {
 		console.log('[Initiator] Peer joined, recreating offer')
+		this.initializeConnectionAndChannel()
 		await this.createAndSendOffer()
 	}
 
