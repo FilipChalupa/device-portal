@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { FunctionComponent, Suspense, useRef, useState } from 'react'
 import './Example.stories.css'
 import { useDevicePortalInput } from './useDevicePortalInput'

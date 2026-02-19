@@ -1,19 +1,23 @@
+import { fileURLToPath } from "node:url";
+import { dirname } from "node:path";
 import type { StorybookConfig } from '@storybook/react-vite'
 
 const config: StorybookConfig = {
-	stories: ['../src/**/*.mdx', '../src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
-	addons: [
-		'@storybook/addon-links',
-		'@storybook/addon-essentials',
-		'@storybook/addon-onboarding',
-		'@storybook/addon-interactions',
-	],
-	framework: {
-		name: '@storybook/react-vite',
+    stories: ['../src/**/*.mdx', '../src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
+
+    addons: [
+        getAbsolutePath("@storybook/addon-links"),
+        getAbsolutePath("@storybook/addon-onboarding"),
+        getAbsolutePath("@storybook/addon-docs")
+    ],
+
+    framework: {
+		name: getAbsolutePath("@storybook/react-vite"),
 		options: {},
-	},
-	docs: {
-		autodocs: 'tag',
-	},
+	}
 }
 export default config
+
+function getAbsolutePath(value: string): any {
+    return dirname(fileURLToPath(import.meta.resolve(`${value}/package.json`)));
+}
