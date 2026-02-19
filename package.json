@@ -6,7 +6,7 @@
 	],
 	"scripts": {
 		"start": "npm run start:server",
-		"build": "npm run build:frontend && npm run build:storybook",
+		"build": "npm run build:package && npm run build:storybook",
 		"dev": "npm run -w @device-portal/react dev",
 		"dev:package": "npm run -w @device-portal/react dev:package",
 		"build:package": "npm run -w @device-portal/react build:package",
