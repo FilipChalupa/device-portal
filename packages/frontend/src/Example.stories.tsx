@@ -20,12 +20,12 @@ localStorage.setItem('room', room)
 const websocketSignalingServer = 'ws://localhost:8080'
 
 const InputComponent: FunctionComponent = () => {
-	const ref = useRef<HTMLDivElement>(null)
+	const containerRef = useRef<HTMLDivElement>(null)
 	const [value, setState] = useState(1)
 	useDevicePortalInput(room, value.toString(), {
 		onValueFromOutput: (value) => {
 			if (value === 'roll') {
-				ref.current?.animate(
+				containerRef.current?.animate(
 					[
 						{
 							transform: 'rotate(1turn)',
@@ -41,7 +41,7 @@ const InputComponent: FunctionComponent = () => {
 	})
 
 	return (
-		<div ref={ref} style={{ display: 'inline-block' }}>
+		<div ref={containerRef} style={{ display: 'inline-block' }}>
 			<p>
 				Providing value for room "<b>{room}</b>":
 			</p>
@@ -50,7 +50,7 @@ const InputComponent: FunctionComponent = () => {
 				<button
 					type="button"
 					onClick={() => {
-						setState((x) => x - 1)
+						setState((previousValue) => previousValue - 1)
 					}}
 				>
 					decrease
@@ -58,7 +58,7 @@ const InputComponent: FunctionComponent = () => {
 				<button
 					type="button"
 					onClick={() => {
-						setState((x) => x + 1)
+						setState((previousValue) => previousValue + 1)
 					}}
 				>
 					increase

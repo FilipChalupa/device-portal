@@ -11,12 +11,12 @@ const rooms = new Map<string, Set<any>>()
 
 app.get(
 	'/',
-	upgradeWebSocket((c) => {
+	upgradeWebSocket((context) => {
 		let room: string | null = null
 
 		return {
-			onMessage(evt, ws) {
-				const message = JSON.parse(evt.data as string)
+			onMessage(event, webSocket) {
+				const message = JSON.parse(event.data as string)
 
 				switch (message.type) {
 					case 'join-room': {
@@ -24,7 +24,7 @@ app.get(
 						if (!rooms.has(room!)) {
 							rooms.set(room!, new Set())
 						}
-						rooms.get(room!)!.add(ws)
+						rooms.get(room!)!.add(webSocket)
 						console.log(`Peer joined room: ${room}`)
 						break
 					}
@@ -34,7 +34,7 @@ app.get(
 						if (room && rooms.has(room)) {
 							for (const client of rooms.get(room)!) {
 								if (
-									client !== ws &&
+									client !== webSocket &&
 									client.readyState === 1 /* WebSocket.OPEN */
 								) {
 									client.send(
@@ -47,19 +47,19 @@ app.get(
 					}
 				}
 			},
-			onClose(evt, ws) {
+			onClose(event, webSocket) {
 				if (room && rooms.has(room)) {
-					rooms.get(room)!.delete(ws)
+					rooms.get(room)!.delete(webSocket)
 					if (rooms.get(room)!.size === 0) {
 						rooms.delete(room)
 					}
 				}
 				console.log('WebSocket connection closed.')
 			},
-			onError(evt, ws) {
-				console.error('WebSocket error:', evt)
+			onError(event, webSocket) {
+				console.error('WebSocket error:', event)
 			},
-			onOpen(evt, ws) {
+			onOpen(event, webSocket) {
 				console.log('WebSocket connection opened.')
 			},
 		}
