@@ -1,5 +1,7 @@
-var delay = function (milliseconds) {
-    return new Promise(function (resolve) { return setTimeout(resolve, milliseconds); });
+var delay = function delay(milliseconds) {
+  return new Promise(function (resolve) {
+    return setTimeout(resolve, milliseconds);
+  });
 };
 
 export { delay };
