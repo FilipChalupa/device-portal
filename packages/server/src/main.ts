@@ -1,9 +1,18 @@
 // server/main.ts
-console.log("Starting WebSocket signaling server...");
+const portString = Deno.env.get("PORT");
+let port = 8080;
+if (portString) {
+  const parsedPort = parseInt(portString, 10);
+  if (!isNaN(parsedPort)) {
+    port = parsedPort;
+  }
+}
+
+console.log(`Starting WebSocket signaling server on port ${port}...`);
 
 const rooms = new Map<string, WebSocket[]>();
 
-Deno.serve({ port: 8080 }, (req) => {
+Deno.serve({ port }, (req) => {
   if (req.headers.get("upgrade") !== "websocket") {
     return new Response(null, { status: 501 });
   }
