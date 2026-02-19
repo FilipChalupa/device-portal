@@ -54,12 +54,16 @@ export abstract class Peer {
 					JSON.stringify({ type: 'join-room', room: this.room }),
 				)
 				this.initializeConnectionAndChannel()
+				this.onConnected()
 				resolve()
 			}
 
 			this.socket.onmessage = (event) => {
 				const message = JSON.parse(event.data)
 				switch (message.type) {
+					case 'peer-joined':
+						this.handlePeerJoined()
+						break
 					case 'offer':
 						this.handleOffer(message.data)
 						break
@@ -90,6 +94,8 @@ export abstract class Peer {
 
 	protected abstract handleOffer(offer: RTCSessionDescriptionInit): void
 	protected abstract handleAnswer(answer: RTCSessionDescriptionInit): void
+	protected abstract handlePeerJoined(): void
+	protected abstract onConnected(): void
 
 	protected async handleIceCandidate(candidate: RTCIceCandidateInit) {
 		if (this.connection) {
@@ -141,6 +147,7 @@ export abstract class Peer {
 	}
 
 	protected initializeConnectionAndChannel() {
+		this.connection?.close()
 		this.connection = new RTCPeerConnection({ iceServers: this.iceServers })
 		this.connection.onicecandidate = this.shareNewIceCandidate.bind(this)
 

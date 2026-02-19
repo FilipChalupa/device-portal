@@ -3,7 +3,15 @@ import { Peer } from './Peer'
 export class Initiator extends Peer {
 	protected role = 'initiator' as const
 
-	protected async connect(): Promise<void> {
+	protected onConnected(): void {
+		this.createAndSendOffer()
+	}
+
+	protected async handlePeerJoined() {
+		await this.createAndSendOffer()
+	}
+
+	protected async createAndSendOffer() {
 		if (!this.connection) {
 			this.initializeConnectionAndChannel()
 		}

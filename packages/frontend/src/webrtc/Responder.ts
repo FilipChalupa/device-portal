@@ -3,10 +3,12 @@ import { Peer } from './Peer'
 export class Responder extends Peer {
 	protected role = 'responder' as const
 
-	protected connect(): Promise<void> {
-		// The connection is initiated from the Peer class
-		// The responder waits for an offer
-		return Promise.resolve()
+	protected onConnected(): void {
+		// Responder waits for an offer
+	}
+
+	protected handlePeerJoined() {
+		// Responder does not need to do anything when a peer joins, it waits for an offer
 	}
 
 	protected async handleOffer(offer: RTCSessionDescriptionInit) {

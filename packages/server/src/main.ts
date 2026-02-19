@@ -24,8 +24,19 @@ app.get(
 						if (!rooms.has(room!)) {
 							rooms.set(room!, new Set())
 						}
-						rooms.get(room!)!.add(webSocket)
+						const roomPeers = rooms.get(room!)!
+						roomPeers.add(webSocket)
 						console.log(`Peer joined room: ${room}`)
+
+						// Notify other peers in the room that a new peer has joined
+						for (const client of roomPeers) {
+							if (
+								client !== webSocket &&
+								client.readyState === 1 /* WebSocket.OPEN */
+							) {
+								client.send(JSON.stringify({ type: 'peer-joined' }))
+							}
+						}
 						break
 					}
 					case 'offer':
