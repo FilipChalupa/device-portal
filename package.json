@@ -11,7 +11,9 @@
 		"build:frontend": "npm run -w @device-portal/react build",
 		"start:storybook": "npm run -w @device-portal/react start:storybook",
 		"build:storybook": "npm run -w @device-portal/react build:storybook",
-		"start:server": "npm run -w @device-portal/server start"
+		"start:server": "npm run -w @device-portal/server start",
+		"test:server": "npm run -w @device-portal/server test",
+		"lint": "prettier --check ."
 	},
 	"devDependencies": {
 		"prettier": "^3.0.3",
