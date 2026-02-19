@@ -22,6 +22,7 @@ localStorage.setItem('room', room)
 const websocketSignalingServer = 'ws://localhost:8080'
 
 const InputComponent: FunctionComponent = () => {
+	console.log('[InputComponent] Rendering')
 	const containerRef = useRef<HTMLDivElement>(null)
 	const [value, setState] = useState(1)
 	useDevicePortalInput(room, value.toString(), {
@@ -71,6 +72,7 @@ const InputComponent: FunctionComponent = () => {
 }
 
 const OutputComponent: FunctionComponent = () => {
+	console.log('[OutputComponent] Rendering')
 	const { value, sendValueToInput } = useDevicePortalOutput(room, {
 		websocketSignalingServer,
 	})

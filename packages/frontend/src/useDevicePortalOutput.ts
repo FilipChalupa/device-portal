@@ -28,8 +28,19 @@ export const useDevicePortalOutput = (
 
 	const currentOutput = useMemo(() => {
 		if (!responders[room]) {
+			console.log(`[useDevicePortalOutput] Creating new Responder for room: ${room}`)
+			const withResolvers = () => {
+				let resolve: (value: string) => void
+				let reject: (reason?: any) => void
+				const promise = new Promise<string>((res, rej) => {
+					resolve = res
+					reject = rej
+				})
+				return { promise, resolve: resolve!, reject: reject! }
+			}
+
 			const { promise: firstValuePromise, resolve: firstValueResolve } =
-				Promise.withResolvers<string>()
+				(Promise as any).withResolvers?.() ?? withResolvers()
 
 			const sendValueToInput = (value: string) => {
 				responders[room].responder.send(value)

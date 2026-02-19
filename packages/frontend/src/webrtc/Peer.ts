@@ -51,6 +51,7 @@ export abstract class Peer {
 			this.socket = new WebSocket(this.websocketSignalingServer)
 
 			this.socket.onopen = () => {
+				console.log(`[Peer] WebSocket opened for room: ${this.room}`)
 				this.socket?.send(
 					JSON.stringify({ type: 'join-room', room: this.room }),
 				)
@@ -61,6 +62,7 @@ export abstract class Peer {
 
 			this.socket.onmessage = (event) => {
 				const message = JSON.parse(event.data)
+				console.log(`[Peer] Received signaling message: ${message.type}`)
 				switch (message.type) {
 					case 'peer-joined':
 						this.handlePeerJoined()
@@ -78,8 +80,10 @@ export abstract class Peer {
 			}
 
 			this.socket.onclose = async () => {
+				console.log('[Peer] WebSocket closed')
 				this.close()
 				if (!this.isDestroyed) {
+					console.log('[Peer] Attempting reconnect in 1s...')
 					await delay(1000)
 					await this.run() // Reconnect
 				}
@@ -104,11 +108,13 @@ export abstract class Peer {
 		}
 		if (this.connection.remoteDescription) {
 			try {
+				console.log('[Peer] Adding received ICE candidate')
 				await this.connection.addIceCandidate(new RTCIceCandidate(candidate))
 			} catch (error) {
-				console.error('Error adding ice candidate:', error)
+				console.error('[Peer] Error adding ice candidate:', error)
 			}
 		} else {
+			console.log('[Peer] Queuing ICE candidate (remote description not set)')
 			this.candidatesQueue.push(candidate)
 		}
 	}
@@ -117,12 +123,15 @@ export abstract class Peer {
 		if (!this.connection) {
 			return
 		}
+		if (this.candidatesQueue.length > 0) {
+			console.log(`[Peer] Processing ${this.candidatesQueue.length} queued ICE candidates`)
+		}
 		while (this.candidatesQueue.length > 0) {
 			const candidate = this.candidatesQueue.shift()!
 			try {
 				await this.connection.addIceCandidate(new RTCIceCandidate(candidate))
 			} catch (error) {
-				console.error('Error adding queued ice candidate:', error)
+				console.error('[Peer] Error adding queued ice candidate:', error)
 			}
 		}
 	}
@@ -143,7 +152,10 @@ export abstract class Peer {
 
 	protected sendMessage(type: string, data: any) {
 		if (this.socket?.readyState === WebSocket.OPEN) {
+			console.log(`[Peer] Sending signaling message: ${type}`)
 			this.socket.send(JSON.stringify({ type, room: this.room, data }))
+		} else {
+			console.warn(`[Peer] Cannot send message ${type}, WebSocket not open`)
 		}
 	}
 
@@ -153,12 +165,14 @@ export abstract class Peer {
 		if (!this.connection) {
 			throw new Error('Connection is not initialized')
 		}
+		console.log(`[Peer] Setting local description (${description.type})`)
 		await this.connection.setLocalDescription(description)
 		this.sendMessage(description.type, description)
 	}
 
 	protected shareNewIceCandidate(event: RTCPeerConnectionIceEvent) {
 		if (event.candidate) {
+			console.log('[Peer] Generated new ICE candidate')
 			this.sendMessage('ice-candidate', event.candidate.toJSON())
 		}
 	}
@@ -183,24 +197,30 @@ export abstract class Peer {
 		}
 
 		if (this.role === 'initiator') {
+			console.log('[Peer] Creating data channel')
 			this.channel = this.connection.createDataChannel(settings.channel.label)
 			this.channel.onopen = () => {
+				console.log('[Peer] Data channel opened')
 				if (this.value && this.sendLastValueOnConnectAndReconnect) {
 					this.channel?.send(this.value.value)
 				}
 			}
 			this.channel.onmessage = (event) => {
+				console.log('[Peer] Data channel message received')
 				this.onValue?.(event.data)
 			}
 		} else {
 			this.connection.ondatachannel = (event) => {
+				console.log('[Peer] Data channel received (responder)')
 				this.channel = event.channel
 				this.channel.onopen = () => {
+					console.log('[Peer] Data channel opened')
 					if (this.value && this.sendLastValueOnConnectAndReconnect) {
 						this.channel?.send(this.value.value)
 					}
 				}
 				this.channel.onmessage = (event) => {
+					console.log('[Peer] Data channel message received')
 					this.onValue?.(event.data)
 				}
 			}
