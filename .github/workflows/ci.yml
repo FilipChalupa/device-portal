@@ -22,7 +22,7 @@ jobs:
       - name: Test Frontend
         run: |
           npm run -w @device-portal/react build
-          npm run -w @device-portal/react build-storybook
+          npm run -w @device-portal/react build:storybook
 
       - name: Test Backend
         run: npm run -w @device-portal/server build
