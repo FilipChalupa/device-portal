@@ -10,6 +10,7 @@ type ClientConnection = {
 export class Initiator extends Peer {
 	protected role = 'initiator' as const
 	protected connections = new Map<string, ClientConnection>()
+	protected waitingPeers = new Set<string>()
 	protected readonly maxClients: number
 
 	constructor(
@@ -33,12 +34,36 @@ export class Initiator extends Peer {
 	protected async handlePeerJoined(peerId: string) {
 		console.log(`[Initiator] Peer ${peerId} joined`)
 		if (this.connections.size >= this.maxClients) {
-			console.warn(
-				`[Initiator] Max clients (${this.maxClients}) reached, ignoring peer ${peerId}`,
-			)
+			console.log(`[Initiator] Max clients reached, adding ${peerId} to waiting list`)
+			this.waitingPeers.add(peerId)
 			return
 		}
 		await this.createAndSendOffer(peerId)
+	}
+
+	protected handlePeerLeft(peerId: string) {
+		console.log(`[Initiator] Peer ${peerId} left`)
+		this.waitingPeers.delete(peerId)
+		const client = this.connections.get(peerId)
+		if (client) {
+			client.channel.close()
+			client.connection.close()
+			this.connections.delete(peerId)
+			this.processWaitingPeers()
+		}
+	}
+
+	protected async processWaitingPeers() {
+		if (this.connections.size >= this.maxClients || this.waitingPeers.size === 0) {
+			return
+		}
+
+		const nextPeerId = this.waitingPeers.values().next().value
+		if (nextPeerId) {
+			console.log(`[Initiator] Slot available, connecting waiting peer: ${nextPeerId}`)
+			this.waitingPeers.delete(nextPeerId)
+			await this.createAndSendOffer(nextPeerId)
+		}
 	}
 
 	protected async createAndSendOffer(toPeerId: string) {
@@ -70,6 +95,7 @@ export class Initiator extends Peer {
 				connection.iceConnectionState === 'closed'
 			) {
 				this.connections.delete(toPeerId)
+				this.processWaitingPeers()
 			}
 		}
 

@@ -11,6 +11,10 @@ export class Responder extends Peer {
 		// Responder does not need to do anything when a peer joins, it waits for an offer
 	}
 
+	protected handlePeerLeft(peerId: string) {
+		// Responder logic for when a peer leaves (usually its own server connection closing handles this)
+	}
+
 	protected async handleOffer(offer: RTCSessionDescriptionInit, fromPeerId: string) {
 		console.log(`[Responder] Handling offer from ${fromPeerId}`)
 		this.initializeConnectionAndChannel()

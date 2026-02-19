@@ -74,6 +74,11 @@ export abstract class Peer {
 							this.handlePeerJoined(message.data.peerId)
 						}
 						break
+					case 'peer-left':
+						if (message.data?.peerId) {
+							this.handlePeerLeft(message.data.peerId)
+						}
+						break
 					case 'offer':
 						this.handleOffer(message.data, message.from)
 						break
@@ -104,9 +109,16 @@ export abstract class Peer {
 		})
 	}
 
-	protected abstract handleOffer(offer: RTCSessionDescriptionInit): void
-	protected abstract handleAnswer(answer: RTCSessionDescriptionInit): void
-	protected abstract handlePeerJoined(): void
+	protected abstract handleOffer(
+		offer: RTCSessionDescriptionInit,
+		fromPeerId: string,
+	): void
+	protected abstract handleAnswer(
+		answer: RTCSessionDescriptionInit,
+		fromPeerId: string,
+	): void
+	protected abstract handlePeerJoined(peerId: string): void
+	protected abstract handlePeerLeft(peerId: string): void
 	protected abstract onConnected(): void
 
 	protected async handleIceCandidate(candidate: RTCIceCandidateInit) {

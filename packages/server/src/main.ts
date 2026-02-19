@@ -80,8 +80,17 @@ app.get(
 			},
 			onClose(event, webSocket) {
 				if (room && rooms.has(room)) {
-					rooms.get(room)!.delete(webSocket)
-					if (rooms.get(room)!.size === 0) {
+					const roomPeers = rooms.get(room)!
+					roomPeers.delete(webSocket)
+
+					// Notify other peers in the room that a peer has left
+					for (const client of roomPeers) {
+						if (client.readyState === 1 /* WebSocket.OPEN */) {
+							client.send(JSON.stringify({ type: 'peer-left', data: { peerId } }))
+						}
+					}
+
+					if (roomPeers.size === 0) {
 						rooms.delete(room)
 					}
 				}
