@@ -77,7 +77,7 @@ if (portString) {
 	}
 }
 
-console.log(`Starting WebSocket signaling server on port ${port}...`)
+console.log(`Starting signaling server on 0.0.0.0:${port}…`)
 
 const server = serve({
 	fetch: app.fetch,
