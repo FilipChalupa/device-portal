@@ -1,0 +1,36 @@
+{
+	"name": "@react-device-portal/frontend",
+	"version": "0.3.1",
+	"description": "Simple WebRTC data channel for React.",
+	"type": "module",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"scripts": {
+		"start": "rollup -c -w",
+		"dev": "npm start",
+		"build": "rollup -c",
+		"prepare": "npm run build",
+		"storybook": "storybook dev -p 6006",
+		"build-storybook": "storybook build"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/FilipChalupa/react-device-portal.git"
+	},
+	"keywords": [
+		"react",
+		"webrtc"
+	],
+	"author": {
+		"name": "Filip Chalupa",
+		"email": "chalupa.filip@gmail.com",
+		"url": "https://www.npmjs.com/~onset"
+	},
+	"license": "ISC",
+	"peerDependencies": {
+		"react": "18 || 19"
+	},
+	"files": [
+		"/dist/"
+	]
+}

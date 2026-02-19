@@ -1,0 +1,8 @@
+{
+  "name": "@react-device-portal/server",
+  "version": "1.0.0",
+  "main": "src/main.ts",
+  "scripts": {
+    "start": "deno run --allow-net src/main.ts"
+  }
+}

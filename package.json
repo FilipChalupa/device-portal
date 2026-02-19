@@ -1,63 +1,39 @@
 {
-	"name": "react-device-portal",
-	"version": "0.3.1",
-	"description": "Simple WebRTC data channel for React.",
-	"type": "module",
-	"main": "./dist/index.js",
-	"types": "./dist/index.d.ts",
-	"scripts": {
-		"start": "rollup -c -w",
-		"dev": "npm start",
-		"build": "rollup -c",
-		"prepare": "npm run build",
-		"storybook": "storybook dev -p 6006",
-		"build-storybook": "storybook build",
-		"start:server": "deno run --allow-net server/main.ts"
-	},
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/FilipChalupa/react-device-portal.git"
-	},
-	"keywords": [
-		"react",
-		"webrtc"
-	],
-	"author": {
-		"name": "Filip Chalupa",
-		"email": "chalupa.filip@gmail.com",
-		"url": "https://www.npmjs.com/~onset"
-	},
-	"license": "ISC",
-	"devDependencies": {
-		"@rollup/plugin-commonjs": "^25.0.7",
-		"@rollup/plugin-node-resolve": "^15.2.3",
-		"@storybook/addon-essentials": "^7.6.16",
-		"@storybook/addon-interactions": "^7.6.16",
-		"@storybook/addon-links": "^7.6.16",
-		"@storybook/addon-onboarding": "^1.0.11",
-		"@storybook/blocks": "^7.6.16",
-		"@storybook/react": "^7.6.16",
-		"@storybook/react-vite": "^7.6.16",
-		"@storybook/test": "^7.6.16",
-		"@tanstack/react-query": "^5.59.20",
-		"@types/react": "^18.2.57",
-		"@types/react-dom": "^18.2.19",
-		"prettier": "^3.0.3",
-		"react": "^18.2.0",
-		"react-dom": "^18.2.0",
-		"rollup": "^4.2.0",
-		"rollup-plugin-delete": "^2.0.0",
-		"rollup-plugin-peer-deps-external": "^2.2.4",
-		"rollup-plugin-postcss": "^4.0.2",
-		"rollup-plugin-preserve-directives": "^0.3.1",
-		"rollup-plugin-typescript2": "^0.36.0",
-		"storybook": "^7.6.16",
-		"typescript": "^5.8.2"
-	},
-	"peerDependencies": {
-		"react": "18 || 19"
-	},
-	"files": [
-		"/dist/"
-	]
+  "name": "react-device-portal-monorepo",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "start:frontend": "npm run -w @react-device-portal/frontend start",
+    "build:frontend": "npm run -w @react-device-portal/frontend build",
+    "storybook": "npm run -w @react-device-portal/frontend storybook",
+    "start:server": "npm run -w @react-device-portal/server start"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^25.0.7",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@storybook/addon-essentials": "^7.6.16",
+    "@storybook/addon-interactions": "^7.6.16",
+    "@storybook/addon-links": "^7.6.16",
+    "@storybook/addon-onboarding": "^1.0.11",
+    "@storybook/blocks": "^7.6.16",
+    "@storybook/react": "^7.6.16",
+    "@storybook/react-vite": "^7.6.16",
+    "@storybook/test": "^7.6.16",
+    "@tanstack/react-query": "^5.59.20",
+    "@types/react": "^18.2.57",
+    "@types/react-dom": "^18.2.19",
+    "prettier": "^3.0.3",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "rollup": "^4.2.0",
+    "rollup-plugin-delete": "^2.0.0",
+    "rollup-plugin-peer-deps-external": "^2.2.4",
+    "rollup-plugin-postcss": "^4.0.2",
+    "rollup-plugin-preserve-directives": "^0.3.1",
+    "rollup-plugin-typescript2": "^0.36.0",
+    "storybook": "^7.6.16",
+    "typescript": "^5.8.2"
+  }
 }
