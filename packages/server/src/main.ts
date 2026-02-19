@@ -1,8 +1,11 @@
 import { serve } from '@hono/node-server'
+import { serveStatic } from '@hono/node-server/serve-static'
 import { createNodeWebSocket } from '@hono/node-ws'
 import { Hono } from 'hono'
 
 const app = new Hono()
+
+app.use('/*', serveStatic({ root: '../frontend/storybook-static' }))
 
 const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app })
 
