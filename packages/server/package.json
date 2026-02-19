@@ -4,6 +4,7 @@
 	"main": "src/main.ts",
 	"scripts": {
 		"start": "ts-node src/main.ts",
+		"dev": "node --watch -r ts-node/register src/main.ts",
 		"test": "tsc --build --dry"
 	},
 	"dependencies": {

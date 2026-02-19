@@ -12,6 +12,7 @@
 		"start:storybook": "npm run -w @device-portal/react start:storybook",
 		"build:storybook": "npm run -w @device-portal/react build:storybook",
 		"start:server": "npm run -w @device-portal/server start",
+		"dev:server": "npm run -w @device-portal/server dev",
 		"test:server": "npm run -w @device-portal/server test",
 		"fix": "prettier --check . --write",
 		"lint": "prettier --check ."
