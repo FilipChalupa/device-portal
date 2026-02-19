@@ -14,7 +14,7 @@ const responders: {
 		responder: Responder
 		firstValuePromise: Promise<string>
 		output: null | { value: string; sendValueToInput: (value: string) => void }
-		setValueState: Dispatch<SetStateAction<State>>
+		setValueStates: Set<Dispatch<SetStateAction<State | null>>>
 	}
 } = {}
 
@@ -25,45 +25,55 @@ export const useDevicePortalOutput = (
 	},
 ): Pick<State, 'value' | 'sendValueToInput'> => {
 	const [valueState, setValueState] = useState<State | null>(null)
-	const output = useMemo(() => {
-		if (valueState === null || valueState.room !== room) {
-			return null
+
+	const currentOutput = useMemo(() => {
+		if (!responders[room]) {
+			const { promise: firstValuePromise, resolve: firstValueResolve } =
+				Promise.withResolvers<string>()
+
+			const sendValueToInput = (value: string) => {
+				responders[room].responder.send(value)
+			}
+
+			const responder = new Responder(room, {
+				onValue: (value) => {
+					const output = { value, sendValueToInput }
+					responders[room].output = output
+					for (const setState of responders[room].setValueStates) {
+						setState({ room, value, sendValueToInput })
+					}
+					firstValueResolve(value)
+				},
+				sendLastValueOnConnectAndReconnect: false,
+				websocketSignalingServer: options?.websocketSignalingServer,
+			})
+
+			responders[room] = {
+				responder,
+				firstValuePromise,
+				output: null,
+				setValueStates: new Set(),
+			}
 		}
+
+		responders[room].setValueStates.add(setValueState)
+
+		return responders[room].output
+	}, [room, options?.websocketSignalingServer, setValueState])
+
+	// Cleanup on unmount (though this hook is currently designed for global persistence)
+	// useEffect(() => () => { responders[room]?.setValueStates.delete(setValueState) }, [room, setValueState]);
+
+	if (valueState && valueState.room === room) {
 		return {
 			value: valueState.value,
 			sendValueToInput: valueState.sendValueToInput,
 		}
-	}, [])
+	}
 
-	if (!responders[room]) {
-		const { promise: firstValuePromise, resolve: firstValueResolve } =
-			Promise.withResolvers<string>()
-		const responder = new Responder(room, {
-			onValue: (value) => {
-				responders[room].output = { value, sendValueToInput }
-				responders[room].setValueState({ room, value, sendValueToInput })
-				firstValueResolve(value)
-			},
-			sendLastValueOnConnectAndReconnect: false,
-			websocketSignalingServer: options?.websocketSignalingServer,
-		})
-		const sendValueToInput = (value: string) => {
-			responder.send(value)
-		}
-		responders[room] = {
-			responder,
-			firstValuePromise,
-			output: null,
-			setValueState,
-		}
+	if (currentOutput) {
+		return currentOutput
 	}
-	responders[room].setValueState = setValueState
 
-	if (output) {
-		return output
-	}
-	if (responders[room].output) {
-		return responders[room].output
-	}
 	throw responders[room].firstValuePromise
 }

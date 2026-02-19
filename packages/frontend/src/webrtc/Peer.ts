@@ -12,6 +12,7 @@ export abstract class Peer {
 	protected readonly websocketSignalingServer: string
 	protected readonly iceServers: Array<RTCIceServer>
 	protected socket: WebSocket | null = null
+	protected candidatesQueue: RTCIceCandidateInit[] = []
 
 	constructor(
 		protected readonly room: string,
@@ -98,8 +99,31 @@ export abstract class Peer {
 	protected abstract onConnected(): void
 
 	protected async handleIceCandidate(candidate: RTCIceCandidateInit) {
-		if (this.connection) {
-			await this.connection.addIceCandidate(new RTCIceCandidate(candidate))
+		if (!this.connection) {
+			return
+		}
+		if (this.connection.remoteDescription) {
+			try {
+				await this.connection.addIceCandidate(new RTCIceCandidate(candidate))
+			} catch (error) {
+				console.error('Error adding ice candidate:', error)
+			}
+		} else {
+			this.candidatesQueue.push(candidate)
+		}
+	}
+
+	protected async processCandidatesQueue() {
+		if (!this.connection) {
+			return
+		}
+		while (this.candidatesQueue.length > 0) {
+			const candidate = this.candidatesQueue.shift()!
+			try {
+				await this.connection.addIceCandidate(new RTCIceCandidate(candidate))
+			} catch (error) {
+				console.error('Error adding queued ice candidate:', error)
+			}
 		}
 	}
 
@@ -148,8 +172,15 @@ export abstract class Peer {
 
 	protected initializeConnectionAndChannel() {
 		this.connection?.close()
+		this.candidatesQueue = []
 		this.connection = new RTCPeerConnection({ iceServers: this.iceServers })
 		this.connection.onicecandidate = this.shareNewIceCandidate.bind(this)
+		this.connection.oniceconnectionstatechange = () => {
+			console.log(`ICE connection state: ${this.connection?.iceConnectionState}`)
+		}
+		this.connection.onconnectionstatechange = () => {
+			console.log(`Connection state: ${this.connection?.connectionState}`)
+		}
 
 		if (this.role === 'initiator') {
 			this.channel = this.connection.createDataChannel(settings.channel.label)

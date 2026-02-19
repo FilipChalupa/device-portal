@@ -19,6 +19,7 @@ export class Responder extends Peer {
 			throw new Error('Connection is not initialized')
 		}
 		await this.connection.setRemoteDescription(offer)
+		await this.processCandidatesQueue()
 		const answer = await this.connection.createAnswer()
 		await this.setAndShareLocalDescription(answer)
 	}

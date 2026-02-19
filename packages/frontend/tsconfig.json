@@ -3,7 +3,7 @@
 		"declaration": true,
 		"declarationDir": "dist",
 		"module": "esnext",
-		"target": "es5",
+		"target": "ES2020",
 		"lib": ["es6", "dom", "es2024"],
 		"sourceMap": true,
 		"jsx": "react-jsx",

@@ -29,6 +29,7 @@ export class Initiator extends Peer {
 	protected async handleAnswer(answer: RTCSessionDescriptionInit) {
 		if (this.connection) {
 			await this.connection.setRemoteDescription(answer)
+			await this.processCandidatesQueue()
 		}
 	}
 }
