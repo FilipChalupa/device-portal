@@ -5,8 +5,6 @@ import { Hono } from 'hono'
 
 const app = new Hono()
 
-app.use('/*', serveStatic({ root: '../frontend/storybook-static' }))
-
 const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app })
 
 const rooms = new Map<string, Set<any>>()
@@ -67,6 +65,8 @@ app.get(
 		}
 	}),
 )
+
+app.use('/*', serveStatic({ root: '../frontend/storybook-static' }))
 
 const portString = process.env.PORT
 let port = 8080
