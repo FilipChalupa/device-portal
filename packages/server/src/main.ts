@@ -1,5 +1,62 @@
-// server/main.ts
-const portString = Deno.env.get("PORT");
+import { Hono } from 'hono';
+import { serve } from '@hono/node-server';
+import { upgradeWebSocket } from 'hono/ws';
+import type { WebSocket } from 'ws';
+
+const rooms = new Map<string, Set<WebSocket>>();
+
+const app = new Hono();
+
+app.get('/', upgradeWebSocket((c) => {
+  let room: string | null = null;
+
+  return {
+    onMessage(evt, ws) {
+      const message = JSON.parse(evt.data as string);
+
+      switch (message.type) {
+        case 'join-room': {
+          room = message.room;
+          if (!rooms.has(room!)) {
+            rooms.set(room!, new Set());
+          }
+          rooms.get(room!)!.add(ws);
+          console.log(`Peer joined room: ${room}`);
+          break;
+        }
+        case 'offer':
+        case 'answer':
+        case 'ice-candidate': {
+          if (room && rooms.has(room)) {
+            for (const client of rooms.get(room)!) {
+              if (client !== ws && client.readyState === 1 /* WebSocket.OPEN */) {
+                client.send(JSON.stringify({ type: message.type, data: message.data }));
+              }
+            }
+          }
+          break;
+        }
+      }
+    },
+    onClose(evt, ws) {
+      if (room && rooms.has(room)) {
+        rooms.get(room)!.delete(ws);
+        if (rooms.get(room)!.size === 0) {
+          rooms.delete(room);
+        }
+      }
+      console.log('WebSocket connection closed.');
+    },
+    onError(evt, ws) {
+      console.error('WebSocket error:', evt);
+    },
+    onOpen(evt, ws) {
+      console.log('WebSocket connection opened.');
+    }
+  }
+}));
+
+const portString = process.env.PORT;
 let port = 8080;
 if (portString) {
   const parsedPort = parseInt(portString, 10);
@@ -10,65 +67,7 @@ if (portString) {
 
 console.log(`Starting WebSocket signaling server on port ${port}...`);
 
-const rooms = new Map<string, WebSocket[]>();
-
-Deno.serve({ port }, (req) => {
-  if (req.headers.get("upgrade") !== "websocket") {
-    return new Response(null, { status: 501 });
-  }
-
-  const { socket, response } = Deno.upgradeWebSocket(req);
-
-  socket.onopen = () => {
-    console.log("WebSocket connection opened.");
-  };
-
-  socket.onmessage = (event) => {
-    const message = JSON.parse(event.data);
-
-    switch (message.type) {
-      case "join-room": {
-        const { room } = message;
-        if (!rooms.has(room)) {
-          rooms.set(room, []);
-        }
-        rooms.get(room)!.push(socket);
-        console.log(`Peer joined room: ${room}`);
-        break;
-      }
-      case "offer":
-      case "answer":
-      case "ice-candidate": {
-        const { room, data } = message;
-        if (rooms.has(room)) {
-          for (const client of rooms.get(room)!) {
-            if (client !== socket && client.readyState === WebSocket.OPEN) {
-              client.send(JSON.stringify({ type: message.type, data }));
-            }
-          }
-        }
-        break;
-      }
-    }
-  };
-
-  socket.onclose = () => {
-    console.log("WebSocket connection closed.");
-    for (const [room, clients] of rooms.entries()) {
-      const index = clients.indexOf(socket);
-      if (index !== -1) {
-        clients.splice(index, 1);
-        if (clients.length === 0) {
-          rooms.delete(room);
-        }
-        break;
-      }
-    }
-  };
-
-  socket.onerror = (error) => {
-    console.error("WebSocket error:", error);
-  };
-
-  return response;
+serve({
+  fetch: app.fetch,
+  port,
 });

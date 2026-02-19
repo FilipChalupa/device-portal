@@ -2,3 +2,4 @@
 /dist/
 /storybook-static/
 packages/frontend/dist/
+packages/server/node_modules/

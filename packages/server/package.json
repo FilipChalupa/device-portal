@@ -3,6 +3,16 @@
   "version": "0.0.0",
   "main": "src/main.ts",
   "scripts": {
-    "start": "deno run --allow-net src/main.ts"
+    "start": "ts-node src/main.ts",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "hono": "^4.0.0",
+    "@hono/node-server": "^1.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "ts-node": "^10.9.1",
+    "@types/node": "^20.0.0"
   }
 }

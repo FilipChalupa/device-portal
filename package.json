@@ -1,17 +1,18 @@
 {
-  "name": "react-device-portal-monorepo",
-  "private": true,
-  "workspaces": [
-    "packages/*"
-  ],
-  "scripts": {
-    "start:frontend": "npm run -w @device-portal/react start",
-    "build:frontend": "npm run -w @device-portal/react build",
-    "storybook": "npm run -w @device-portal/react storybook",
-    "start:server": "npm run -w @device-portal/server start"
-  },
-  "devDependencies": {
-    "prettier": "^3.0.3",
-    "typescript": "^5.8.2"
-  }
+	"name": "react-device-portal-monorepo",
+	"private": true,
+	"workspaces": [
+		"packages/*"
+	],
+	"scripts": {
+		"start:frontend": "npm run -w @device-portal/react start",
+		"build:frontend": "npm run -w @device-portal/react build",
+		"start:storybook": "npm run -w @device-portal/react start:storybook",
+		"build:storybook": "npm run -w @device-portal/react build:storybook",
+		"start:server": "npm run -w @device-portal/server start"
+	},
+	"devDependencies": {
+		"prettier": "^3.0.3",
+		"typescript": "^5.8.2"
+	}
 }
