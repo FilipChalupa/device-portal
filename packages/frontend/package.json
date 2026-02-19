@@ -1,6 +1,6 @@
 {
-	"name": "@react-device-portal/frontend",
-	"version": "0.3.1",
+	"name": "@device-portal/react",
+	"version": "0.0.0",
 	"description": "Simple WebRTC data channel for React.",
 	"type": "module",
 	"main": "./dist/index.js",

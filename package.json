@@ -5,10 +5,10 @@
     "packages/*"
   ],
   "scripts": {
-    "start:frontend": "npm run -w @react-device-portal/frontend start",
-    "build:frontend": "npm run -w @react-device-portal/frontend build",
-    "storybook": "npm run -w @react-device-portal/frontend storybook",
-    "start:server": "npm run -w @react-device-portal/server start"
+    "start:frontend": "npm run -w @device-portal/react start",
+    "build:frontend": "npm run -w @device-portal/react build",
+    "storybook": "npm run -w @device-portal/react storybook",
+    "start:server": "npm run -w @device-portal/server start"
   },
   "devDependencies": {
     "prettier": "^3.0.3",
