@@ -9,6 +9,7 @@ export const useDevicePortalInput = (
 	options?: {
 		onValueFromOutput?: (value: string) => void
 		websocketSignalingServer?: string
+		maxClients?: number
 	},
 ) => {
 	const [initiator, setInitiator] = useState<Initiator | null>(null)
@@ -21,6 +22,7 @@ export const useDevicePortalInput = (
 				onValueFromOutputRef.current?.(value)
 			},
 			websocketSignalingServer: options?.websocketSignalingServer,
+			maxClients: options?.maxClients,
 		})
 		setInitiator(initiator)
 
@@ -28,7 +30,7 @@ export const useDevicePortalInput = (
 			initiator.destroy()
 			setInitiator(null)
 		}
-	}, [room, options?.websocketSignalingServer])
+	}, [room, options?.websocketSignalingServer, options?.maxClients])
 
 	useEffect(() => {
 		initiator?.send(value)

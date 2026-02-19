@@ -13,6 +13,7 @@ export abstract class Peer {
 	protected readonly iceServers: Array<RTCIceServer>
 	protected socket: WebSocket | null = null
 	protected candidatesQueue: RTCIceCandidateInit[] = []
+	protected peerId: string | null = null
 
 	constructor(
 		protected readonly room: string,
@@ -64,17 +65,23 @@ export abstract class Peer {
 				const message = JSON.parse(event.data)
 				console.log(`[Peer] Received signaling message: ${message.type}`)
 				switch (message.type) {
+					case 'identity':
+						this.peerId = message.data.peerId
+						console.log(`[Peer] My peer ID is: ${this.peerId}`)
+						break
 					case 'peer-joined':
-						this.handlePeerJoined()
+						if (message.data?.peerId) {
+							this.handlePeerJoined(message.data.peerId)
+						}
 						break
 					case 'offer':
-						this.handleOffer(message.data)
+						this.handleOffer(message.data, message.from)
 						break
 					case 'answer':
-						this.handleAnswer(message.data)
+						this.handleAnswer(message.data, message.from)
 						break
 					case 'ice-candidate':
-						this.handleIceCandidate(message.data)
+						this.handleIceCandidate(message.data, message.from)
 						break
 				}
 			}
@@ -150,10 +157,10 @@ export abstract class Peer {
 		this.close()
 	}
 
-	protected sendMessage(type: string, data: any) {
+	protected sendMessage(type: string, data: any, to?: string) {
 		if (this.socket?.readyState === WebSocket.OPEN) {
-			console.log(`[Peer] Sending signaling message: ${type}`)
-			this.socket.send(JSON.stringify({ type, room: this.room, data }))
+			console.log(`[Peer] Sending signaling message: ${type}${to ? ` to ${to}` : ''}`)
+			this.socket.send(JSON.stringify({ type, room: this.room, data, to }))
 		} else {
 			console.warn(`[Peer] Cannot send message ${type}, WebSocket not open`)
 		}
@@ -161,19 +168,23 @@ export abstract class Peer {
 
 	protected async setAndShareLocalDescription(
 		description: RTCSessionDescriptionInit,
+		toPeerId?: string,
 	) {
 		if (!this.connection) {
 			throw new Error('Connection is not initialized')
 		}
 		console.log(`[Peer] Setting local description (${description.type})`)
 		await this.connection.setLocalDescription(description)
-		this.sendMessage(description.type, description)
+		this.sendMessage(description.type, description, toPeerId)
 	}
 
-	protected shareNewIceCandidate(event: RTCPeerConnectionIceEvent) {
+	protected shareNewIceCandidate(
+		event: RTCPeerConnectionIceEvent,
+		toPeerId?: string,
+	) {
 		if (event.candidate) {
 			console.log('[Peer] Generated new ICE candidate')
-			this.sendMessage('ice-candidate', event.candidate.toJSON())
+			this.sendMessage('ice-candidate', event.candidate.toJSON(), toPeerId)
 		}
 	}
 

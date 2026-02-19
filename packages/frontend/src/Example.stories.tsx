@@ -41,6 +41,7 @@ const InputComponent: FunctionComponent = () => {
 			}
 		},
 		websocketSignalingServer,
+		maxClients: 1,
 	})
 
 	return (

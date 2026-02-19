@@ -13,8 +13,14 @@ app.get(
 	'/',
 	upgradeWebSocket((context) => {
 		let room: string | null = null
+		const peerId = crypto.randomUUID()
 
 		return {
+			onOpen(event, webSocket) {
+				;(webSocket as any).peerId = peerId
+				console.log(`WebSocket connection opened: ${peerId}`)
+				webSocket.send(JSON.stringify({ type: 'identity', data: { peerId } }))
+			},
 			onMessage(event, webSocket) {
 				const message = JSON.parse(event.data as string)
 
@@ -26,7 +32,7 @@ app.get(
 						}
 						const roomPeers = rooms.get(room!)!
 						roomPeers.add(webSocket)
-						console.log(`Peer joined room: ${room}`)
+						console.log(`Peer ${peerId} joined room: ${room}`)
 
 						// Notify other peers in the room that a new peer has joined
 						for (const client of roomPeers) {
@@ -34,7 +40,9 @@ app.get(
 								client !== webSocket &&
 								client.readyState === 1 /* WebSocket.OPEN */
 							) {
-								client.send(JSON.stringify({ type: 'peer-joined' }))
+								client.send(
+									JSON.stringify({ type: 'peer-joined', data: { peerId } }),
+								)
 							}
 						}
 						break
@@ -42,15 +50,26 @@ app.get(
 					case 'offer':
 					case 'answer':
 					case 'ice-candidate': {
-						console.log(`Forwarding ${message.type} in room: ${room}`)
+						console.log(
+							`Forwarding ${message.type} from ${peerId} in room: ${room}`,
+						)
 						if (room && rooms.has(room)) {
 							for (const client of rooms.get(room)!) {
 								if (
 									client !== webSocket &&
 									client.readyState === 1 /* WebSocket.OPEN */
 								) {
+									// If message has a target 'to', only send to that client
+									if (message.to && (client as any).peerId !== message.to) {
+										continue
+									}
+
 									client.send(
-										JSON.stringify({ type: message.type, data: message.data }),
+										JSON.stringify({
+											type: message.type,
+											from: peerId,
+											data: message.data,
+										}),
 									)
 								}
 							}
@@ -66,13 +85,10 @@ app.get(
 						rooms.delete(room)
 					}
 				}
-				console.log('WebSocket connection closed.')
+				console.log(`WebSocket connection closed: ${peerId}`)
 			},
 			onError(event, webSocket) {
-				console.error('WebSocket error:', event)
-			},
-			onOpen(event, webSocket) {
-				console.log('WebSocket connection opened.')
+				console.error(`WebSocket error for ${peerId}:`, event)
 			},
 		}
 	}),
