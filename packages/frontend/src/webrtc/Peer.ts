@@ -152,10 +152,7 @@ export abstract class Peer {
 		this.connection.onicecandidate = this.shareNewIceCandidate.bind(this)
 
 		if (this.role === 'initiator') {
-			this.channel = this.connection.createDataChannel(settings.channel.label, {
-				negotiated: true,
-				id: settings.channel.id,
-			})
+			this.channel = this.connection.createDataChannel(settings.channel.label)
 			this.channel.onopen = () => {
 				if (this.value && this.sendLastValueOnConnectAndReconnect) {
 					this.channel?.send(this.value.value)

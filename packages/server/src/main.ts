@@ -42,6 +42,7 @@ app.get(
 					case 'offer':
 					case 'answer':
 					case 'ice-candidate': {
+						console.log(`Forwarding ${message.type} in room: ${room}`)
 						if (room && rooms.has(room)) {
 							for (const client of rooms.get(room)!) {
 								if (

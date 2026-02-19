@@ -16,7 +16,7 @@ export const useDevicePortalInput = (
 	onValueFromOutputRef.current = options?.onValueFromOutput
 
 	useEffect(() => {
-		const initiator = new Initiator(encodeURIComponent(room), {
+		const initiator = new Initiator(room, {
 			onValue: (value) => {
 				onValueFromOutputRef.current?.(value)
 			},
