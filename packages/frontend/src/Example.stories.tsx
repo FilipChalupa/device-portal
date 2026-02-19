@@ -11,10 +11,12 @@ const meta: Meta<FunctionComponent> = {
 export default meta
 type Story = StoryObj<typeof meta>
 
+const defaultRoom = 'storybook'
+
 const room =
 	localStorage.getItem('room') ||
-	prompt('Enter room name', localStorage.getItem('room') || 'storybook') ||
-	'storybook'
+	prompt('Enter room name', localStorage.getItem('room') || defaultRoom) ||
+	defaultRoom
 localStorage.setItem('room', room)
 
 const websocketSignalingServer = 'ws://localhost:8080'
