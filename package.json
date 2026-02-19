@@ -5,6 +5,7 @@
 		"packages/*"
 	],
 	"scripts": {
+		"build": "npm run build:frontend && npm run build:storybook",
 		"start:frontend": "npm run -w @device-portal/react start",
 		"build:frontend": "npm run -w @device-portal/react build",
 		"start:storybook": "npm run -w @device-portal/react start:storybook",
