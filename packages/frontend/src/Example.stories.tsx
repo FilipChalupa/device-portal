@@ -5,7 +5,7 @@ import { useDevicePortalProvider } from './useDevicePortalProvider'
 import { useDevicePortalConsumer } from './useDevicePortalConsumer'
 
 const meta: Meta<FunctionComponent> = {
-	title: 'Demo',
+	title: 'Counter',
 } satisfies Meta<FunctionComponent>
 
 export default meta
@@ -103,7 +103,7 @@ export const Provider: Story = {
 	render: () => {
 		return (
 			<div className="wrapper">
-				<h1>Demo provider</h1>
+				<h1>Counter provider</h1>
 				<p>
 					Note: This demo requires the signaling server to be running. Run{' '}
 					<code>npm run start:server</code> in your terminal.
@@ -118,7 +118,7 @@ export const Consumer: Story = {
 	render: () => {
 		return (
 			<div className="wrapper">
-				<h1>Demo consumer</h1>
+				<h1>Counter consumer</h1>
 				<p>
 					Note: This demo requires the signaling server to be running. Run{' '}
 					<code>npm run start:server</code> in your terminal.
