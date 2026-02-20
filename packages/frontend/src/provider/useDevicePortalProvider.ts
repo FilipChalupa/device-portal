@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Initiator } from './webrtc/Initiator'
+import { Initiator } from '../webrtc/Initiator'
 
 // @TODO: warn if one room is used by multiple useDevicePortalProvider hooks more than once at the same time
 

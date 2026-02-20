@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { FunctionComponent, Suspense, useRef, useState } from 'react'
 import './Example.stories.css'
-import { useDevicePortalProvider } from './useDevicePortalProvider'
-import { useDevicePortalConsumer } from './useDevicePortalConsumer'
+import { useDevicePortalProvider } from './provider/useDevicePortalProvider'
+import { useDevicePortalConsumer } from './consumer/useDevicePortalConsumer'
 
 const meta: Meta<FunctionComponent> = {
 	title: 'Counter',
