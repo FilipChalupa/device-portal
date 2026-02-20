@@ -24,8 +24,9 @@ export const useDevicePortalPeer = (
 	}, [initiator, peerId])
 
 	useEffect(() => {
-		if (options.value !== undefined) {
-			initiator.sendToPeer(peerId, options.value)
+		if (options.value === undefined) {
+			return
 		}
+		initiator.sendToPeer(peerId, options.value)
 	}, [initiator, peerId, options.value])
 }
