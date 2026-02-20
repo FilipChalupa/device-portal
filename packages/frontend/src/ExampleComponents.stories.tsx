@@ -62,7 +62,7 @@ const ProviderComponent: FunctionComponent = () => {
 			<div style={{ marginTop: '0.5em', display: 'grid', rowGap: '0.5em' }}>
 				<DevicePortalProvider
 					room={room}
-					data={value.toString()}
+					value={value.toString()}
 					websocketSignalingServer={websocketSignalingServer}
 					maxClients={5}
 					onMessageFromConsumer={(value, peerId) => {

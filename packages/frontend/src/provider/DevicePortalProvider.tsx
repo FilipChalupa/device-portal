@@ -10,14 +10,14 @@ import {
 export const DevicePortalProvider: FunctionComponent<
 	{
 		room: string
-		data: string
+		value: string
 		children?: (
 			Peer: FunctionComponent<PeerOptions>,
 			peerId: PeerId,
 		) => ReactNode
 	} & DevicePortalProviderOptions
-> = ({ room, data, children, ...options }) => {
-	const { peers, initiator } = useDevicePortalProvider(room, data, options)
+> = ({ room, value, children, ...options }) => {
+	const { peers, initiator } = useDevicePortalProvider(room, value, options)
 
 	if (!initiator || !children) {
 		return null
