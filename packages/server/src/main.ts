@@ -1,46 +1,65 @@
-#!/usr/bin/env node
 import { serve } from '@hono/node-server'
 import { serveStatic } from '@hono/node-server/serve-static'
 import { createNodeWebSocket } from '@hono/node-ws'
-import { Hono } from 'hono'
 import { existsSync } from 'fs'
+import { Hono } from 'hono'
 import { resolve } from 'path'
+import { WebSocket } from 'ws'
+
+type JoinRoomMessage = {
+	type: 'join-room'
+	room: string
+}
+
+type RtcMessage = {
+	type: 'offer' | 'answer' | 'ice-candidate'
+	to?: string
+	data: any
+}
+
+type SignalingMessage = JoinRoomMessage | RtcMessage
 
 const app = new Hono()
 
 const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app })
 
-const rooms = new Map<string, Set<any>>()
+const rooms = new Map<string, Set<WebSocket>>()
+const webSocketToPeerId = new Map<WebSocket, string>()
+const webSocketToRoom = new Map<WebSocket, string>()
 
 app.get(
 	'/v0/',
 	upgradeWebSocket((context) => {
-		let room: string | null = null
-		const peerId = crypto.randomUUID()
-
 		return {
 			onOpen(event, webSocket) {
-				;(webSocket as any).peerId = peerId
+				const peerId = crypto.randomUUID()
+				// @ts-expect-error The raw socket is not exposed on the type, but it's there
+				webSocketToPeerId.set(webSocket.raw, peerId)
 				console.log(`WebSocket connection opened: ${peerId}`)
 				webSocket.send(JSON.stringify({ type: 'identity', data: { peerId } }))
 			},
 			onMessage(event, webSocket) {
-				const message = JSON.parse(event.data as string)
+				// @ts-expect-error The raw socket is not exposed on the type, but it's there
+				const peerId = webSocketToPeerId.get(webSocket.raw)!
+				const message = JSON.parse(event.data as string) as SignalingMessage
 
 				switch (message.type) {
 					case 'join-room': {
-						room = message.room
+						const room = message.room
+						// @ts-expect-error The raw socket is not exposed on the type, but it's there
+						webSocketToRoom.set(webSocket.raw, room)
 						if (!rooms.has(room!)) {
 							rooms.set(room!, new Set())
 						}
 						const roomPeers = rooms.get(room!)!
-						roomPeers.add(webSocket)
+						// @ts-expect-error The raw socket is not exposed on the type, but it's there
+						roomPeers.add(webSocket.raw)
 						console.log(`Peer ${peerId} joined room: ${room}`)
 
 						// Notify other peers in the room that a new peer has joined
 						for (const client of roomPeers) {
 							if (
-								client !== webSocket &&
+								client !== webSocket.raw &&
 								client.readyState === 1 /* WebSocket.OPEN */
 							) {
 								client.send(
@@ -53,17 +72,20 @@ app.get(
 					case 'offer':
 					case 'answer':
 					case 'ice-candidate': {
+						// @ts-expect-error The raw socket is not exposed on the type, but it's there
+						const room = webSocketToRoom.get(webSocket.raw)!
 						console.log(
 							`Forwarding ${message.type} from ${peerId} in room: ${room}`,
 						)
 						if (room && rooms.has(room)) {
 							for (const client of rooms.get(room)!) {
 								if (
-									client !== webSocket &&
+									client !== webSocket.raw &&
 									client.readyState === 1 /* WebSocket.OPEN */
 								) {
 									// If message has a target 'to', only send to that client
-									if (message.to && (client as any).peerId !== message.to) {
+									const clientPeerId = webSocketToPeerId.get(client)
+									if (message.to && clientPeerId !== message.to) {
 										continue
 									}
 
@@ -82,9 +104,15 @@ app.get(
 				}
 			},
 			onClose(event, webSocket) {
+				// @ts-expect-error The raw socket is not exposed on the type, but it's there
+				const peerId = webSocketToPeerId.get(webSocket.raw)
+				// @ts-expect-error The raw socket is not exposed on the type, but it's there
+				const room = webSocketToRoom.get(webSocket.raw)
+
 				if (room && rooms.has(room)) {
 					const roomPeers = rooms.get(room)!
-					roomPeers.delete(webSocket)
+					// @ts-expect-error The raw socket is not exposed on the type, but it's there
+					roomPeers.delete(webSocket.raw)
 
 					// Notify other peers in the room that a peer has left
 					for (const client of roomPeers) {
@@ -99,9 +127,15 @@ app.get(
 						rooms.delete(room)
 					}
 				}
+				// @ts-expect-error The raw socket is not exposed on the type, but it's there
+				webSocketToPeerId.delete(webSocket.raw)
+				// @ts-expect-error The raw socket is not exposed on the type, but it's there
+				webSocketToRoom.delete(webSocket.raw)
 				console.log(`WebSocket connection closed: ${peerId}`)
 			},
 			onError(event, webSocket) {
+				// @ts-expect-error The raw socket is not exposed on the type, but it's there
+				const peerId = webSocketToPeerId.get(webSocket.raw)
 				console.error(`WebSocket error for ${peerId}:`, event)
 			},
 		}
