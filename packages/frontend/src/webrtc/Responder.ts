@@ -36,7 +36,9 @@ export class Responder extends Peer {
 				this.connection.iceConnectionState === 'disconnected' ||
 				this.connection.iceConnectionState === 'closed'
 			) {
-				console.log('[Responder] Attempting to re-join room for reconnection...')
+				console.log(
+					'[Responder] Attempting to re-join room for reconnection...',
+				)
 				this.socket?.send(
 					JSON.stringify({ type: 'join-room', room: this.room }),
 				)

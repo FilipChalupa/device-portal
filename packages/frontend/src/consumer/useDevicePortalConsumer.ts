@@ -13,7 +13,10 @@ const responders: {
 	[room: string]: {
 		responder: Responder
 		firstValuePromise: Promise<string>
-		consumer: null | { value: string; sendValueToProvider: (value: string) => void }
+		consumer: null | {
+			value: string
+			sendValueToProvider: (value: string) => void
+		}
 		setValueStates: Set<Dispatch<SetStateAction<State | null>>>
 	}
 } = {}
