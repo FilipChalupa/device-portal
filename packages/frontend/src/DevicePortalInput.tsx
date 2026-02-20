@@ -4,7 +4,8 @@ import { useDevicePortalInput } from './useDevicePortalInput'
 export const DevicePortalInput: FunctionComponent<{
 	room: string
 	data: string
-}> = ({ room, data }) => {
-	useDevicePortalInput(room, data)
+	websocketSignalingServer: string
+}> = ({ room, data, websocketSignalingServer }) => {
+	useDevicePortalInput(room, data, { websocketSignalingServer })
 	return null
 }

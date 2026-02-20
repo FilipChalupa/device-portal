@@ -20,8 +20,8 @@ const responders: {
 
 export const useDevicePortalOutput = (
 	room: string,
-	options?: {
-		websocketSignalingServer?: string
+	options: {
+		websocketSignalingServer: string
 	},
 ): Pick<State, 'value' | 'sendValueToInput'> => {
 	const [valueState, setValueState] = useState<State | null>(null)
@@ -58,7 +58,7 @@ export const useDevicePortalOutput = (
 					firstValueResolve(value)
 				},
 				sendLastValueOnConnectAndReconnect: false,
-				websocketSignalingServer: options?.websocketSignalingServer,
+				websocketSignalingServer: options.websocketSignalingServer,
 			})
 
 			responders[room] = {
@@ -72,7 +72,7 @@ export const useDevicePortalOutput = (
 		responders[room].setValueStates.add(setValueState)
 
 		return responders[room].output
-	}, [room, options?.websocketSignalingServer, setValueState])
+	}, [room, options.websocketSignalingServer, setValueState])
 
 	// Cleanup on unmount (though this hook is currently designed for global persistence)
 	// useEffect(() => () => { responders[room]?.setValueStates.delete(setValueState) }, [room, setValueState]);
