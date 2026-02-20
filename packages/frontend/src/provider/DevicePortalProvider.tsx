@@ -1,4 +1,4 @@
-import { type FunctionComponent } from 'react'
+import { Fragment, type FunctionComponent, type ReactNode } from 'react'
 import {
 	useDevicePortalProvider,
 	type DevicePortalProviderOptions,
@@ -8,7 +8,11 @@ export const DevicePortalProvider: FunctionComponent<{
 	room: string
 	data: string
 	options?: DevicePortalProviderOptions
-}> = ({ room, data, options }) => {
-	useDevicePortalProvider(room, data, options)
-	return null
+	renderPeer?: (peer: string) => ReactNode
+}> = ({ room, data, options, renderPeer }) => {
+	const { peers, initiator } = useDevicePortalProvider(room, data, options)
+	if (!initiator || !renderPeer) {
+		return null
+	}
+	return peers.map((peer) => <Fragment key={peer}>{renderPeer(peer)}</Fragment>)
 }
