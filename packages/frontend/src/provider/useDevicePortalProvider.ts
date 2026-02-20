@@ -5,6 +5,7 @@ import { PeerId } from '../webrtc/PeerId'
 // @TODO: warn if one room is used by multiple useDevicePortalProvider hooks more than once at the same time
 
 export type DevicePortalProviderOptions = {
+	value?: string
 	websocketSignalingServer?: string
 	onMessageFromConsumer?: (value: string, peerId: PeerId) => void
 	maxClients?: number
@@ -12,7 +13,6 @@ export type DevicePortalProviderOptions = {
 
 export const useDevicePortalProvider = (
 	room: string,
-	value: string,
 	options: DevicePortalProviderOptions = {},
 ) => {
 	const [initiator, setInitiator] = useState<Initiator | null>(null)
@@ -42,8 +42,11 @@ export const useDevicePortalProvider = (
 	}, [room, options.websocketSignalingServer, options.maxClients])
 
 	useEffect(() => {
-		initiator?.send(value)
-	}, [value, initiator])
+		if (options.value === undefined) {
+			return
+		}
+		initiator?.send(options.value)
+	}, [options.value, initiator])
 
 	return { peers, initiator }
 }

@@ -33,36 +33,15 @@ const websocketSignalingServer = import.meta.env.DEV
 const ProviderComponent: FunctionComponent = () => {
 	console.log('[ProviderComponent] Rendering')
 	const containerRef = useRef<HTMLDivElement>(null)
-	const [value, setState] = useState(1)
 
 	return (
 		<div ref={containerRef} style={{ display: 'inline-block' }}>
 			<p>
-				Providing value for room "<b>{room}</b>":
+				Providing value for room "<b>{room}</b>".
 			</p>
-			<output>{value}</output>
-			<div>
-				<button
-					type="button"
-					onClick={() => {
-						setState((previousValue) => previousValue - 1)
-					}}
-				>
-					decrease
-				</button>{' '}
-				<button
-					type="button"
-					onClick={() => {
-						setState((previousValue) => previousValue + 1)
-					}}
-				>
-					increase
-				</button>
-			</div>
 			<div style={{ marginTop: '0.5em', display: 'grid', rowGap: '0.5em' }}>
 				<DevicePortalProvider
 					room={room}
-					value={value.toString()}
 					websocketSignalingServer={websocketSignalingServer}
 					maxClients={5}
 					onMessageFromConsumer={(value, peerId) => {
