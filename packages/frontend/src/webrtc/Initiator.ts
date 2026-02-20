@@ -15,14 +15,14 @@ export class Initiator extends Peer {
 	protected readonly maxClients: number
 	protected peerListeners = new Map<PeerId, Set<(value: string) => void>>()
 	protected onPeersChange: ((peers: PeerId[]) => void) | undefined
-	protected override readonly onValue:
+	protected override readonly onMessage:
 		| ((value: string, peerId: PeerId) => void)
 		| undefined
 
 	constructor(
 		room: string,
 		options: {
-			onValue?: (value: string, peerId: PeerId) => void
+			onMessage?: (value: string, peerId: PeerId) => void
 			onPeersChange?: (peers: PeerId[]) => void
 			sendLastValueOnConnectAndReconnect?: boolean
 			websocketSignalingServer?: string
@@ -31,7 +31,7 @@ export class Initiator extends Peer {
 		} = {},
 	) {
 		super(room, options)
-		this.onValue = options.onValue
+		this.onMessage = options.onMessage
 		this.onPeersChange = options.onPeersChange
 		this.maxClients = options.maxClients ?? 1
 	}
@@ -150,7 +150,7 @@ export class Initiator extends Peer {
 
 		channel.onmessage = (event) => {
 			console.log(`[Initiator] Message from ${toPeerId}: ${event.data}`)
-			this.onValue?.(event.data, toPeerId)
+			this.onMessage?.(event.data, toPeerId)
 			const listeners = this.peerListeners.get(toPeerId)
 			if (listeners) {
 				for (const listener of listeners) {

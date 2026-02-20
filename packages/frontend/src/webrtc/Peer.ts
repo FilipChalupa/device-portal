@@ -8,7 +8,9 @@ export abstract class Peer {
 	protected channel: RTCDataChannel | null = null
 	protected abstract role: 'initiator' | 'responder'
 	protected value: { value: string } | null = null
-	protected readonly onValue: ((value: string, peerId: PeerId) => void) | undefined
+	protected readonly onMessage:
+		| ((value: string, peerId: PeerId) => void)
+		| undefined
 	protected readonly sendLastValueOnConnectAndReconnect: boolean
 	protected readonly websocketSignalingServer: string
 	protected readonly iceServers: Array<RTCIceServer>
@@ -20,12 +22,12 @@ export abstract class Peer {
 		protected readonly room: string,
 		options: {
 			websocketSignalingServer?: string
-			onValue?: (value: string, peerId: PeerId) => void
+			onMessage?: (value: string, peerId: PeerId) => void
 			sendLastValueOnConnectAndReconnect?: boolean
 			iceServers?: Array<RTCIceServer>
 		} = {},
 	) {
-		this.onValue = options.onValue
+		this.onMessage = options.onMessage
 		this.sendLastValueOnConnectAndReconnect =
 			options.sendLastValueOnConnectAndReconnect ?? true
 		this.websocketSignalingServer = `${(
@@ -243,7 +245,7 @@ export abstract class Peer {
 			this.channel.onmessage = (event) => {
 				console.log('[Peer] Data channel message received')
 				if (this.peerId) {
-					this.onValue?.(event.data, this.peerId)
+					this.onMessage?.(event.data, this.peerId)
 				}
 			}
 		} else {
@@ -259,7 +261,7 @@ export abstract class Peer {
 				this.channel.onmessage = (event) => {
 					console.log('[Peer] Data channel message received')
 					if (this.peerId) {
-						this.onValue?.(event.data, this.peerId)
+						this.onMessage?.(event.data, this.peerId)
 					}
 				}
 			}

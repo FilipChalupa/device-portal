@@ -28,7 +28,7 @@ const ProviderComponent: FunctionComponent = () => {
 	const containerRef = useRef<HTMLDivElement>(null)
 	const [value, setState] = useState(1)
 	useDevicePortalProvider(room, value.toString(), {
-		onValueFromConsumer: (value, peerId) => {
+		onMessageFromConsumer: (value, peerId) => {
 			console.log(
 				`[ProviderComponent] Received value from peer ${peerId}: ${value}`,
 			)

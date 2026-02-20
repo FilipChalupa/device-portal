@@ -49,7 +49,7 @@ export const useDevicePortalConsumer = (
 			}
 
 			const responder = new Responder(room, {
-				onValue: (value, peerId) => {
+				onMessage: (value, peerId) => {
 					const consumer = { value, sendValueToProvider }
 					responders[room].consumer = consumer
 					for (const setState of responders[room].setValueStates) {

@@ -1,8 +1,15 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { FunctionComponent, Suspense, useRef, useState } from 'react'
+import {
+	FunctionComponent,
+	Suspense,
+	useRef,
+	useState,
+	type PropsWithChildren,
+} from 'react'
 import { DevicePortalConsumer } from './consumer/DevicePortalConsumer'
 import './Example.stories.css'
 import { DevicePortalProvider } from './provider/DevicePortalProvider'
+import type { PeerId } from './webrtc/PeerId'
 
 const meta: Meta<FunctionComponent> = {
 	title: 'Counter/Components',
@@ -57,7 +64,7 @@ const ProviderComponent: FunctionComponent = () => {
 				data={value.toString()}
 				websocketSignalingServer={websocketSignalingServer}
 				maxClients={5}
-				onValueFromConsumer={(value, peerId) => {
+				onMessageFromConsumer={(value, peerId) => {
 					console.log(
 						`[ProviderComponent] Received value from peer ${peerId}: ${value}`,
 					)
@@ -76,17 +83,27 @@ const ProviderComponent: FunctionComponent = () => {
 				}}
 			>
 				{(Peer, peerId) => (
-					<div key={peerId}>
-						<p>Connected peer: {peerId}</p>
+					<PeerInsideProvider key={peerId} peerId={peerId}>
 						<Peer
 							// @TODO: Investigate if setting value={} here works
-							onValueFromConsumer={(message) => {
+							onMessageFromConsumer={(message) => {
 								console.log(`Message from peer ${peerId}: ${message}`)
 							}}
 						/>
-					</div>
+					</PeerInsideProvider>
 				)}
 			</DevicePortalProvider>
+		</div>
+	)
+}
+
+const PeerInsideProvider: FunctionComponent<
+	PropsWithChildren<{ peerId: PeerId }>
+> = ({ peerId, children }) => {
+	return (
+		<div>
+			<p>Connected peer: {peerId}</p>
+			{children}
 		</div>
 	)
 }

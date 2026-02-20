@@ -4,7 +4,7 @@ import { PeerId } from '../webrtc/PeerId'
 
 export type PeerOptions = {
 	value?: string
-	onValueFromConsumer?: (value: string) => void
+	onMessageFromConsumer?: (value: string) => void
 }
 
 export const useDevicePortalPeer = (
@@ -12,12 +12,12 @@ export const useDevicePortalPeer = (
 	peerId: PeerId,
 	options: PeerOptions = {},
 ) => {
-	const onValueFromConsumerRef = useRef(options.onValueFromConsumer)
-	onValueFromConsumerRef.current = options.onValueFromConsumer
+	const onMessageFromConsumerRef = useRef(options.onMessageFromConsumer)
+	onMessageFromConsumerRef.current = options.onMessageFromConsumer
 
 	useEffect(() => {
 		const unsubscribe = initiator.addPeerListener(peerId, (value) => {
-			onValueFromConsumerRef.current?.(value)
+			onMessageFromConsumerRef.current?.(value)
 		})
 
 		return unsubscribe
