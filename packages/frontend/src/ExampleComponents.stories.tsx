@@ -56,7 +56,7 @@ const ProviderComponent: FunctionComponent = () => {
 				room={room}
 				data={value.toString()}
 				websocketSignalingServer={websocketSignalingServer}
-				maxClients={1}
+				maxClients={5}
 				onValueFromConsumer={(value, peerId) => {
 					console.log(
 						`[ProviderComponent] Received value from peer ${peerId}: ${value}`,
@@ -74,7 +74,14 @@ const ProviderComponent: FunctionComponent = () => {
 						)
 					}
 				}}
-			/>
+			>
+				{(PeerComponent, peerId) => (
+					<div key={peerId}>
+						<p>Connected peer: {peerId}</p>
+						<PeerComponent options={{}} />
+					</div>
+				)}
+			</DevicePortalProvider>
 		</div>
 	)
 }
