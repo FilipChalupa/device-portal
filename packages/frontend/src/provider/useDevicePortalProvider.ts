@@ -15,7 +15,7 @@ export const useDevicePortalProvider = (
 	options: DevicePortalProviderOptions = {},
 ) => {
 	const [initiator, setInitiator] = useState<Initiator | null>(null)
-	const [activePeers, setActivePeers] = useState<string[]>([])
+	const [peers, setPeers] = useState<string[]>([])
 	const onValueFromConsumerRef = useRef(options.onValueFromConsumer)
 	onValueFromConsumerRef.current = options.onValueFromConsumer
 
@@ -25,18 +25,18 @@ export const useDevicePortalProvider = (
 				onValueFromConsumerRef.current?.(value, peerId)
 			},
 			onPeersChange: (peers) => {
-				setActivePeers(peers)
+				setPeers(peers)
 			},
 			websocketSignalingServer: options.websocketSignalingServer,
 			maxClients: options.maxClients,
 		})
 		setInitiator(initiator)
-		setActivePeers(initiator.activePeers)
+		setPeers(initiator.peers)
 
 		return () => {
 			initiator.destroy()
 			setInitiator(null)
-			setActivePeers([])
+			setPeers([])
 		}
 	}, [room, options.websocketSignalingServer, options.maxClients])
 
@@ -44,5 +44,5 @@ export const useDevicePortalProvider = (
 		initiator?.send(value)
 	}, [value, initiator])
 
-	return { activePeers, initiator }
+	return { peers, initiator }
 }

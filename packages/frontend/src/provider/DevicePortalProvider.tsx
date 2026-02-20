@@ -11,12 +11,12 @@ import {
 } from './useDevicePortalProvider'
 
 type DevicePortalContextValue = {
-	activePeers: string[]
+	peers: string[]
 	initiator: Initiator | null
 }
 
 const DevicePortalContext = createContext<DevicePortalContextValue>({
-	activePeers: [],
+	peers: [],
 	initiator: null,
 })
 

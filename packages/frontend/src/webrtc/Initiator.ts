@@ -35,7 +35,7 @@ export class Initiator extends Peer {
 		this.maxClients = options.maxClients ?? 1
 	}
 
-	public get activePeers(): string[] {
+	public get peers(): string[] {
 		return Array.from(this.connections.keys())
 	}
 
@@ -63,7 +63,7 @@ export class Initiator extends Peer {
 			return
 		}
 		await this.createAndSendOffer(peerId)
-		this.onPeersChange?.(this.activePeers)
+		this.onPeersChange?.(this.peers)
 	}
 
 	protected handlePeerLeft(peerId: string) {
@@ -74,7 +74,7 @@ export class Initiator extends Peer {
 			client.channel.close()
 			client.connection.close()
 			this.connections.delete(peerId)
-			this.onPeersChange?.(this.activePeers)
+			this.onPeersChange?.(this.peers)
 			this.processWaitingPeers()
 		}
 	}
@@ -94,7 +94,7 @@ export class Initiator extends Peer {
 			)
 			this.waitingPeers.delete(nextPeerId)
 			await this.createAndSendOffer(nextPeerId)
-			this.onPeersChange?.(this.activePeers)
+			this.onPeersChange?.(this.peers)
 		}
 	}
 
@@ -135,7 +135,7 @@ export class Initiator extends Peer {
 				connection.iceConnectionState === 'closed'
 			) {
 				this.connections.delete(toPeerId)
-				this.onPeersChange?.(this.activePeers)
+				this.onPeersChange?.(this.peers)
 				this.processWaitingPeers()
 			}
 		}
