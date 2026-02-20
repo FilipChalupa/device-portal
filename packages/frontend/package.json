@@ -11,7 +11,8 @@
 		"dev:package": "rollup -c -w",
 		"build:package": "rollup -c",
 		"dev:storybook": "storybook dev -p 6006",
-		"build:storybook": "storybook build"
+		"build:storybook": "storybook build",
+		"prepare": "npm run build:package"
 	},
 	"repository": {
 		"type": "git",

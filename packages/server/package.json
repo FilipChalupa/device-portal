@@ -9,10 +9,11 @@
 		"build": "tsc",
 		"start": "node dist/main.js",
 		"dev": "node --watch -r ts-node/register src/main.ts",
-		"test": "tsc --build --dry"
+		"test": "tsc --build --dry",
+		"prepare": "npm run build"
 	},
 	"files": [
-		"dist"
+		"/dist/"
 	],
 	"dependencies": {
 		"hono": "^4.1.0",
