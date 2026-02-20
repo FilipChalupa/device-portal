@@ -79,6 +79,7 @@ const ProviderComponent: FunctionComponent = () => {
 					<div key={peerId}>
 						<p>Connected peer: {peerId}</p>
 						<Peer
+							// @TODO: Investigate if setting value={} here works
 							onValueFromConsumer={(message) => {
 								console.log(`Message from peer ${peerId}: ${message}`)
 							}}
