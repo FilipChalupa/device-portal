@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { Initiator } from '../webrtc/Initiator'
 
 export const useDevicePortalPeer = (
-	initiator: Initiator | null,
+	initiator: Initiator,
 	peerId: string,
 	value?: string,
 	options: {
@@ -13,10 +13,6 @@ export const useDevicePortalPeer = (
 	onValueFromConsumerRef.current = options.onValueFromConsumer
 
 	useEffect(() => {
-		if (!initiator) {
-			return
-		}
-
 		const unsubscribe = initiator.addPeerListener(peerId, (value) => {
 			onValueFromConsumerRef.current?.(value)
 		})
@@ -26,7 +22,7 @@ export const useDevicePortalPeer = (
 
 	useEffect(() => {
 		if (value !== undefined) {
-			initiator?.sendToPeer(peerId, value)
+			initiator.sendToPeer(peerId, value)
 		}
 	}, [initiator, peerId, value])
 }
