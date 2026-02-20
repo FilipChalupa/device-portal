@@ -5,7 +5,7 @@ import { Initiator } from '../webrtc/Initiator'
 
 export type DevicePortalProviderOptions = {
 	websocketSignalingServer?: string
-	onValueFromConsumer?: (value: string) => void
+	onValueFromConsumer?: (value: string, peerId: string) => void
 	maxClients?: number
 }
 
@@ -15,26 +15,34 @@ export const useDevicePortalProvider = (
 	options: DevicePortalProviderOptions = {},
 ) => {
 	const [initiator, setInitiator] = useState<Initiator | null>(null)
+	const [activePeers, setActivePeers] = useState<string[]>([])
 	const onValueFromConsumerRef = useRef(options.onValueFromConsumer)
 	onValueFromConsumerRef.current = options.onValueFromConsumer
 
 	useEffect(() => {
 		const initiator = new Initiator(room, {
-			onValue: (value) => {
-				onValueFromConsumerRef.current?.(value)
+			onValue: (value, peerId) => {
+				onValueFromConsumerRef.current?.(value, peerId)
+			},
+			onPeersChange: (peers) => {
+				setActivePeers(peers)
 			},
 			websocketSignalingServer: options.websocketSignalingServer,
 			maxClients: options.maxClients,
 		})
 		setInitiator(initiator)
+		setActivePeers(initiator.activePeers)
 
 		return () => {
 			initiator.destroy()
 			setInitiator(null)
+			setActivePeers([])
 		}
 	}, [room, options.websocketSignalingServer, options.maxClients])
 
 	useEffect(() => {
 		initiator?.send(value)
 	}, [value, initiator])
+
+	return { activePeers, initiator }
 }

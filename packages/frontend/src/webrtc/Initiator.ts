@@ -12,11 +12,17 @@ export class Initiator extends Peer {
 	protected connections = new Map<string, ClientConnection>()
 	protected waitingPeers = new Set<string>()
 	protected readonly maxClients: number
+	protected peerListeners = new Map<string, Set<(value: string) => void>>()
+	protected onPeersChange: ((peers: string[]) => void) | undefined
+	protected override readonly onValue:
+		| ((value: string, peerId: string) => void)
+		| undefined
 
 	constructor(
 		room: string,
 		options: {
-			onValue?: (value: string) => void
+			onValue?: (value: string, peerId: string) => void
+			onPeersChange?: (peers: string[]) => void
 			sendLastValueOnConnectAndReconnect?: boolean
 			websocketSignalingServer?: string
 			iceServers?: Array<RTCIceServer>
@@ -24,7 +30,23 @@ export class Initiator extends Peer {
 		} = {},
 	) {
 		super(room, options)
+		this.onValue = options.onValue
+		this.onPeersChange = options.onPeersChange
 		this.maxClients = options.maxClients ?? 1
+	}
+
+	public get activePeers(): string[] {
+		return Array.from(this.connections.keys())
+	}
+
+	public addPeerListener(peerId: string, listener: (value: string) => void) {
+		if (!this.peerListeners.has(peerId)) {
+			this.peerListeners.set(peerId, new Set())
+		}
+		this.peerListeners.get(peerId)!.add(listener)
+		return () => {
+			this.peerListeners.get(peerId)?.delete(listener)
+		}
 	}
 
 	protected onConnected(): void {
@@ -41,6 +63,7 @@ export class Initiator extends Peer {
 			return
 		}
 		await this.createAndSendOffer(peerId)
+		this.onPeersChange?.(this.activePeers)
 	}
 
 	protected handlePeerLeft(peerId: string) {
@@ -51,6 +74,7 @@ export class Initiator extends Peer {
 			client.channel.close()
 			client.connection.close()
 			this.connections.delete(peerId)
+			this.onPeersChange?.(this.activePeers)
 			this.processWaitingPeers()
 		}
 	}
@@ -70,6 +94,7 @@ export class Initiator extends Peer {
 			)
 			this.waitingPeers.delete(nextPeerId)
 			await this.createAndSendOffer(nextPeerId)
+			this.onPeersChange?.(this.activePeers)
 		}
 	}
 
@@ -110,6 +135,7 @@ export class Initiator extends Peer {
 				connection.iceConnectionState === 'closed'
 			) {
 				this.connections.delete(toPeerId)
+				this.onPeersChange?.(this.activePeers)
 				this.processWaitingPeers()
 			}
 		}
@@ -123,7 +149,13 @@ export class Initiator extends Peer {
 
 		channel.onmessage = (event) => {
 			console.log(`[Initiator] Message from ${toPeerId}: ${event.data}`)
-			this.onValue?.(event.data)
+			this.onValue?.(event.data, toPeerId)
+			const listeners = this.peerListeners.get(toPeerId)
+			if (listeners) {
+				for (const listener of listeners) {
+					listener(event.data)
+				}
+			}
 		}
 
 		const offer = await connection.createOffer()
@@ -180,6 +212,13 @@ export class Initiator extends Peer {
 		}
 	}
 
+	public sendToPeer(peerId: string, value: string) {
+		const client = this.connections.get(peerId)
+		if (client && client.channel.readyState === 'open') {
+			client.channel.send(value)
+		}
+	}
+
 	public destroy() {
 		super.destroy()
 		for (const client of this.connections.values()) {
@@ -187,5 +226,6 @@ export class Initiator extends Peer {
 			client.connection.close()
 		}
 		this.connections.clear()
+		this.peerListeners.clear()
 	}
 }
