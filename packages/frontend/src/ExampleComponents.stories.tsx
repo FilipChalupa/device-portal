@@ -78,7 +78,11 @@ const ProviderComponent: FunctionComponent = () => {
 				{(Peer, peerId) => (
 					<div key={peerId}>
 						<p>Connected peer: {peerId}</p>
-						<Peer options={{}} />
+						<Peer
+							onValueFromConsumer={(message) => {
+								console.log(`Message from peer ${peerId}: ${message}`)
+							}}
+						/>
 					</div>
 				)}
 			</DevicePortalProvider>
