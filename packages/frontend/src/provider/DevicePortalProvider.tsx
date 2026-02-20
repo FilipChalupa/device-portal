@@ -12,21 +12,22 @@ export const DevicePortalProvider: FunctionComponent<
 		room: string
 		data: string
 		children?: (
-			PeerComponent: FunctionComponent<{ options: PeerOptions }>,
+			Peer: FunctionComponent<{ options: PeerOptions }>,
 			peerId: PeerId,
 		) => ReactNode
 	} & DevicePortalProviderOptions
 > = ({ room, data, children, ...options }) => {
 	const { peers, initiator } = useDevicePortalProvider(room, data, options)
 
-	if (!initiator || !children) {		return null
+	if (!initiator || !children) {
+		return null
 	}
 
 	return peers.map((peerId) => (
 		<Fragment key={peerId}>
 			{children(
 				(props) => (
-					<Peer peerId={peerId} initiator={initiator} {...props} />
+					<PeerBase peerId={peerId} initiator={initiator} {...props} />
 				),
 				peerId,
 			)}
@@ -34,7 +35,7 @@ export const DevicePortalProvider: FunctionComponent<
 	))
 }
 
-const Peer: FunctionComponent<{
+const PeerBase: FunctionComponent<{
 	peerId: PeerId
 	initiator: Initiator
 	options: PeerOptions

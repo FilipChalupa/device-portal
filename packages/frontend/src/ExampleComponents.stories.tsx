@@ -75,10 +75,10 @@ const ProviderComponent: FunctionComponent = () => {
 					}
 				}}
 			>
-				{(PeerComponent, peerId) => (
+				{(Peer, peerId) => (
 					<div key={peerId}>
 						<p>Connected peer: {peerId}</p>
-						<PeerComponent options={{}} />
+						<Peer options={{}} />
 					</div>
 				)}
 			</DevicePortalProvider>
