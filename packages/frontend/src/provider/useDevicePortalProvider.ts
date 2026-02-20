@@ -3,14 +3,16 @@ import { Initiator } from '../webrtc/Initiator'
 
 // @TODO: warn if one room is used by multiple useDevicePortalProvider hooks more than once at the same time
 
+export type DevicePortalProviderOptions = {
+	websocketSignalingServer?: string
+	onValueFromConsumer?: (value: string) => void
+	maxClients?: number
+}
+
 export const useDevicePortalProvider = (
 	room: string,
 	value: string,
-	options: {
-		websocketSignalingServer?: string
-		onValueFromConsumer?: (value: string) => void
-		maxClients?: number
-	} = {},
+	options: DevicePortalProviderOptions = {},
 ) => {
 	const [initiator, setInitiator] = useState<Initiator | null>(null)
 	const onValueFromConsumerRef = useRef(options.onValueFromConsumer)

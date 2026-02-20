@@ -1,11 +1,14 @@
 import { type FunctionComponent } from 'react'
-import { useDevicePortalProvider } from './useDevicePortalProvider'
+import {
+	useDevicePortalProvider,
+	type DevicePortalProviderOptions,
+} from './useDevicePortalProvider'
 
 export const DevicePortalProvider: FunctionComponent<{
 	room: string
 	data: string
-	websocketSignalingServer?: string
-}> = ({ room, data, websocketSignalingServer }) => {
-	useDevicePortalProvider(room, data, { websocketSignalingServer })
+	options?: DevicePortalProviderOptions
+}> = ({ room, data, options }) => {
+	useDevicePortalProvider(room, data, options)
 	return null
 }
