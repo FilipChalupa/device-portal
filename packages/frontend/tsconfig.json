@@ -7,10 +7,11 @@
 		"lib": ["es6", "dom", "es2024"],
 		"sourceMap": true,
 		"jsx": "react-jsx",
-		"moduleResolution": "node",
+		"moduleResolution": "bundler",
 		"allowSyntheticDefaultImports": true,
 		"strictNullChecks": true,
 		"esModuleInterop": true,
+		"skipLibCheck": true,
 		"types": ["vite/client"]
 	},
 	"include": ["src/**/*"],

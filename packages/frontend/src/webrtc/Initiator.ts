@@ -148,8 +148,11 @@ export class Initiator extends Peer {
 
 	protected async handleIceCandidate(
 		candidate: RTCIceCandidateInit,
-		fromPeerId: string,
+		fromPeerId?: string,
 	) {
+		if (!fromPeerId) {
+			return
+		}
 		const client = this.connections.get(fromPeerId)
 		if (client) {
 			if (client.connection.remoteDescription) {

@@ -123,7 +123,10 @@ export abstract class Peer {
 	protected abstract handlePeerLeft(peerId: string): void
 	protected abstract onConnected(): void
 
-	protected async handleIceCandidate(candidate: RTCIceCandidateInit) {
+	protected async handleIceCandidate(
+		candidate: RTCIceCandidateInit,
+		fromPeerId?: string,
+	) {
 		if (!this.connection) {
 			return
 		}
