@@ -1,12 +1,19 @@
 {
 	"name": "@device-portal/server",
 	"version": "0.0.0",
-	"main": "src/main.ts",
+	"main": "dist/main.js",
+	"bin": {
+		"device-portal-server": "dist/main.js"
+	},
 	"scripts": {
-		"start": "ts-node src/main.ts",
+		"build": "tsc",
+		"start": "node dist/main.js",
 		"dev": "node --watch -r ts-node/register src/main.ts",
 		"test": "tsc --build --dry"
 	},
+	"files": [
+		"dist"
+	],
 	"dependencies": {
 		"hono": "^4.1.0",
 		"@hono/node-server": "^1.8.0",

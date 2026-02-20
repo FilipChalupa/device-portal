@@ -1,7 +1,10 @@
+#!/usr/bin/env node
 import { serve } from '@hono/node-server'
 import { serveStatic } from '@hono/node-server/serve-static'
 import { createNodeWebSocket } from '@hono/node-ws'
 import { Hono } from 'hono'
+import { existsSync } from 'fs'
+import { resolve } from 'path'
 
 const app = new Hono()
 
@@ -105,7 +108,10 @@ app.get(
 	}),
 )
 
-app.use('/*', serveStatic({ root: '../frontend/storybook-static' }))
+const storybookPath = resolve(__dirname, '../frontend/storybook-static')
+if (existsSync(storybookPath)) {
+	app.use('/*', serveStatic({ root: '../frontend/storybook-static' }))
+}
 
 const portString = process.env.PORT
 let port = 8080

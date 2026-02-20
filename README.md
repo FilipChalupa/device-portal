@@ -60,15 +60,15 @@ const AppB = () => {
 
 ## Server used for WebRTC signaling
 
-This project includes a WebSocket-based signaling server. To run it, you need to have [Deno](https://deno.land/) installed.
+This project includes a WebSocket-based signaling server. To run it, you need to have [Node.js](https://nodejs.org/) installed.
 
 Then, you can run the server with the following command:
 
 ```sh
-npm run start:server
+npx @device-portal/server
 ```
 
-The server will run on `wss://device-portal.filipchalupa.cz` by default.
+The server will run on `ws://localhost:8080` by default.
 
 ## Development
 
