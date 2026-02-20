@@ -21,8 +21,8 @@ const responders: {
 export const useDevicePortalOutput = (
 	room: string,
 	options: {
-		websocketSignalingServer: string
-	},
+		websocketSignalingServer?: string
+	} = {},
 ): Pick<State, 'value' | 'sendValueToInput'> => {
 	const [valueState, setValueState] = useState<State | null>(null)
 

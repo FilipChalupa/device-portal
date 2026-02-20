@@ -2,7 +2,7 @@ export const settings = {
 	channel: {
 		label: 'data',
 	},
-	webrtcSignalingServer: 'https://webrtc-signaling.deno.dev',
+	defaultWebsocketSignalingServer: 'wss://device-portal.filipchalupa.cz',
 	iceServers: [
 		{
 			urls: ['stun:stun1.l.google.com:19302', 'stun:stun3.l.google.com:19302'],

@@ -18,16 +18,19 @@ export abstract class Peer {
 	constructor(
 		protected readonly room: string,
 		options: {
-			websocketSignalingServer: string
+			websocketSignalingServer?: string
 			onValue?: (value: string) => void
 			sendLastValueOnConnectAndReconnect?: boolean
 			iceServers?: Array<RTCIceServer>
-		},
+		} = {},
 	) {
 		this.onValue = options.onValue
 		this.sendLastValueOnConnectAndReconnect =
 			options.sendLastValueOnConnectAndReconnect ?? true
-		this.websocketSignalingServer = `${options.websocketSignalingServer.replace(/\/+$/, '')}/v0/`
+		this.websocketSignalingServer = `${(
+			options.websocketSignalingServer ??
+			settings.defaultWebsocketSignalingServer
+		).replace(/\/+$/, '')}/v0/`
 		this.iceServers = options.iceServers ?? settings.iceServers
 		this.run()
 	}

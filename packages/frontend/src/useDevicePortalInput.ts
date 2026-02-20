@@ -7,10 +7,10 @@ export const useDevicePortalInput = (
 	room: string,
 	value: string,
 	options: {
-		websocketSignalingServer: string
+		websocketSignalingServer?: string
 		onValueFromOutput?: (value: string) => void
 		maxClients?: number
-	},
+	} = {},
 ) => {
 	const [initiator, setInitiator] = useState<Initiator | null>(null)
 	const onValueFromOutputRef = useRef(options.onValueFromOutput)
