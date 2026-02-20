@@ -28,7 +28,7 @@ export abstract class Peer {
 		this.sendLastValueOnConnectAndReconnect =
 			options.sendLastValueOnConnectAndReconnect ?? true
 		this.websocketSignalingServer =
-			options.websocketSignalingServer ?? 'ws://localhost:8080'
+			options.websocketSignalingServer ?? 'ws://localhost:8080/v0/'
 		this.iceServers = options.iceServers ?? settings.iceServers
 		this.run()
 	}

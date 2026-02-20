@@ -19,7 +19,7 @@ const room =
 	defaultRoom
 localStorage.setItem('room', room)
 
-const websocketSignalingServer = 'ws://localhost:8080'
+const websocketSignalingServer = 'ws://localhost:8080/v0/'
 
 const InputComponent: FunctionComponent = () => {
 	console.log('[InputComponent] Rendering')

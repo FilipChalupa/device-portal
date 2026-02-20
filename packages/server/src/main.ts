@@ -10,7 +10,7 @@ const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app })
 const rooms = new Map<string, Set<any>>()
 
 app.get(
-	'/',
+	'/v0/',
 	upgradeWebSocket((context) => {
 		let room: string | null = null
 		const peerId = crypto.randomUUID()
