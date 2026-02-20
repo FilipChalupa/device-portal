@@ -1,35 +1,35 @@
 import { useMemo, useState, type Dispatch, type SetStateAction } from 'react'
 import { Responder } from './webrtc/Responder'
 
-// @TODO: warn if one room is used by multiple useDevicePortalOutput hooks more than once at the same time
+// @TODO: warn if one room is used by multiple useDevicePortalConsumer hooks more than once at the same time
 
 type State = {
 	room: string
 	value: string
-	sendValueToInput: (value: string) => void
+	sendValueToProvider: (value: string) => void
 }
 
 const responders: {
 	[room: string]: {
 		responder: Responder
 		firstValuePromise: Promise<string>
-		output: null | { value: string; sendValueToInput: (value: string) => void }
+		consumer: null | { value: string; sendValueToProvider: (value: string) => void }
 		setValueStates: Set<Dispatch<SetStateAction<State | null>>>
 	}
 } = {}
 
-export const useDevicePortalOutput = (
+export const useDevicePortalConsumer = (
 	room: string,
 	options: {
 		websocketSignalingServer?: string
 	} = {},
-): Pick<State, 'value' | 'sendValueToInput'> => {
+): Pick<State, 'value' | 'sendValueToProvider'> => {
 	const [valueState, setValueState] = useState<State | null>(null)
 
-	const currentOutput = useMemo(() => {
+	const currentConsumer = useMemo(() => {
 		if (!responders[room]) {
 			console.log(
-				`[useDevicePortalOutput] Creating new Responder for room: ${room}`,
+				`[useDevicePortalConsumer] Creating new Responder for room: ${room}`,
 			)
 			const withResolvers = () => {
 				let resolve: (value: string) => void
@@ -44,16 +44,16 @@ export const useDevicePortalOutput = (
 			const { promise: firstValuePromise, resolve: firstValueResolve } =
 				(Promise as any).withResolvers?.() ?? withResolvers()
 
-			const sendValueToInput = (value: string) => {
+			const sendValueToProvider = (value: string) => {
 				responders[room].responder.send(value)
 			}
 
 			const responder = new Responder(room, {
 				onValue: (value) => {
-					const output = { value, sendValueToInput }
-					responders[room].output = output
+					const consumer = { value, sendValueToProvider }
+					responders[room].consumer = consumer
 					for (const setState of responders[room].setValueStates) {
-						setState({ room, value, sendValueToInput })
+						setState({ room, value, sendValueToProvider })
 					}
 					firstValueResolve(value)
 				},
@@ -64,14 +64,14 @@ export const useDevicePortalOutput = (
 			responders[room] = {
 				responder,
 				firstValuePromise,
-				output: null,
+				consumer: null,
 				setValueStates: new Set(),
 			}
 		}
 
 		responders[room].setValueStates.add(setValueState)
 
-		return responders[room].output
+		return responders[room].consumer
 	}, [room, options.websocketSignalingServer, setValueState])
 
 	// Cleanup on unmount (though this hook is currently designed for global persistence)
@@ -80,12 +80,12 @@ export const useDevicePortalOutput = (
 	if (valueState && valueState.room === room) {
 		return {
 			value: valueState.value,
-			sendValueToInput: valueState.sendValueToInput,
+			sendValueToProvider: valueState.sendValueToProvider,
 		}
 	}
 
-	if (currentOutput) {
-		return currentOutput
+	if (currentConsumer) {
+		return currentConsumer
 	}
 
 	throw responders[room].firstValuePromise

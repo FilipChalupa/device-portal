@@ -16,14 +16,14 @@ It is expected that the package will be used on two different devices. Create fo
 
 ### App A
 
-The first app will be a value provider or `Input`.
+The first app will be a value provider or `Provider`.
 
 ```jsx
-import { useDevicePortalInput } from '@device-portal/react'
+import { useDevicePortalProvider } from '@device-portal/react'
 
 const AppA = () => {
 	const [value, setValue] = useState(0)
-	useDevicePortalInput('my-test-room', value.toString(), {
+	useDevicePortalProvider('my-test-room', value.toString(), {
 		websocketSignalingServer: 'wss://device-portal.filipchalupa.cz',
 	})
 
@@ -45,13 +45,13 @@ const AppA = () => {
 
 ### App B
 
-The other app will be a value consumer or `Output`. Every time input value in App A changes, the output in App B will be automatically updated.
+The other app will be a value consumer or `Consumer`. Every time provider value in App A changes, the consumer in App B will be automatically updated.
 
 ```jsx
-import { useDevicePortalOutput } from '@device-portal/react'
+import { useDevicePortalConsumer } from '@device-portal/react'
 
 const AppB = () => {
-	const { value } = useDevicePortalOutput('my-test-room', {
+	const { value } = useDevicePortalConsumer('my-test-room', {
 		websocketSignalingServer: 'wss://device-portal.filipchalupa.cz',
 	})
 

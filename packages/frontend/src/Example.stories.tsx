@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { FunctionComponent, Suspense, useRef, useState } from 'react'
 import './Example.stories.css'
-import { useDevicePortalInput } from './useDevicePortalInput'
-import { useDevicePortalOutput } from './useDevicePortalOutput'
+import { useDevicePortalProvider } from './useDevicePortalProvider'
+import { useDevicePortalConsumer } from './useDevicePortalConsumer'
 
 const meta: Meta<FunctionComponent> = {
 	title: 'Demo',
@@ -23,12 +23,12 @@ const websocketSignalingServer = import.meta.env.DEV
 	? 'ws://localhost:8080'
 	: 'wss://device-portal.filipchalupa.cz'
 
-const InputComponent: FunctionComponent = () => {
-	console.log('[InputComponent] Rendering')
+const ProviderComponent: FunctionComponent = () => {
+	console.log('[ProviderComponent] Rendering')
 	const containerRef = useRef<HTMLDivElement>(null)
 	const [value, setState] = useState(1)
-	useDevicePortalInput(room, value.toString(), {
-		onValueFromOutput: (value) => {
+	useDevicePortalProvider(room, value.toString(), {
+		onValueFromConsumer: (value) => {
 			if (value === 'roll') {
 				containerRef.current?.animate(
 					[
@@ -74,22 +74,22 @@ const InputComponent: FunctionComponent = () => {
 	)
 }
 
-const OutputComponent: FunctionComponent = () => {
-	console.log('[OutputComponent] Rendering')
-	const { value, sendValueToInput } = useDevicePortalOutput(room, {
+const ConsumerComponent: FunctionComponent = () => {
+	console.log('[ConsumerComponent] Rendering')
+	const { value, sendValueToProvider } = useDevicePortalConsumer(room, {
 		websocketSignalingServer,
 	})
 	return (
 		<div>
 			<p>
-				Value provided by the input in room "<b>{room}</b>" is:
+				Value provided by the provider in room "<b>{room}</b>" is:
 			</p>
 			<output>{value}</output>
 			<div>
 				<button
 					type="button"
 					onClick={() => {
-						sendValueToInput('roll')
+						sendValueToProvider('roll')
 					}}
 				>
 					Do barrel roll
@@ -99,32 +99,32 @@ const OutputComponent: FunctionComponent = () => {
 	)
 }
 
-export const Input: Story = {
+export const Provider: Story = {
 	render: () => {
 		return (
 			<div className="wrapper">
-				<h1>Demo input</h1>
+				<h1>Demo provider</h1>
 				<p>
 					Note: This demo requires the signaling server to be running. Run{' '}
 					<code>npm run start:server</code> in your terminal.
 				</p>
-				<InputComponent />
+				<ProviderComponent />
 			</div>
 		)
 	},
 }
 
-export const Output: Story = {
+export const Consumer: Story = {
 	render: () => {
 		return (
 			<div className="wrapper">
-				<h1>Demo output</h1>
+				<h1>Demo consumer</h1>
 				<p>
 					Note: This demo requires the signaling server to be running. Run{' '}
 					<code>npm run start:server</code> in your terminal.
 				</p>
 				<Suspense fallback={<p>Connecting…</p>}>
-					<OutputComponent />
+					<ConsumerComponent />
 				</Suspense>
 			</div>
 		)

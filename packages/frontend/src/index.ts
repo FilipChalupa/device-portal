@@ -1,3 +1,3 @@
-export * from './DevicePortalInput'
-export * from './useDevicePortalInput'
-export * from './useDevicePortalOutput'
+export * from './DevicePortalProvider'
+export * from './useDevicePortalProvider'
+export * from './useDevicePortalConsumer'
