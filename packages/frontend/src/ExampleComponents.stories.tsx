@@ -55,26 +55,24 @@ const ProviderComponent: FunctionComponent = () => {
 			<DevicePortalProvider
 				room={room}
 				data={value.toString()}
-				options={{
-					websocketSignalingServer,
-					maxClients: 1,
-					onValueFromConsumer: (value, peerId) => {
-						console.log(
-							`[ProviderComponent] Received value from peer ${peerId}: ${value}`,
-						)
-						if (value === 'roll') {
-							containerRef.current?.animate(
-								[
-									{
-										transform: 'rotate(1turn)',
-									},
-								],
+				websocketSignalingServer={websocketSignalingServer}
+				maxClients={1}
+				onValueFromConsumer={(value, peerId) => {
+					console.log(
+						`[ProviderComponent] Received value from peer ${peerId}: ${value}`,
+					)
+					if (value === 'roll') {
+						containerRef.current?.animate(
+							[
 								{
-									duration: 1000,
+									transform: 'rotate(1turn)',
 								},
-							)
-						}
-					},
+							],
+							{
+								duration: 1000,
+							},
+						)
+					}
 				}}
 			/>
 		</div>

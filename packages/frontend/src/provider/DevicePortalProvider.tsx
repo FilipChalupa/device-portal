@@ -7,19 +7,19 @@ import {
 	type DevicePortalProviderOptions,
 } from './useDevicePortalProvider'
 
-export const DevicePortalProvider: FunctionComponent<{
-	room: string
-	data: string
-	options?: DevicePortalProviderOptions
-	children?: (
-		PeerComponent: FunctionComponent<{ options: PeerOptions }>,
-		peerId: PeerId,
-	) => ReactNode
-}> = ({ room, data, options, children }) => {
+export const DevicePortalProvider: FunctionComponent<
+	{
+		room: string
+		data: string
+		children?: (
+			PeerComponent: FunctionComponent<{ options: PeerOptions }>,
+			peerId: PeerId,
+		) => ReactNode
+	} & DevicePortalProviderOptions
+> = ({ room, data, children, ...options }) => {
 	const { peers, initiator } = useDevicePortalProvider(room, data, options)
 
-	if (!initiator || !children) {
-		return null
+	if (!initiator || !children) {		return null
 	}
 
 	return peers.map((peerId) => (
