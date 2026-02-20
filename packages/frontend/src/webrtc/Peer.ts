@@ -98,7 +98,7 @@ export abstract class Peer {
 
 			this.socket.onclose = async () => {
 				console.log('[Peer] WebSocket closed')
-				this.close()
+				this.socket = null
 				if (!this.isDestroyed) {
 					console.log('[Peer] Attempting reconnect in 1s...')
 					await delay(1000)
@@ -108,7 +108,6 @@ export abstract class Peer {
 
 			this.socket.onerror = (error) => {
 				console.error('WebSocket error:', error)
-				this.close()
 				reject(error)
 			}
 		})
@@ -220,7 +219,9 @@ export abstract class Peer {
 	}
 
 	protected initializeConnectionAndChannel() {
-		this.connection?.close()
+		if (this.connection) {
+			return
+		}
 		this.candidatesQueue = []
 		this.connection = new RTCPeerConnection({ iceServers: this.iceServers })
 		this.connection.onicecandidate = this.shareNewIceCandidate.bind(this)
