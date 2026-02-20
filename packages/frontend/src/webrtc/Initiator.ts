@@ -76,6 +76,14 @@ export class Initiator extends Peer {
 	protected async createAndSendOffer(toPeerId: string) {
 		console.log(`[Initiator] Creating offer for ${toPeerId}...`)
 
+		// Close existing connection if any
+		const existingClient = this.connections.get(toPeerId)
+		if (existingClient) {
+			console.log(`[Initiator] Closing existing connection for ${toPeerId}`)
+			existingClient.connection.close()
+			existingClient.channel.close()
+		}
+
 		const connection = new RTCPeerConnection({ iceServers: this.iceServers })
 		const channel = connection.createDataChannel(settings.channel.label)
 		const clientConnection: ClientConnection = {
