@@ -38,7 +38,7 @@ const Peer: FunctionComponent<{
 	peerId: PeerId
 	initiator: Initiator
 	options: PeerOptions
-}> = ({ peerId, initiator }) => {
-	useDevicePortalPeer(initiator, peerId)
+}> = ({ peerId, initiator, options }) => {
+	useDevicePortalPeer(initiator, peerId, options)
 	return null
 }
