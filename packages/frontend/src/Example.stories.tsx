@@ -1,11 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { FunctionComponent, Suspense, useRef, useState } from 'react'
+import { useDevicePortalConsumer } from './consumer/useDevicePortalConsumer'
 import './Example.stories.css'
 import { useDevicePortalProvider } from './provider/useDevicePortalProvider'
-import { useDevicePortalConsumer } from './consumer/useDevicePortalConsumer'
 
 const meta: Meta<FunctionComponent> = {
-	title: 'Counter',
+	title: 'Counter/hooks',
 } satisfies Meta<FunctionComponent>
 
 export default meta
@@ -29,7 +29,9 @@ const ProviderComponent: FunctionComponent = () => {
 	const [value, setState] = useState(1)
 	useDevicePortalProvider(room, value.toString(), {
 		onValueFromConsumer: (value, peerId) => {
-			console.log(`[ProviderComponent] Received value from peer ${peerId}: ${value}`)
+			console.log(
+				`[ProviderComponent] Received value from peer ${peerId}: ${value}`,
+			)
 			if (value === 'roll') {
 				containerRef.current?.animate(
 					[
