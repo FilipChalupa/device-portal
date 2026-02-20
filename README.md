@@ -20,7 +20,7 @@ The first app will be a value provider or `Input`.
 const AppA = () => {
 	const [value, setValue] = useState(0)
 	useDevicePortalInput('my-test-room', value.toString(), {
-		websocketSignalingServer: 'ws://localhost:8080',
+		websocketSignalingServer: 'wss://device-portal.filipchalupa.cz',
 	})
 
 	return (
@@ -46,7 +46,7 @@ The other app will be a value consumer or `Output`. Every time input value in Ap
 ```jsx
 const AppB = () => {
 	const { value } = useDevicePortalOutput('my-test-room', {
-		websocketSignalingServer: 'ws://localhost:8080',
+		websocketSignalingServer: 'wss://device-portal.filipchalupa.cz',
 	})
 
 	return (
@@ -68,7 +68,7 @@ Then, you can run the server with the following command:
 npm run start:server
 ```
 
-The server will run on `ws://localhost:8080` by default.
+The server will run on `wss://device-portal.filipchalupa.cz` by default.
 
 ## Development
 
