@@ -115,10 +115,6 @@ export const Provider: Story = {
 		return (
 			<div className="wrapper">
 				<h1>Counter provider</h1>
-				<p>
-					Note: This demo requires the signaling server to be running. Run{' '}
-					<code>npm run start:server</code> in your terminal.
-				</p>
 				<ProviderComponent />
 			</div>
 		)
@@ -130,10 +126,6 @@ export const Consumer: Story = {
 		return (
 			<div className="wrapper">
 				<h1>Counter consumer</h1>
-				<p>
-					Note: This demo requires the signaling server to be running. Run{' '}
-					<code>npm run start:server</code> in your terminal.
-				</p>
 				<Suspense fallback={<p>Connecting…</p>}>
 					<ConsumerComponent />
 				</Suspense>
