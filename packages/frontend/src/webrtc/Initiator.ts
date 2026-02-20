@@ -6,6 +6,7 @@ type ClientConnection = {
 	connection: RTCPeerConnection
 	channel: RTCDataChannel
 	candidatesQueue: RTCIceCandidateInit[]
+	value?: { value: string }
 }
 
 export class Initiator extends Peer {
@@ -146,6 +147,9 @@ export class Initiator extends Peer {
 			if (this.value && this.sendLastValueOnConnectAndReconnect) {
 				channel.send(this.value.value)
 			}
+			if (clientConnection.value) {
+				channel.send(clientConnection.value.value)
+			}
 		}
 
 		channel.onmessage = (event) => {
@@ -215,6 +219,8 @@ export class Initiator extends Peer {
 
 	public sendToPeer(peerId: PeerId, value: string) {
 		const client = this.connections.get(peerId)
+		if (!client) return
+		client.value = { value }
 		if (client && client.channel.readyState === 'open') {
 			client.channel.send(value)
 		}
