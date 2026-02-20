@@ -1,86 +1,19 @@
-# React device portal
+# Device portal
 
-[![NPM](https://img.shields.io/npm/v/react-device-portal.svg)](https://www.npmjs.com/package/react-device-portal) ![npm type definitions](https://img.shields.io/npm/types/shared-loading-indicator.svg)
+Simple WebRTC data channel for React.
 
-## Install
+## Packages
 
-```bash
-npm install react-device-portal
-```
+This monorepo consists of two main packages:
 
-## How to use
-
-It is expected that the package will be used on two different devices. Create for them two separate pages or apps. Let's call them App A and App B. Both apps will be linked by same `room` (e.g. `'my-test-room'`).
-
-### App A
-
-The first app will be a value provider or `Input`.
-
-```jsx
-const AppA = () => {
-	const [value, setValue] = useState(0)
-	useDevicePortalInput('my-test-room', value.toString(), {
-		websocketSignalingServer: 'wss://device-portal.filipchalupa.cz',
-	})
-
-	return (
-		<>
-			<h1>App A</h1>
-			<p>Value: {value}</p>
-			<button
-				onClick={() => {
-					setValue(value + 1)
-				}}
-			>
-				Increment
-			</button>
-		</>
-	)
-}
-```
-
-### App B
-
-The other app will be a value consumer or `Output`. Every time input value in App A changes, the output in App B will be automatically updated.
-
-```jsx
-const AppB = () => {
-	const { value } = useDevicePortalOutput('my-test-room', {
-		websocketSignalingServer: 'wss://device-portal.filipchalupa.cz',
-	})
-
-	return (
-		<>
-			<h1>App B</h1>
-			<p>Value: {value}</p>
-		</>
-	)
-}
-```
-
-## Server used for WebRTC signaling
-
-This project includes a WebSocket-based signaling server. To run it, you need to have [Node.js](https://nodejs.org/) installed.
-
-Then, you can run the server with the following command:
-
-```sh
-npx @device-portal/server
-```
-
-The server will run on `ws://localhost:8080` by default.
+- **[@device-portal/react](./packages/frontend/README.md)**: Simple WebRTC data channel for React.
+- **[@device-portal/server](./packages/server/README.md)**: WebSocket-based signaling server for WebRTC.
 
 ## Development
 
-Run
+Run development mode (starts both server and storybook):
 
 ```sh
 npm ci
 npm run dev
-```
-
-and
-
-```sh
-npm run storybook
 ```

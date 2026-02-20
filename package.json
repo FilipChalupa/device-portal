@@ -7,7 +7,7 @@
 	"scripts": {
 		"start": "npm run start:server",
 		"build": "npm run build:package && npm run build:storybook",
-		"dev": "npm run -w @device-portal/react dev",
+		"dev": "npm run -w @device-portal/react dev & npm run dev:server",
 		"dev:package": "npm run -w @device-portal/react dev:package",
 		"build:package": "npm run -w @device-portal/react build:package",
 		"dev:storybook": "npm run -w @device-portal/react dev:storybook",
