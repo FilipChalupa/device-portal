@@ -1,4 +1,5 @@
 import { Peer } from './Peer'
+import { PeerId } from './PeerId'
 
 export class Responder extends Peer {
 	protected role = 'responder' as const
@@ -9,11 +10,11 @@ export class Responder extends Peer {
 		this.startReconnectionTimer()
 	}
 
-	protected handlePeerJoined(peerId: string) {
+	protected handlePeerJoined(peerId: PeerId) {
 		// Responder does not need to do anything when a peer joins, it waits for an offer
 	}
 
-	protected handlePeerLeft(peerId: string) {
+	protected handlePeerLeft(peerId: PeerId) {
 		// Responder logic for when a peer leaves
 		console.log(`[Responder] Peer ${peerId} left`)
 		this.startReconnectionTimer()
@@ -53,7 +54,7 @@ export class Responder extends Peer {
 
 	protected async handleOffer(
 		offer: RTCSessionDescriptionInit,
-		fromPeerId: string,
+		fromPeerId: PeerId,
 	) {
 		console.log(`[Responder] Handling offer from ${fromPeerId}`)
 		this.stopReconnectionTimer()
@@ -94,7 +95,7 @@ export class Responder extends Peer {
 
 	protected handleAnswer(
 		answer: RTCSessionDescriptionInit,
-		fromPeerId: string,
+		fromPeerId: PeerId,
 	): void {
 		// Responder does not handle answers
 	}

@@ -1,9 +1,10 @@
 import { useEffect, useRef } from 'react'
 import { Initiator } from '../webrtc/Initiator'
+import { PeerId } from '../webrtc/PeerId'
 
 export const useDevicePortalPeer = (
 	initiator: Initiator,
-	peerId: string,
+	peerId: PeerId,
 	value?: string,
 	options: {
 		onValueFromConsumer?: (value: string) => void

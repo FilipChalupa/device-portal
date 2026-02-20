@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { Initiator } from '../webrtc/Initiator'
+import { PeerId } from '../webrtc/PeerId'
 
 // @TODO: warn if one room is used by multiple useDevicePortalProvider hooks more than once at the same time
 
 export type DevicePortalProviderOptions = {
 	websocketSignalingServer?: string
-	onValueFromConsumer?: (value: string, peerId: string) => void
+	onValueFromConsumer?: (value: string, peerId: PeerId) => void
 	maxClients?: number
 }
 
@@ -15,7 +16,7 @@ export const useDevicePortalProvider = (
 	options: DevicePortalProviderOptions = {},
 ) => {
 	const [initiator, setInitiator] = useState<Initiator | null>(null)
-	const [peers, setPeers] = useState<string[]>([])
+	const [peers, setPeers] = useState<PeerId[]>([])
 	const onValueFromConsumerRef = useRef(options.onValueFromConsumer)
 	onValueFromConsumerRef.current = options.onValueFromConsumer
 

@@ -1,5 +1,6 @@
 import { Peer } from './Peer'
 import { settings } from '../settings'
+import { PeerId } from './PeerId'
 
 type ClientConnection = {
 	connection: RTCPeerConnection
@@ -9,20 +10,20 @@ type ClientConnection = {
 
 export class Initiator extends Peer {
 	protected role = 'initiator' as const
-	protected connections = new Map<string, ClientConnection>()
-	protected waitingPeers = new Set<string>()
+	protected connections = new Map<PeerId, ClientConnection>()
+	protected waitingPeers = new Set<PeerId>()
 	protected readonly maxClients: number
-	protected peerListeners = new Map<string, Set<(value: string) => void>>()
-	protected onPeersChange: ((peers: string[]) => void) | undefined
+	protected peerListeners = new Map<PeerId, Set<(value: string) => void>>()
+	protected onPeersChange: ((peers: PeerId[]) => void) | undefined
 	protected override readonly onValue:
-		| ((value: string, peerId: string) => void)
+		| ((value: string, peerId: PeerId) => void)
 		| undefined
 
 	constructor(
 		room: string,
 		options: {
-			onValue?: (value: string, peerId: string) => void
-			onPeersChange?: (peers: string[]) => void
+			onValue?: (value: string, peerId: PeerId) => void
+			onPeersChange?: (peers: PeerId[]) => void
 			sendLastValueOnConnectAndReconnect?: boolean
 			websocketSignalingServer?: string
 			iceServers?: Array<RTCIceServer>
@@ -35,11 +36,11 @@ export class Initiator extends Peer {
 		this.maxClients = options.maxClients ?? 1
 	}
 
-	public get peers(): string[] {
+	public get peers(): PeerId[] {
 		return Array.from(this.connections.keys())
 	}
 
-	public addPeerListener(peerId: string, listener: (value: string) => void) {
+	public addPeerListener(peerId: PeerId, listener: (value: string) => void) {
 		if (!this.peerListeners.has(peerId)) {
 			this.peerListeners.set(peerId, new Set())
 		}
@@ -53,7 +54,7 @@ export class Initiator extends Peer {
 		console.log('[Initiator] Connected to signaling server')
 	}
 
-	protected async handlePeerJoined(peerId: string) {
+	protected async handlePeerJoined(peerId: PeerId) {
 		console.log(`[Initiator] Peer ${peerId} joined`)
 		if (this.connections.size >= this.maxClients) {
 			console.log(
@@ -66,7 +67,7 @@ export class Initiator extends Peer {
 		this.onPeersChange?.(this.peers)
 	}
 
-	protected handlePeerLeft(peerId: string) {
+	protected handlePeerLeft(peerId: PeerId) {
 		console.log(`[Initiator] Peer ${peerId} left`)
 		this.waitingPeers.delete(peerId)
 		const client = this.connections.get(peerId)
@@ -98,7 +99,7 @@ export class Initiator extends Peer {
 		}
 	}
 
-	protected async createAndSendOffer(toPeerId: string) {
+	protected async createAndSendOffer(toPeerId: PeerId) {
 		console.log(`[Initiator] Creating offer for ${toPeerId}...`)
 
 		// Close existing connection if any
@@ -165,14 +166,14 @@ export class Initiator extends Peer {
 
 	protected handleOffer(
 		offer: RTCSessionDescriptionInit,
-		fromPeerId: string,
+		fromPeerId: PeerId,
 	): void {
 		// Initiator does not handle offers
 	}
 
 	protected async handleAnswer(
 		answer: RTCSessionDescriptionInit,
-		fromPeerId: string,
+		fromPeerId: PeerId,
 	) {
 		const client = this.connections.get(fromPeerId)
 		if (client) {
@@ -188,7 +189,7 @@ export class Initiator extends Peer {
 
 	protected async handleIceCandidate(
 		candidate: RTCIceCandidateInit,
-		fromPeerId?: string,
+		fromPeerId?: PeerId,
 	) {
 		if (!fromPeerId) {
 			return
@@ -212,7 +213,7 @@ export class Initiator extends Peer {
 		}
 	}
 
-	public sendToPeer(peerId: string, value: string) {
+	public sendToPeer(peerId: PeerId, value: string) {
 		const client = this.connections.get(peerId)
 		if (client && client.channel.readyState === 'open') {
 			client.channel.send(value)

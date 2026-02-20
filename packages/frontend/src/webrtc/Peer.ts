@@ -1,5 +1,6 @@
 import { delay } from '../delay'
 import { settings } from '../settings'
+import { PeerId } from './PeerId'
 
 export abstract class Peer {
 	protected isDestroyed = false
@@ -7,19 +8,19 @@ export abstract class Peer {
 	protected channel: RTCDataChannel | null = null
 	protected abstract role: 'initiator' | 'responder'
 	protected value: { value: string } | null = null
-	protected readonly onValue: ((value: string) => void) | undefined
+	protected readonly onValue: ((value: string, peerId: PeerId) => void) | undefined
 	protected readonly sendLastValueOnConnectAndReconnect: boolean
 	protected readonly websocketSignalingServer: string
 	protected readonly iceServers: Array<RTCIceServer>
 	protected socket: WebSocket | null = null
 	protected candidatesQueue: RTCIceCandidateInit[] = []
-	protected peerId: string | null = null
+	protected peerId: PeerId | null = null
 
 	constructor(
 		protected readonly room: string,
 		options: {
 			websocketSignalingServer?: string
-			onValue?: (value: string) => void
+			onValue?: (value: string, peerId: PeerId) => void
 			sendLastValueOnConnectAndReconnect?: boolean
 			iceServers?: Array<RTCIceServer>
 		} = {},
@@ -113,19 +114,19 @@ export abstract class Peer {
 
 	protected abstract handleOffer(
 		offer: RTCSessionDescriptionInit,
-		fromPeerId: string,
+		fromPeerId: PeerId,
 	): void
 	protected abstract handleAnswer(
 		answer: RTCSessionDescriptionInit,
-		fromPeerId: string,
+		fromPeerId: PeerId,
 	): void
-	protected abstract handlePeerJoined(peerId: string): void
-	protected abstract handlePeerLeft(peerId: string): void
+	protected abstract handlePeerJoined(peerId: PeerId): void
+	protected abstract handlePeerLeft(peerId: PeerId): void
 	protected abstract onConnected(): void
 
 	protected async handleIceCandidate(
 		candidate: RTCIceCandidateInit,
-		fromPeerId?: string,
+		fromPeerId?: PeerId,
 	) {
 		if (!this.connection) {
 			return
@@ -176,7 +177,7 @@ export abstract class Peer {
 		this.close()
 	}
 
-	protected sendMessage(type: string, data: any, to?: string) {
+	protected sendMessage(type: string, data: any, to?: PeerId) {
 		if (this.socket?.readyState === WebSocket.OPEN) {
 			console.log(
 				`[Peer] Sending signaling message: ${type}${to ? ` to ${to}` : ''}`,
@@ -189,7 +190,7 @@ export abstract class Peer {
 
 	protected async setAndShareLocalDescription(
 		description: RTCSessionDescriptionInit,
-		toPeerId?: string,
+		toPeerId?: PeerId,
 	) {
 		if (!this.connection) {
 			throw new Error('Connection is not initialized')
@@ -201,7 +202,7 @@ export abstract class Peer {
 
 	protected shareNewIceCandidate(
 		event: RTCPeerConnectionIceEvent,
-		toPeerId?: string,
+		toPeerId?: PeerId,
 	) {
 		if (event.candidate) {
 			console.log('[Peer] Generated new ICE candidate')
@@ -241,7 +242,9 @@ export abstract class Peer {
 			}
 			this.channel.onmessage = (event) => {
 				console.log('[Peer] Data channel message received')
-				this.onValue?.(event.data)
+				if (this.peerId) {
+					this.onValue?.(event.data, this.peerId)
+				}
 			}
 		} else {
 			this.connection.ondatachannel = (event) => {
@@ -255,7 +258,9 @@ export abstract class Peer {
 				}
 				this.channel.onmessage = (event) => {
 					console.log('[Peer] Data channel message received')
-					this.onValue?.(event.data)
+					if (this.peerId) {
+						this.onValue?.(event.data, this.peerId)
+					}
 				}
 			}
 		}
