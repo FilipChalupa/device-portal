@@ -2,13 +2,13 @@ import {
 	createContext,
 	useContext,
 	type FunctionComponent,
-	type ReactNode,
+	type PropsWithChildren,
 } from 'react'
+import { type Initiator } from '../webrtc/Initiator'
 import {
 	useDevicePortalProvider,
 	type DevicePortalProviderOptions,
 } from './useDevicePortalProvider'
-import { type Initiator } from '../webrtc/Initiator'
 
 type DevicePortalContextValue = {
 	activePeers: string[]
@@ -22,12 +22,13 @@ const DevicePortalContext = createContext<DevicePortalContextValue>({
 
 export const useDevicePortal = () => useContext(DevicePortalContext)
 
-export const DevicePortalProvider: FunctionComponent<{
-	room: string
-	data: string
-	options?: DevicePortalProviderOptions
-	children?: ReactNode
-}> = ({ room, data, options, children }) => {
+export const DevicePortalProvider: FunctionComponent<
+	PropsWithChildren<{
+		room: string
+		data: string
+		options?: DevicePortalProviderOptions
+	}>
+> = ({ room, data, options, children }) => {
 	const value = useDevicePortalProvider(room, data, options)
 	return (
 		<DevicePortalContext.Provider value={value}>
