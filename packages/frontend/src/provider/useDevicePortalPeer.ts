@@ -2,13 +2,15 @@ import { useEffect, useRef } from 'react'
 import { Initiator } from '../webrtc/Initiator'
 import { PeerId } from '../webrtc/PeerId'
 
+export type PeerOptions = {
+	value?: string
+	onValueFromConsumer?: (value: string) => void
+}
+
 export const useDevicePortalPeer = (
 	initiator: Initiator,
 	peerId: PeerId,
-	value?: string,
-	options: {
-		onValueFromConsumer?: (value: string) => void
-	} = {},
+	options: PeerOptions = {},
 ) => {
 	const onValueFromConsumerRef = useRef(options.onValueFromConsumer)
 	onValueFromConsumerRef.current = options.onValueFromConsumer
@@ -22,8 +24,8 @@ export const useDevicePortalPeer = (
 	}, [initiator, peerId])
 
 	useEffect(() => {
-		if (value !== undefined) {
-			initiator.sendToPeer(peerId, value)
+		if (options.value !== undefined) {
+			initiator.sendToPeer(peerId, options.value)
 		}
-	}, [initiator, peerId, value])
+	}, [initiator, peerId, options.value])
 }
