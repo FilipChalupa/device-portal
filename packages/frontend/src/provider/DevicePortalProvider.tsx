@@ -1,4 +1,4 @@
-import { type FunctionComponent } from 'react'
+import { Fragment, type FunctionComponent, type ReactNode } from 'react'
 import type { Initiator } from '../webrtc/Initiator'
 import { PeerId } from '../webrtc/PeerId'
 import { PeerOptions, useDevicePortalPeer } from './useDevicePortalPeer'
@@ -11,19 +11,26 @@ export const DevicePortalProvider: FunctionComponent<{
 	room: string
 	data: string
 	options?: DevicePortalProviderOptions
-	peerOptions?: (peer: PeerId) => PeerOptions
-}> = ({ room, data, options, peerOptions }) => {
+	children?: (
+		PeerComponent: FunctionComponent<{ options: PeerOptions }>,
+		peerId: PeerId,
+	) => ReactNode
+}> = ({ room, data, options, children }) => {
 	const { peers, initiator } = useDevicePortalProvider(room, data, options)
-	if (!initiator || !peerOptions) {
+
+	if (!initiator || !children) {
 		return null
 	}
+
 	return peers.map((peerId) => (
-		<Peer
-			key={peerId}
-			initiator={initiator}
-			peerId={peerId}
-			options={peerOptions(peerId)}
-		/>
+		<Fragment key={peerId}>
+			{children(
+				(props) => (
+					<Peer peerId={peerId} initiator={initiator} {...props} />
+				),
+				peerId,
+			)}
+		</Fragment>
 	))
 }
 
