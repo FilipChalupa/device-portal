@@ -20,8 +20,8 @@ const room =
 localStorage.setItem('room', room)
 
 const websocketSignalingServer = import.meta.env.DEV
-	? 'ws://localhost:8080/v0/'
-	: 'wss://device-portal.filipchalupa.cz/v0/'
+	? 'ws://localhost:8080'
+	: 'wss://device-portal.filipchalupa.cz'
 
 const InputComponent: FunctionComponent = () => {
 	console.log('[InputComponent] Rendering')
