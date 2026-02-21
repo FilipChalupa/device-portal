@@ -1,7 +1,7 @@
 /node_modules/
-/packages/frontend/dist/
-/packages/frontend/storybook-static/
-/packages/frontend/node_modules/
+/packages/react/dist/
+/packages/react/storybook-static/
+/packages/react/node_modules/
 /packages/node_modules/
 /packages/server/node_modules/
 /packages/server/dist/

@@ -35,5 +35,5 @@ jobs:
       - name: Publish server package
         run: npm publish --workspace packages/server --access public --provenance
 
-      - name: Publish frontend package
-        run: npm publish --workspace packages/frontend --access public --provenance
+      - name: Publish React package
+        run: npm publish --workspace packages/react --access public --provenance
