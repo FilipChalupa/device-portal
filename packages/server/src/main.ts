@@ -145,7 +145,7 @@ if (portString) {
 	}
 }
 
-console.log(`Starting signaling server on 0.0.0.0:${port}…`)
+console.log(`Starting signaling server on http://0.0.0.0:${port}`)
 
 const server = serve({
 	fetch: app.fetch,
