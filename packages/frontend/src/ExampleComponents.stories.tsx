@@ -106,7 +106,7 @@ const ConsumerComponent: FunctionComponent = () => {
 			room={room}
 			websocketSignalingServer={websocketSignalingServer}
 		>
-			{({ value, sendValueToProvider }) => (
+			{({ value, sendMessageToProvider }) => (
 				<div>
 					<p>
 						Value provided by the provider in room "<b>{room}</b>" is:
@@ -116,7 +116,7 @@ const ConsumerComponent: FunctionComponent = () => {
 						<button
 							type="button"
 							onClick={() => {
-								sendValueToProvider('roll')
+								sendMessageToProvider('roll')
 							}}
 						>
 							Do barrel roll

@@ -77,7 +77,7 @@ const ProviderComponent: FunctionComponent = () => {
 
 const ConsumerComponent: FunctionComponent = () => {
 	console.log('[ConsumerComponent] Rendering')
-	const { value, sendValueToProvider } = useDevicePortalConsumer(room, {
+	const { value, sendMessageToProvider } = useDevicePortalConsumer(room, {
 		websocketSignalingServer,
 	})
 	return (
@@ -90,7 +90,7 @@ const ConsumerComponent: FunctionComponent = () => {
 				<button
 					type="button"
 					onClick={() => {
-						sendValueToProvider('roll')
+						sendMessageToProvider('roll')
 					}}
 				>
 					Do barrel roll

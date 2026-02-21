@@ -6,7 +6,7 @@ import { Responder } from '../webrtc/Responder'
 type State = {
 	room: string
 	value: string
-	sendValueToProvider: (value: string) => void
+	sendMessageToProvider: (value: string) => void
 }
 
 const responders: {
@@ -15,7 +15,7 @@ const responders: {
 		firstValuePromise: Promise<string>
 		consumer: null | {
 			value: string
-			sendValueToProvider: (value: string) => void
+			sendMessageToProvider: (value: string) => void
 		}
 		setValueStates: Set<Dispatch<SetStateAction<State | null>>>
 	}
@@ -26,7 +26,7 @@ export const useDevicePortalConsumer = (
 	options: {
 		websocketSignalingServer?: string
 	} = {},
-): Pick<State, 'value' | 'sendValueToProvider'> => {
+): Pick<State, 'value' | 'sendMessageToProvider'> => {
 	const [valueState, setValueState] = useState<State | null>(null)
 
 	const currentConsumer = useMemo(() => {
@@ -47,16 +47,16 @@ export const useDevicePortalConsumer = (
 			const { promise: firstValuePromise, resolve: firstValueResolve } =
 				(Promise as any).withResolvers?.() ?? withResolvers()
 
-			const sendValueToProvider = (value: string) => {
+			const sendMessageToProvider = (value: string) => {
 				responders[room].responder.send(value)
 			}
 
 			const responder = new Responder(room, {
 				onMessage: (value, peerId) => {
-					const consumer = { value, sendValueToProvider }
+					const consumer = { value, sendMessageToProvider }
 					responders[room].consumer = consumer
 					for (const setState of responders[room].setValueStates) {
-						setState({ room, value, sendValueToProvider })
+						setState({ room, value, sendMessageToProvider })
 					}
 					firstValueResolve(value)
 				},
@@ -83,7 +83,7 @@ export const useDevicePortalConsumer = (
 	if (valueState && valueState.room === room) {
 		return {
 			value: valueState.value,
-			sendValueToProvider: valueState.sendValueToProvider,
+			sendMessageToProvider: valueState.sendMessageToProvider,
 		}
 	}
 

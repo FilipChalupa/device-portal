@@ -97,7 +97,7 @@ const ClientEntrypoint: FunctionComponent = () => {
 						room={room}
 						websocketSignalingServer={websocketSignalingServer}
 					>
-						{({ value: sharedCountString, sendValueToProvider }) => {
+						{({ value: sharedCountString, sendMessageToProvider }) => {
 							const sharedCount = parseInt(sharedCountString, 10) || 0
 							const percentage =
 								sharedCount > 0
@@ -114,7 +114,7 @@ const ClientEntrypoint: FunctionComponent = () => {
 										type="button"
 										onClick={() => {
 											setLocalCount((previous) => previous + step)
-											sendValueToProvider(step.toString())
+											sendMessageToProvider(step.toString())
 										}}
 									>
 										Click me!
@@ -123,7 +123,7 @@ const ClientEntrypoint: FunctionComponent = () => {
 										type="button"
 										onClick={() => {
 											setLocalCount((previous) => previous - upgradePrice)
-											sendValueToProvider((-upgradePrice).toString())
+											sendMessageToProvider((-upgradePrice).toString())
 											setStep((previous) => previous + 1)
 										}}
 										disabled={localCount < upgradePrice}

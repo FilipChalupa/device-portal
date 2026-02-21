@@ -6,11 +6,11 @@ export const DevicePortalConsumer: FunctionComponent<{
 	websocketSignalingServer?: string
 	children: (data: {
 		value: string
-		sendValueToProvider: (value: string) => void
+		sendMessageToProvider: (message: string) => void
 	}) => ReactNode
 }> = ({ room, websocketSignalingServer, children }) => {
-	const { value, sendValueToProvider } = useDevicePortalConsumer(room, {
+	const { value, sendMessageToProvider } = useDevicePortalConsumer(room, {
 		websocketSignalingServer,
 	})
-	return <>{children({ value, sendValueToProvider })}</>
+	return <>{children({ value, sendMessageToProvider })}</>
 }
