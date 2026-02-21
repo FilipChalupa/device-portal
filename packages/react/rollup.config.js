@@ -46,7 +46,12 @@ export default (args) => {
 			preserveDirectives(),
 			!isWatch &&
 				strip({
-					include: ['src/**/*.ts', 'src/**/*.js', 'src/**/*.tsx', 'src/**/*.jsx'],
+					include: [
+						'src/**/*.ts',
+						'src/**/*.js',
+						'src/**/*.tsx',
+						'src/**/*.jsx',
+					],
 					functions: ['console.log', 'console.debug', 'console.warn'],
 				}),
 		],
