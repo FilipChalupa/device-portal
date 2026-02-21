@@ -10,6 +10,18 @@
 		"build": "rollup -c",
 		"prepare": "npm run build"
 	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/FilipChalupa/device-portal.git"
+	},
+	"keywords": [
+		"webrtc"
+	],
+	"author": {
+		"name": "Filip Chalupa",
+		"email": "chalupa.filip@gmail.com",
+		"url": "https://www.npmjs.com/~onset"
+	},
 	"license": "ISC",
 	"devDependencies": {
 		"@babel/core": "^7.24.0",
@@ -22,5 +34,8 @@
 		"rollup-plugin-delete": "^2.0.0",
 		"rollup-plugin-typescript2": "^0.36.0",
 		"typescript": "^5.8.2"
-	}
+	},
+	"files": [
+		"/dist/"
+	]
 }
