@@ -7,37 +7,47 @@ import peerDepsExternal from 'rollup-plugin-peer-deps-external'
 import postcss from 'rollup-plugin-postcss'
 import preserveDirectives from 'rollup-plugin-preserve-directives'
 import typescript from 'rollup-plugin-typescript2'
+import strip from '@rollup/plugin-strip'
 import packageJson from './package.json' with { type: 'json' }
 
 const outputDirectory = path.parse(packageJson.main).dir
 
-export default {
-	input: './src/index.ts',
-	output: {
-		dir: outputDirectory,
-		format: 'esm',
-		sourcemap: true,
-		preserveModules: true,
-	},
-	external: ['react', '@device-portal/client'],
-	plugins: [
-		del({ targets: outputDirectory + '/*' }),
-		peerDepsExternal(),
-		postcss({
-			extract: true,
-			modules: true,
-		}),
-		resolve({
-			extensions: ['.js', '.jsx', '.ts', '.tsx'],
-		}),
-		commonjs(),
-		typescript({
-			useTsconfigDeclarationDir: true,
-		}),
-		babel({
-			babelHelpers: 'bundled',
-			extensions: ['.js', '.jsx', '.ts', '.tsx'],
-		}),
-		preserveDirectives(),
-	],
+export default (args) => {
+	const isWatch = args.watch
+
+	return {
+		input: './src/index.ts',
+		output: {
+			dir: outputDirectory,
+			format: 'esm',
+			sourcemap: true,
+			preserveModules: true,
+		},
+		external: ['react', '@device-portal/client'],
+		plugins: [
+			del({ targets: outputDirectory + '/*' }),
+			peerDepsExternal(),
+			postcss({
+				extract: true,
+				modules: true,
+			}),
+			resolve({
+				extensions: ['.js', '.jsx', '.ts', '.tsx'],
+			}),
+			commonjs(),
+			typescript({
+				useTsconfigDeclarationDir: true,
+			}),
+			babel({
+				babelHelpers: 'bundled',
+				extensions: ['.js', '.jsx', '.ts', '.tsx'],
+			}),
+			preserveDirectives(),
+			!isWatch &&
+				strip({
+					include: ['**/*.ts', '**/*.js', '**/*.tsx', '**/*.jsx'],
+					functions: ['console.log', 'console.debug', 'console.warn'],
+				}),
+		],
+	}
 }

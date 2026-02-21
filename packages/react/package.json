@@ -49,6 +49,8 @@
 		"@rollup/plugin-babel": "^6.0.4",
 		"@rollup/plugin-commonjs": "^25.0.7",
 		"@rollup/plugin-node-resolve": "^15.2.3",
+		"@rollup/plugin-strip": "^3.0.4",
+		"@storybook/addon-docs": "^10.2.10",
 		"@storybook/addon-links": "^10.2.10",
 		"@storybook/addon-onboarding": "^10.2.10",
 		"@storybook/react": "^10.2.10",
@@ -67,8 +69,7 @@
 		"rollup-plugin-typescript2": "^0.36.0",
 		"storybook": "^10.2.10",
 		"typescript": "^5.9.3",
-		"vite": "^5.0.0",
-		"@storybook/addon-docs": "^10.2.10"
+		"vite": "^5.0.0"
 	},
 	"files": [
 		"/dist/"
