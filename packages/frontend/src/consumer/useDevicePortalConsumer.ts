@@ -1,8 +1,6 @@
 import { useMemo, useState, type Dispatch, type SetStateAction } from 'react'
 import { Responder } from '../webrtc/Responder'
 
-// @TODO: warn if one room is used by multiple useDevicePortalConsumer hooks more than once at the same time
-
 type State = {
 	room: string
 	value: string
