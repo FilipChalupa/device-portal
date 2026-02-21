@@ -36,7 +36,7 @@ export default (args) => {
 			}),
 			commonjs(),
 			typescript({
-				useTsconfigDeclarationDir: true,
+				useTsconfigDeclarationDir: false,
 			}),
 			babel({
 				babelHelpers: 'bundled',
@@ -45,7 +45,7 @@ export default (args) => {
 			preserveDirectives(),
 			!isWatch &&
 				strip({
-					include: ['**/*.ts', '**/*.js', '**/*.tsx', '**/*.jsx'],
+					include: ['src/**/*.ts', 'src/**/*.js', 'src/**/*.tsx', 'src/**/*.jsx'],
 					functions: ['console.log', 'console.debug', 'console.warn'],
 				}),
 		],

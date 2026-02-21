@@ -28,7 +28,7 @@ export default (args) => {
 			typescript(),
 			!isWatch &&
 				strip({
-					include: ['**/*.ts', '**/*.js'],
+					include: ['src/**/*.ts', 'src/**/*.js'],
 					functions: ['console.log', 'console.debug', 'console.warn'],
 				}),
 		],
