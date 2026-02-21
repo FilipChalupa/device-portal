@@ -6,7 +6,7 @@
 		"device-portal-server": "dist/main.js"
 	},
 	"scripts": {
-		"build": "tsc",
+		"build": "tsc && node ../scripts/add-shebang.js ./dist/main.js",
 		"start": "node dist/main.js",
 		"dev": "node --watch -r ts-node/register src/main.ts",
 		"test": "tsc --build --dry",
