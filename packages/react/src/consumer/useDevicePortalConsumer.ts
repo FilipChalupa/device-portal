@@ -1,5 +1,5 @@
 import { useMemo, useState, type Dispatch, type SetStateAction } from 'react'
-import { Responder } from '../webrtc/Responder'
+import { Responder } from '@device-portal/client'
 
 type State = {
 	room: string

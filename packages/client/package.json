@@ -1,0 +1,26 @@
+{
+	"name": "@device-portal/client",
+	"version": "0.0.0",
+	"description": "Base WebRTC logic for Device Portal.",
+	"type": "module",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"scripts": {
+		"dev": "rollup -c -w",
+		"build": "rollup -c",
+		"prepare": "npm run build"
+	},
+	"license": "ISC",
+	"devDependencies": {
+		"@babel/core": "^7.24.0",
+		"@babel/preset-env": "^7.24.0",
+		"@babel/preset-typescript": "^7.24.0",
+		"@rollup/plugin-babel": "^6.0.4",
+		"@rollup/plugin-commonjs": "^25.0.7",
+		"@rollup/plugin-node-resolve": "^15.2.3",
+		"rollup": "^4.2.0",
+		"rollup-plugin-delete": "^2.0.0",
+		"rollup-plugin-typescript2": "^0.36.0",
+		"typescript": "^5.8.2"
+	}
+}

@@ -2,6 +2,7 @@
 /packages/react/dist/
 /packages/react/storybook-static/
 /packages/react/node_modules/
-/packages/node_modules/
+/packages/client/node_modules/
+/packages/client/dist/
 /packages/server/node_modules/
 /packages/server/dist/

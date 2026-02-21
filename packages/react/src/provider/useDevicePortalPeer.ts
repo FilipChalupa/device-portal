@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { Initiator } from '../webrtc/Initiator'
-import { PeerId } from '../webrtc/PeerId'
+import { Initiator, type PeerId } from '@device-portal/client'
 
 export type PeerOptions = {
 	value?: string

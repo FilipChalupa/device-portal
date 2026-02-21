@@ -1,6 +1,5 @@
 import { Fragment, type FunctionComponent, type ReactNode } from 'react'
-import type { Initiator } from '../webrtc/Initiator'
-import { PeerId } from '../webrtc/PeerId'
+import { type Initiator, type PeerId } from '@device-portal/client'
 import { PeerOptions, useDevicePortalPeer } from './useDevicePortalPeer'
 import {
 	useDevicePortalProvider,

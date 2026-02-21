@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Initiator } from '../webrtc/Initiator'
-import { PeerId } from '../webrtc/PeerId'
+import { Initiator, type PeerId } from '@device-portal/client'
 
 // @TODO: warn if one room is used by multiple useDevicePortalProvider hooks more than once at the same time
 
