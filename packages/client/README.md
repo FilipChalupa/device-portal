@@ -9,6 +9,7 @@ npm install @device-portal/client
 ```
 
 ## Features
+
 - Core WebRTC abstraction (`Peer`, `Initiator`, `Responder`)
 - Signaling server client implementation
 - Peer ID branding and utilities
