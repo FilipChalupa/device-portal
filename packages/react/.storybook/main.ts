@@ -21,6 +21,9 @@ const config: StorybookConfig = {
 		return mergeConfig(config, {
 			resolve: {
 				alias: {
+					'@device-portal/client': fileURLToPath(
+						import.meta.resolve('../../client/src/index.ts'),
+					),
 					'@storybook/addon-docs/mdx-react-shim': fileURLToPath(
 						import.meta.resolve('@storybook/addon-docs/mdx-react-shim'),
 					),

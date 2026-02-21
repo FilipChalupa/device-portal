@@ -18,7 +18,7 @@ export default {
 		sourcemap: true,
 		preserveModules: true,
 	},
-	external: ['react'],
+	external: ['react', '@device-portal/client'],
 	plugins: [
 		del({ targets: outputDirectory + '/*' }),
 		peerDepsExternal(),
