@@ -131,10 +131,10 @@ app.get(
 	}),
 )
 
-const storybookRelativePath = '../../frontend/storybook-static'
-const storybookPath = resolve(__dirname, storybookRelativePath)
+const storybookRelativePath = '../frontend/storybook-static'
+const storybookPath = resolve(__dirname, '..', storybookRelativePath)
 if (existsSync(storybookPath)) {
-	app.use('/*', serveStatic({ root: storybookRelativePath }))
+	app.use('/*', serveStatic({ root: '../frontend/storybook-static' }))
 }
 
 const portString = process.env.PORT
