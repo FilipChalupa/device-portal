@@ -22,7 +22,26 @@ const ServerEntrypoint: FunctionComponent = () => {
 		<div>
 			<h1>Cookie Clicker Server</h1>
 			<p>
-				Room name: <input readOnly value={room} />
+				Room name: <input readOnly value={room} />{' '}
+				{navigator.share && (
+					<button
+						type="button"
+						disabled={!navigator.share}
+						onClick={() => {
+							const shareUrl = new URL(
+								window.location.href.replace('-server', '-client'),
+							)
+							shareUrl.hash = room
+							navigator.share({
+								title: 'Join Cookie Clicker',
+								text: `Join my Cookie Clicker room: ${room}`,
+								url: shareUrl.toString(),
+							})
+						}}
+					>
+						Share Client Link
+					</button>
+				)}
 			</p>
 			Total click: <output>{counter}</output>
 			<DevicePortalProvider
@@ -39,7 +58,7 @@ const ServerEntrypoint: FunctionComponent = () => {
 }
 
 const ClientEntrypoint: FunctionComponent = () => {
-	const [room, setRoom] = useState('')
+	const [room, setRoom] = useState(location.hash.slice(1))
 	const [isStarted, setIsStarted] = useState(false)
 	const [localCount, setLocalCount] = useState(0)
 	const [step, setStep] = useState(1)
