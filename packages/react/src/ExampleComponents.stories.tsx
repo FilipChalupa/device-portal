@@ -11,7 +11,7 @@ import './Example.stories.css'
 import { DevicePortalProvider } from './provider/DevicePortalProvider'
 import { getLocalStorageRoom } from './stories/utilities/getLocalStorageRoom'
 import { websocketSignalingServer } from './stories/utilities/websocketSignalingServer'
-import type { PeerId } from './webrtc/PeerId'
+import type { PeerId } from '@device-portal/client'
 
 const meta: Meta<FunctionComponent> = {
 	title: 'Counter/Components',

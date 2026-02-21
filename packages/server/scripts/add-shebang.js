@@ -1,4 +1,5 @@
-const fs = require('fs')
+import fs from 'fs'
+import process from 'process'
 
 const filePath = process.argv[2]
 if (!filePath) {
