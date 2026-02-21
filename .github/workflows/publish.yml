@@ -31,11 +31,11 @@ jobs:
         run: npm run build
 
       - name: Publish server package
-        run: npm publish --workspace packages/server
+        run: npm publish --workspace packages/server --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish frontend package
-        run: npm publish --workspace packages/frontend
+        run: npm publish --workspace packages/frontend --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
