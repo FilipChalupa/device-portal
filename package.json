@@ -7,7 +7,7 @@
 	"scripts": {
 		"start": "npm run start:server",
 		"build": "npm run build:client && npm run build:react && npm run build:storybook && npm run build:server",
-		"dev": "npm run dev:client & npm run dev:server & npm run dev:storybook",
+		"dev": "concurrently -n \"client,server,react\" -c \"blue,cyan,magenta\" \"npm run dev:client\" \"npm run dev:server\" \"npm run dev:storybook\"",
 		"dev:client": "npm run -w @device-portal/client dev",
 		"build:client": "npm run -w @device-portal/client build",
 		"dev:package": "npm run -w @device-portal/react dev:package",
