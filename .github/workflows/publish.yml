@@ -34,10 +34,7 @@ jobs:
 
       - name: Build packages
         run: |
-          npm run build:client
-          npm run build:react
-          npm run build:server
-          npm run build:storybook
+          npm run build
 
       - name: Publish server package
         run: npm publish --workspace packages/server --access public --provenance
