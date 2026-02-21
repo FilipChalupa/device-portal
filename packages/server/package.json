@@ -1,7 +1,10 @@
 {
 	"name": "@device-portal/server",
 	"version": "0.0.0",
+	"description": "WebSocket-based signaling server for WebRTC.",
+	"type": "module",
 	"main": "dist/main.js",
+	"license": "ISC",
 	"bin": {
 		"device-portal-server": "dist/main.js"
 	},
