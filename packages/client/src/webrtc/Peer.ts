@@ -169,8 +169,15 @@ export abstract class Peer {
 		this.connection = null
 		this.channel?.close()
 		this.channel = null
-		this.socket?.close()
-		this.socket = null
+		if (this.socket) {
+			const socket = this.socket
+			if (socket.readyState === WebSocket.CONNECTING) {
+				socket.onopen = () => socket.close()
+			} else {
+				socket.close()
+			}
+			this.socket = null
+		}
 	}
 
 	public destroy() {
