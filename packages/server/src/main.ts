@@ -4,8 +4,11 @@ import { createNodeWebSocket } from '@hono/node-ws'
 import { existsSync } from 'fs'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import { resolve } from 'path'
+import { resolve, dirname } from 'path'
+import { fileURLToPath } from 'url'
 import { WebSocket } from 'ws'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
 
 type JoinRoomMessage = {
 	type: 'join-room'
