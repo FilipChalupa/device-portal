@@ -33,7 +33,11 @@ jobs:
           npm pkg set "dependencies.@device-portal/client=^${{ steps.get_version.outputs.VERSION }}" --workspace packages/react
 
       - name: Build packages
-        run: npm run build
+        run: |
+          npm run build:client
+          npm run build:react
+          npm run build:server
+          npm run build:storybook
 
       - name: Publish server package
         run: npm publish --workspace packages/server --access public --provenance

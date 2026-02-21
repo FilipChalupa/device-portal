@@ -11,7 +11,11 @@
 		"strictNullChecks": true,
 		"esModuleInterop": true,
 		"skipLibCheck": true,
-		"types": ["vite/client"]
+		"types": ["vite/client"],
+		"baseUrl": ".",
+		"paths": {
+			"@device-portal/client": ["../client/src/index.ts"]
+		}
 	},
 	"include": ["src/**/*"],
 	"exclude": [

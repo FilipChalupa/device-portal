@@ -36,6 +36,7 @@ export default (args) => {
 			}),
 			commonjs(),
 			typescript({
+				tsconfig: 'tsconfig.build.json',
 				useTsconfigDeclarationDir: false,
 			}),
 			babel({

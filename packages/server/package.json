@@ -12,8 +12,7 @@
 		"build": "tsc && node ./scripts/add-shebang.js ./dist/main.js",
 		"start": "node dist/main.js",
 		"dev": "tsx watch src/main.ts",
-		"test": "tsc --build --dry",
-		"prepare": "npm run build"
+		"test": "tsc --build --dry"
 	},
 	"repository": {
 		"type": "git",
