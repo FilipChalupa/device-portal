@@ -30,12 +30,12 @@ jobs:
       - name: Build packages
         run: npm run build
 
-      - name: Publish server package (dry run)
-        run: npm publish --workspace packages/server --dry-run
+      - name: Publish server package
+        run: npm publish --workspace packages/server
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Publish frontend package (dry run)
-        run: npm publish --workspace packages/frontend --dry-run
+      - name: Publish frontend package
+        run: npm publish --workspace packages/frontend
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
