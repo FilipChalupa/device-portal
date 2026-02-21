@@ -3,6 +3,7 @@ import { serveStatic } from '@hono/node-server/serve-static'
 import { createNodeWebSocket } from '@hono/node-ws'
 import { existsSync } from 'fs'
 import { Hono } from 'hono'
+import { cors } from 'hono/cors'
 import { resolve } from 'path'
 import { WebSocket } from 'ws'
 
@@ -27,6 +28,7 @@ const rooms = new Map<string, Set<WebSocket>>()
 const webSocketToPeerId = new Map<WebSocket, string>()
 const webSocketToRoom = new Map<WebSocket, string>()
 
+app.use('/v0/*', cors())
 app.get(
 	'/v0/',
 	upgradeWebSocket((context) => {
