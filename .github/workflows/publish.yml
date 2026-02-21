@@ -27,7 +27,9 @@ jobs:
         run: echo "VERSION=${{ github.ref_name }}" | sed 's/v//' >> $GITHUB_OUTPUT
 
       - name: Update package versions
-        run: npm version ${{ steps.get_version.outputs.VERSION }} --no-git-tag-version --workspaces
+        run: |
+          npm version ${{ steps.get_version.outputs.VERSION }} --no-git-tag-version --workspaces
+          npm pkg set "dependencies.@device-portal/client=^${{ steps.get_version.outputs.VERSION }}" --workspace packages/react
 
       - name: Build packages
         run: npm run build
