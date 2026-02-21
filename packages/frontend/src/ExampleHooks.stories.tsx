@@ -3,6 +3,7 @@ import { FunctionComponent, Suspense, useRef, useState } from 'react'
 import { useDevicePortalConsumer } from './consumer/useDevicePortalConsumer'
 import './Example.stories.css'
 import { useDevicePortalProvider } from './provider/useDevicePortalProvider'
+import { getLocalStorageRoom } from './stories/utilities/getLocalStorageRoom'
 import { websocketSignalingServer } from './stories/utilities/websocketSignalingServer'
 
 const meta: Meta<FunctionComponent> = {
@@ -12,15 +13,8 @@ const meta: Meta<FunctionComponent> = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-const defaultRoom = 'storybook'
-
-const room =
-	localStorage.getItem('room') ||
-	prompt('Enter room name', localStorage.getItem('room') || defaultRoom) ||
-	defaultRoom
-localStorage.setItem('room', room)
-
 const ProviderComponent: FunctionComponent = () => {
+	const room = getLocalStorageRoom()
 	console.log('[ProviderComponent] Rendering')
 	const containerRef = useRef<HTMLDivElement>(null)
 	const [value, setState] = useState(1)
@@ -76,6 +70,7 @@ const ProviderComponent: FunctionComponent = () => {
 }
 
 const ConsumerComponent: FunctionComponent = () => {
+	const room = getLocalStorageRoom()
 	console.log('[ConsumerComponent] Rendering')
 	const { value, sendMessageToProvider } = useDevicePortalConsumer(room, {
 		websocketSignalingServer,

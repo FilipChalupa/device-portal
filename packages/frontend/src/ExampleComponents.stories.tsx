@@ -9,6 +9,7 @@ import {
 import { DevicePortalConsumer } from './consumer/DevicePortalConsumer'
 import './Example.stories.css'
 import { DevicePortalProvider } from './provider/DevicePortalProvider'
+import { getLocalStorageRoom } from './stories/utilities/getLocalStorageRoom'
 import { websocketSignalingServer } from './stories/utilities/websocketSignalingServer'
 import type { PeerId } from './webrtc/PeerId'
 
@@ -19,17 +20,10 @@ const meta: Meta<FunctionComponent> = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-const defaultRoom = 'storybook'
-
-const room =
-	localStorage.getItem('room') ||
-	prompt('Enter room name', localStorage.getItem('room') || defaultRoom) ||
-	defaultRoom
-localStorage.setItem('room', room)
-
 const ProviderComponent: FunctionComponent = () => {
 	console.log('[ProviderComponent] Rendering')
 	const containerRef = useRef<HTMLDivElement>(null)
+	const room = getLocalStorageRoom()
 
 	return (
 		<div ref={containerRef} style={{ display: 'inline-block' }}>
@@ -100,6 +94,7 @@ const PeerInsideProvider: FunctionComponent<{
 }
 
 const ConsumerComponent: FunctionComponent = () => {
+	const room = getLocalStorageRoom()
 	console.log('[ConsumerComponent] Rendering')
 	return (
 		<DevicePortalConsumer
