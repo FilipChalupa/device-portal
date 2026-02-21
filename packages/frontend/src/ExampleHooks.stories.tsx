@@ -3,6 +3,7 @@ import { FunctionComponent, Suspense, useRef, useState } from 'react'
 import { useDevicePortalConsumer } from './consumer/useDevicePortalConsumer'
 import './Example.stories.css'
 import { useDevicePortalProvider } from './provider/useDevicePortalProvider'
+import { websocketSignalingServer } from './stories/utilities/websocketSignalingServer'
 
 const meta: Meta<FunctionComponent> = {
 	title: 'Counter/hooks',
@@ -19,15 +20,12 @@ const room =
 	defaultRoom
 localStorage.setItem('room', room)
 
-const websocketSignalingServer = import.meta.env.DEV
-	? 'ws://localhost:8080'
-	: 'wss://device-portal.filipchalupa.cz'
-
 const ProviderComponent: FunctionComponent = () => {
 	console.log('[ProviderComponent] Rendering')
 	const containerRef = useRef<HTMLDivElement>(null)
 	const [value, setState] = useState(1)
-	useDevicePortalProvider(room, value.toString(), {
+	useDevicePortalProvider(room, {
+		value: value.toString(),
 		onMessageFromConsumer: (value, peerId) => {
 			console.log(
 				`[ProviderComponent] Received value from peer ${peerId}: ${value}`,

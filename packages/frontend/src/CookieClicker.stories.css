@@ -1,0 +1,9 @@
+.wrapper {
+	font-family: sans-serif;
+	max-width: 40rem;
+	margin-inline: auto;
+}
+
+output {
+	font-size: 3em;
+}

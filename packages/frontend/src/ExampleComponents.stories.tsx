@@ -9,6 +9,7 @@ import {
 import { DevicePortalConsumer } from './consumer/DevicePortalConsumer'
 import './Example.stories.css'
 import { DevicePortalProvider } from './provider/DevicePortalProvider'
+import { websocketSignalingServer } from './stories/utilities/websocketSignalingServer'
 import type { PeerId } from './webrtc/PeerId'
 
 const meta: Meta<FunctionComponent> = {
@@ -25,10 +26,6 @@ const room =
 	prompt('Enter room name', localStorage.getItem('room') || defaultRoom) ||
 	defaultRoom
 localStorage.setItem('room', room)
-
-const websocketSignalingServer = import.meta.env.DEV
-	? 'ws://localhost:8080'
-	: 'wss://device-portal.filipchalupa.cz'
 
 const ProviderComponent: FunctionComponent = () => {
 	console.log('[ProviderComponent] Rendering')
