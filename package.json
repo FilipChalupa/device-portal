@@ -22,6 +22,7 @@
 		"lint": "prettier --check ."
 	},
 	"devDependencies": {
+		"concurrently": "^9.2.1",
 		"prettier": "^3.0.3",
 		"typescript": "^5.8.2"
 	}
