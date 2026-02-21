@@ -1,3 +1,4 @@
+import type { PeerId } from '@device-portal/client'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import {
 	FunctionComponent,
@@ -11,7 +12,6 @@ import './Example.stories.css'
 import { DevicePortalProvider } from './provider/DevicePortalProvider'
 import { getLocalStorageRoom } from './stories/utilities/getLocalStorageRoom'
 import { websocketSignalingServer } from './stories/utilities/websocketSignalingServer'
-import type { PeerId } from '@device-portal/client'
 
 const meta: Meta<FunctionComponent> = {
 	title: 'Counter/Components',
@@ -54,7 +54,7 @@ const ProviderComponent: FunctionComponent = () => {
 					}}
 				>
 					{(Peer, peerId) => (
-						<PeerInsideProvider key={peerId} peerId={peerId}>
+						<PeerInsideProvider peerId={peerId}>
 							{(value: string) => (
 								<Peer
 									value={value}
