@@ -123,6 +123,7 @@ const ClientEntrypoint: FunctionComponent = () => {
 										type="button"
 										onClick={() => {
 											setLocalCount((previous) => previous - upgradePrice)
+											sendValueToProvider((-upgradePrice).toString())
 											setStep((previous) => previous + 1)
 										}}
 										disabled={localCount < upgradePrice}
