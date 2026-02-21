@@ -12,6 +12,21 @@
 		"test": "tsc --build --dry",
 		"prepare": "npm run build"
 	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/FilipChalupa/device-portal.git"
+	},
+	"keywords": [
+		"webrtc",
+		"server",
+		"signaling",
+		"websocket"
+	],
+	"author": {
+		"name": "Filip Chalupa",
+		"email": "chalupa.filip@gmail.com",
+		"url": "https://www.npmjs.com/~onset"
+	},
 	"files": [
 		"/dist/"
 	],
