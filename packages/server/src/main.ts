@@ -140,10 +140,13 @@ app.get(
 
 const storybookPath = resolve(__dirname, '../../react/storybook-static')
 if (existsSync(storybookPath)) {
-	app.use('/*', serveStatic({
-		root: relative(process.cwd(), storybookPath),
-		rewriteRequestPath: (path) => (path === '/' ? '/index.html' : path),
-	}))
+	app.use(
+		'/*',
+		serveStatic({
+			root: relative(process.cwd(), storybookPath),
+			rewriteRequestPath: (path) => (path === '/' ? '/index.html' : path),
+		}),
+	)
 }
 
 const portString = process.env.PORT
