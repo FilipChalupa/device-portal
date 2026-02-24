@@ -61,7 +61,7 @@ import { Suspense } from 'react'
 
 const AppB = () => {
 	return (
-		<Suspense fallback={<p>Connecting...</p>}>
+		<Suspense fallback={<p>Connecting…</p>}>
 			<ConsumerComponent />
 		</Suspense>
 	)
