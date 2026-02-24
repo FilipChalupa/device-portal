@@ -4,7 +4,7 @@ import { createNodeWebSocket } from '@hono/node-ws'
 import { existsSync } from 'fs'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import { resolve, dirname } from 'path'
+import { dirname, relative, resolve } from 'path'
 import { fileURLToPath } from 'url'
 import { WebSocket } from 'ws'
 
@@ -138,10 +138,12 @@ app.get(
 	}),
 )
 
-const storybookRelativePath = '../react/storybook-static'
-const storybookPath = resolve(__dirname, '..', storybookRelativePath)
+const storybookPath = resolve(__dirname, '../../react/storybook-static')
 if (existsSync(storybookPath)) {
-	app.use('/*', serveStatic({ root: '../react/storybook-static' }))
+	app.use('/*', serveStatic({
+		root: relative(process.cwd(), storybookPath),
+		rewriteRequestPath: (path) => (path === '/' ? '/index.html' : path),
+	}))
 }
 
 const portString = process.env.PORT
@@ -153,11 +155,15 @@ if (portString) {
 	}
 }
 
-console.log(`Starting signaling server on http://0.0.0.0:${port}`)
-
-const server = serve({
-	fetch: app.fetch,
-	port,
-})
+const server = serve(
+	{
+		fetch: app.fetch,
+		port,
+		hostname: '0.0.0.0',
+	},
+	(info) => {
+		console.log(`Server is listening on http://${info.address}:${info.port}`)
+	},
+)
 
 injectWebSocket(server)
