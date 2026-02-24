@@ -6,8 +6,8 @@ WORKDIR /app
 # Copy all files for building
 COPY . .
 
-# Install all dependencies and build the server
-RUN npm ci && npm run build:server
+# Install all dependencies and build the server and storybook
+RUN npm ci && npm run build:storybook && npm run build:server
 
 # Runtime stage
 FROM node:22-alpine
@@ -28,6 +28,9 @@ RUN npm ci --omit=dev -w @device-portal/server
 # Copy the built server and scripts
 COPY --from=builder /app/packages/server/dist ./packages/server/dist
 COPY --from=builder /app/packages/server/scripts ./packages/server/scripts
+
+# Copy the built storybook
+COPY --from=builder /app/packages/react/storybook-static ./packages/react/storybook-static
 
 # Expose the default port
 EXPOSE 8080
