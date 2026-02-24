@@ -25,6 +25,8 @@ type SignalingMessage = JoinRoomMessage | RtcMessage
 
 const app = new Hono()
 
+app.get('/health', (context) => context.text('OK'))
+
 const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app })
 
 const rooms = new Map<string, Set<WebSocket>>()
