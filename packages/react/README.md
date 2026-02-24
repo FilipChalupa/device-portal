@@ -14,6 +14,8 @@ npm install @device-portal/react
 
 It is expected that the package will be used on two different devices. Create for them two separate pages or apps. Let's call them App A and App B. Both apps will be linked by same `room` (e.g. `'my-test-room'`).
 
+> **Note:** The example signaling server `wss://device-portal.filipchalupa.cz` is running on a free instance of render.com, so expect slower startup times if it has been inactive.
+
 ### One-way Data Flow
 
 This is the simplest use case where a `Provider` sends data to one or more `Consumer`s.
