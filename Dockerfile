@@ -3,10 +3,6 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-# Add build argument for signaling server
-ARG WEBSOCKET_SIGNALING_SERVER
-ENV VITE_WEBSOCKET_SIGNALING_SERVER=$WEBSOCKET_SIGNALING_SERVER
-
 # Copy all files for building
 COPY . .
 
