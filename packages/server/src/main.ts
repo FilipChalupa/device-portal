@@ -61,14 +61,23 @@ app.get(
 						console.log(`Peer ${peerId} joined room: ${room}`)
 
 						// Notify other peers in the room that a new peer has joined
+						// AND notify the new peer about existing peers in the room
 						for (const client of roomPeers) {
-							if (
-								client !== webSocket.raw &&
-								client.readyState === 1 /* WebSocket.OPEN */
-							) {
-								client.send(
-									JSON.stringify({ type: 'peer-joined', data: { peerId } }),
-								)
+							if (client.readyState === 1 /* WebSocket.OPEN */) {
+								if (client !== webSocket.raw) {
+									// Notify existing peer about the new peer
+									client.send(
+										JSON.stringify({ type: 'peer-joined', data: { peerId } }),
+									)
+									// Notify the new peer about the existing peer
+									const existingPeerId = webSocketToPeerId.get(client)
+									webSocket.send(
+										JSON.stringify({
+											type: 'peer-joined',
+											data: { peerId: existingPeerId },
+										}),
+									)
+								}
 							}
 						}
 						break
