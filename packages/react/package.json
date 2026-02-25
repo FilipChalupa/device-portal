@@ -49,7 +49,6 @@
 		"@rollup/plugin-commonjs": "^25.0.7",
 		"@rollup/plugin-node-resolve": "^15.2.3",
 		"@rollup/plugin-strip": "^3.0.4",
-		"@storybook-community/storybook-dark-mode": "^7.1.1",
 		"@storybook/addon-docs": "^10.2.10",
 		"@storybook/addon-links": "^10.2.10",
 		"@storybook/addon-onboarding": "^10.2.10",
