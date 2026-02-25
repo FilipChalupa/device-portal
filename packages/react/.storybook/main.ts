@@ -1,6 +1,6 @@
-import { fileURLToPath } from 'node:url'
-import { dirname } from 'node:path'
 import type { StorybookConfig } from '@storybook/react-vite'
+import { dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 const config: StorybookConfig = {
 	stories: ['../src/**/*.mdx', '../src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
@@ -9,6 +9,7 @@ const config: StorybookConfig = {
 		getAbsolutePath('@storybook/addon-links'),
 		getAbsolutePath('@storybook/addon-onboarding'),
 		getAbsolutePath('@storybook/addon-docs'),
+		getAbsolutePath('@storybook-community/storybook-dark-mode'),
 	],
 
 	framework: {

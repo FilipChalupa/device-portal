@@ -5,6 +5,10 @@ const preview: Preview = {
 		options: {
 			storySort: ['Welcome', '*'],
 		},
+		darkMode: {
+			darkClass: 'color-scheme-dark',
+			lightClass: 'color-scheme-light',
+		},
 		actions: { argTypesRegex: '^on[A-Z].*' },
 		controls: {
 			matchers: {
