@@ -17,20 +17,20 @@ Device Portal uses a signaling server to coordinate WebRTC connections. One peer
 The `Initiator` creates a room and waits for responders to join. It automatically initiates a WebRTC connection with each joining responder.
 
 ```typescript
-import { Initiator } from '@device-portal/client';
+import { Initiator } from '@device-portal/client'
 
 const initiator = new Initiator('my-secret-room', {
-  onMessage: (data, peerId) => {
-    console.log(`Received from ${peerId}:`, data);
-  },
-  onPeersChange: (peers) => {
-    console.log('Connected peers:', peers);
-  },
-  maxClients: 5 // Optional: limit number of connections
-});
+	onMessage: (data, peerId) => {
+		console.log(`Received from ${peerId}:`, data)
+	},
+	onPeersChange: (peers) => {
+		console.log('Connected peers:', peers)
+	},
+	maxClients: 5, // Optional: limit number of connections
+})
 
 // Send data to all connected responders
-initiator.send('Hello everyone!');
+initiator.send('Hello everyone!')
 
 // Send data to a specific peer
 // initiator.sendToPeer(somePeerId, 'Hello you!');
@@ -44,16 +44,16 @@ initiator.send('Hello everyone!');
 The `Responder` joins an existing room and waits for an offer from the initiator.
 
 ```typescript
-import { Responder } from '@device-portal/client';
+import { Responder } from '@device-portal/client'
 
 const responder = new Responder('my-secret-room', {
-  onMessage: (data) => {
-    console.log('Received from initiator:', data);
-  }
-});
+	onMessage: (data) => {
+		console.log('Received from initiator:', data)
+	},
+})
 
 // Send data back to the initiator
-responder.send('I received your message!');
+responder.send('I received your message!')
 
 // Cleanup
 // responder.destroy();
