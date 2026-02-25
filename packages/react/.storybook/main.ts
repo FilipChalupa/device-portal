@@ -1,7 +1,7 @@
 import type { StorybookConfig } from '@storybook/react-vite'
 import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { settings } from '../../client/src/settings'
+import { settings } from '../../client/src/settings.ts'
 
 const config: StorybookConfig = {
 	stories: ['../src/**/*.mdx', '../src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
