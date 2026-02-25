@@ -59,7 +59,7 @@ const ServerEntrypoint: FunctionComponent = () => {
 
 const ClientEntrypoint: FunctionComponent = () => {
 	const [room, setRoom] = useState(location.hash.slice(1))
-	const [isStarted, setIsStarted] = useState(false)
+	const [isStarted, setIsStarted] = useState(() => room.length > 0)
 	const [localCount, setLocalCount] = useState(0)
 	const [step, setStep] = useState(1)
 
