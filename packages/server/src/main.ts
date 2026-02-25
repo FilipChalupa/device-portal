@@ -7,7 +7,7 @@ import { cors } from 'hono/cors'
 import { dirname, relative, resolve } from 'path'
 import { fileURLToPath } from 'url'
 import { WebSocket } from 'ws'
-import { settings } from '@device-portal/client'
+import { defaultPort } from '@device-portal/constants'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -151,7 +151,7 @@ if (existsSync(storybookPath)) {
 }
 
 const portString = process.env.PORT
-let port: number = settings.defaultPort
+let port: number = defaultPort
 if (portString) {
 	const parsedPort = parseInt(portString, 10)
 	if (!isNaN(parsedPort)) {
