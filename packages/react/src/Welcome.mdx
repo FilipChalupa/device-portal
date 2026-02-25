@@ -1,4 +1,5 @@
 import { Meta } from '@storybook/addon-docs/blocks'
+import { websocketSignalingServer } from './stories/utilities/websocketSignalingServer'
 
 <Meta title="Welcome" />
 
@@ -12,6 +13,11 @@ Device Portal is a React-based library that simplifies peer-to-peer data sharing
 - **[@device-portal/client](https://www.npmjs.com/package/@device-portal/client)**: Base WebRTC logic for non-React environments.
 - **[@device-portal/server](https://www.npmjs.com/package/@device-portal/server)**: The signaling server for WebRTC negotiation.
 
+
+## Signaling Server
+
+The signaling server used in this demo runs at **{websocketSignalingServer}**.
+
 ## Core Features
 
 - **Easy Setup**: Use `DevicePortalProvider` and `DevicePortalConsumer` to establish connections.
@@ -22,6 +28,6 @@ Device Portal is a React-based library that simplifies peer-to-peer data sharing
 
 Explore the components in the sidebar to see how Device Portal works in different scenarios.
 
+- **Cookie Clicker**: A fun demonstration of real-time state synchronization.
 - **Example Components**: Basic usage of the provider and consumer.
 - **Example Hooks**: Low-level hooks for custom implementations.
-- **Cookie Clicker**: A fun demonstration of real-time state synchronization.

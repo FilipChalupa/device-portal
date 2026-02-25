@@ -19,7 +19,7 @@ const config: StorybookConfig = {
 		const { mergeConfig } = await import('vite')
 		return mergeConfig(config, {
 			define: {
-				'import.meta.env.VITE_PORT': JSON.stringify(process.env.PORT),
+				'import.meta.env.VITE_PORT': JSON.stringify(process.env.PORT || '8080'),
 			},
 			resolve: {
 				alias: {

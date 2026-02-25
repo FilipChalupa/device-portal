@@ -7,7 +7,7 @@ import { getLocalStorageRoom } from './stories/utilities/getLocalStorageRoom'
 import { websocketSignalingServer } from './stories/utilities/websocketSignalingServer'
 
 const meta: Meta<FunctionComponent> = {
-	title: 'Counter/hooks',
+	title: 'Counter/Hooks',
 } satisfies Meta<FunctionComponent>
 
 export default meta
