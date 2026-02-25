@@ -14,8 +14,7 @@
 		"types": ["vite/client"],
 		"baseUrl": ".",
 		"paths": {
-			"@device-portal/client": ["../client/src/index.ts"],
-			"@device-portal/constants": ["../constants/index.ts"]
+			"@device-portal/client": ["../client/src/index.ts"]
 		}
 	},
 	"include": ["src/**/*"],

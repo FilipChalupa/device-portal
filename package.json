@@ -6,8 +6,10 @@
 	],
 	"scripts": {
 		"start": "npm run start:server",
-		"build": "npm run build:client && npm run build:react && npm run build:storybook && npm run build:server",
-		"dev": "concurrently -n \"client,server,react\" -c \"blue,cyan,magenta\" \"npm run dev:client\" \"npm run dev:server\" \"npm run dev:storybook\"",
+		"build": "npm run build:constants && npm run build:client && npm run build:react && npm run build:storybook && npm run build:server",
+		"build:constants": "npm run -w @device-portal/constants build",
+		"dev:constants": "npm run -w @device-portal/constants dev",
+		"dev": "concurrently -n \"constants,client,server,react\" -c \"blue,cyan,magenta\" \"npm run dev:client\" \"npm run dev:server\" \"npm run dev:storybook\"",
 		"dev:client": "npm run -w @device-portal/client dev",
 		"build:client": "npm run -w @device-portal/client build",
 		"test:client": "npm run -w @device-portal/client test",

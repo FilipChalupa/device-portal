@@ -8,9 +8,7 @@
 		"skipLibCheck": true,
 		"forceConsistentCasingInFileNames": true,
 		"outDir": "dist",
-		"baseUrl": ".",
-		"paths": {
-			"@device-portal/constants": ["../constants/index.ts"]
-		}
+		"rootDir": "src",
+		"baseUrl": "."
 	}
 }
