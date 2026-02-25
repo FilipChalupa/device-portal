@@ -3,6 +3,7 @@ import { FunctionComponent, Suspense, useRef, useState } from 'react'
 import { useDevicePortalConsumer } from './consumer/useDevicePortalConsumer'
 import './Example.stories.css'
 import { useDevicePortalProvider } from './provider/useDevicePortalProvider'
+import './stories/global.css'
 import { getLocalStorageRoom } from './stories/utilities/getLocalStorageRoom'
 import { websocketSignalingServer } from './stories/utilities/websocketSignalingServer'
 

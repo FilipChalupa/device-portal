@@ -1,0 +1,10 @@
+:root:has(body.color-scheme-dark) {
+	color-scheme: dark;
+	color: #ffffff;
+	background-color: #000000;
+}
+:root:has(body.color-scheme-light) {
+	color-scheme: light;
+	color: #000000;
+	background-color: #ffffff;
+}
