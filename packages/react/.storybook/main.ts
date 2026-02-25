@@ -1,6 +1,7 @@
 import type { StorybookConfig } from '@storybook/react-vite'
 import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { settings } from '../../client/src/settings'
 
 const config: StorybookConfig = {
 	stories: ['../src/**/*.mdx', '../src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
@@ -19,7 +20,7 @@ const config: StorybookConfig = {
 		const { mergeConfig } = await import('vite')
 		return mergeConfig(config, {
 			define: {
-				'import.meta.env.VITE_PORT': JSON.stringify(process.env.PORT || '8080'),
+				'import.meta.env.VITE_PORT': JSON.stringify(process.env.PORT || settings.defaultPort.toString()),
 			},
 			resolve: {
 				alias: {

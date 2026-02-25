@@ -2,6 +2,7 @@ export const settings = {
 	channel: {
 		label: 'data',
 	},
+	defaultPort: 8080,
 	defaultWebsocketSignalingServer: 'wss://device-portal.filipchalupa.cz',
 	iceServers: [
 		{
