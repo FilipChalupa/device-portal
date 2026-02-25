@@ -1,6 +1,6 @@
-import { fileURLToPath } from 'node:url'
-import { dirname } from 'node:path'
 import type { StorybookConfig } from '@storybook/react-vite'
+import { dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 const config: StorybookConfig = {
 	stories: ['../src/**/*.mdx', '../src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
@@ -18,6 +18,9 @@ const config: StorybookConfig = {
 	async viteFinal(config) {
 		const { mergeConfig } = await import('vite')
 		return mergeConfig(config, {
+			define: {
+				'import.meta.env.VITE_PORT': JSON.stringify(process.env.PORT),
+			},
 			resolve: {
 				alias: {
 					'@device-portal/client': fileURLToPath(
