@@ -27,7 +27,7 @@ jobs:
 
       - name: Test React
         run: |
-          npm run build
+          npm run test:react
 
       - name: Test Backend
         run: npm run test:server

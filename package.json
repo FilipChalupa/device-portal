@@ -12,6 +12,7 @@
 		"build:client": "npm run -w @device-portal/client build",
 		"dev:package": "npm run -w @device-portal/react dev:package",
 		"build:react": "npm run -w @device-portal/react build:package",
+		"test:react": "npm run -w @device-portal/react test:package",
 		"dev:storybook": "npm run -w @device-portal/react dev:storybook",
 		"build:storybook": "npm run -w @device-portal/react build:storybook",
 		"start:server": "npm run -w @device-portal/server start",
