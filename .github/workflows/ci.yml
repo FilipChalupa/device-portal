@@ -25,6 +25,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Test client
+        run: npm run test:client
+
       - name: Test React
         run: |
           npm run test:react
