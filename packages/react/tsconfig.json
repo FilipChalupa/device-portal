@@ -18,11 +18,5 @@
 		}
 	},
 	"include": ["src/**/*"],
-	"exclude": [
-		"node_modules",
-		"dist",
-		"**/*.stories.tsx",
-		"**/*.stories.css",
-		"**/stories/**/*"
-	]
+	"exclude": ["node_modules", "dist"]
 }

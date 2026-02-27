@@ -4,5 +4,12 @@
 		"rootDir": "src",
 		"baseUrl": ".",
 		"paths": {}
-	}
+	},
+	"exclude": [
+		"node_modules",
+		"dist",
+		"**/*.stories.tsx",
+		"**/*.stories.css",
+		"**/stories/**/*"
+	]
 }
