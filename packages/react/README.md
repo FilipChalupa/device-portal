@@ -153,6 +153,87 @@ const ConsumerComponent = () => {
 }
 ```
 
+## Data Serialization
+
+By default, all values and messages are treated as strings. You can provide custom serializers and deserializers to work with other data types (like objects, numbers, etc.).
+
+### Example with JSON
+
+#### Provider
+
+```jsx
+const { peers, initiator } = useDevicePortalProvider('my-room', {
+	value: { count: 42, label: 'Initial' },
+	serializeValue: (value) => JSON.stringify(value),
+	deserializeMessage: (message) => JSON.parse(message),
+	onMessageFromConsumer: (message) => {
+		console.log('Received object:', message.text)
+	},
+})
+```
+
+#### Consumer
+
+```jsx
+const { value, sendMessageToProvider } = useDevicePortalConsumer('my-room', {
+	deserializeValue: (value) => JSON.parse(value),
+	serializeMessage: (message) => JSON.stringify(message),
+})
+
+// value is now an object: { count: 42, label: 'Initial' }
+// sendMessageToProvider({ text: 'Hello!' }) will send a JSON string
+```
+
+## Components
+
+In addition to hooks, you can use components.
+
+### DevicePortalProvider
+
+Useful for rendering something for each connected peer.
+
+```jsx
+<DevicePortalProvider
+	room="my-room"
+	value={someState}
+	serializeValue={JSON.stringify}
+>
+	{(Peer, peerId) => (
+		<div key={peerId}>
+			<p>Peer {peerId} is connected!</p>
+			{/* Peer component is a headless component that manages connection to this specific peer */}
+			<Peer
+				value={individualValueForThisPeer}
+				onMessageFromConsumer={(message) => console.log(message)}
+			/>
+		</div>
+	)}
+</DevicePortalProvider>
+```
+
+### DevicePortalConsumer
+
+A component version of `useDevicePortalConsumer`.
+
+```jsx
+<Suspense fallback="Connecting...">
+	<DevicePortalConsumer
+		room="my-room"
+		deserializeValue={JSON.parse}
+		serializeMessage={JSON.stringify}
+	>
+		{({ value, sendMessageToProvider }) => (
+			<div>
+				<p>Value: {value.count}</p>
+				<button onClick={() => sendMessageToProvider({ type: 'PING' })}>
+					Ping
+				</button>
+			</div>
+		)}
+	</DevicePortalConsumer>
+</Suspense>
+```
+
 ## Resilience
 
 The WebRTC connection is designed to be resilient. If the connection to the signaling server is temporarily lost, any established peer-to-peer connections will remain active. The client will attempt to reconnect to the signaling server in the background to handle any future connection negotiations.

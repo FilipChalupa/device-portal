@@ -1,16 +1,23 @@
-import { type FunctionComponent, type ReactNode } from 'react'
-import { useDevicePortalConsumer } from './useDevicePortalConsumer'
+import { type ReactNode } from 'react'
+import {
+	useDevicePortalConsumer,
+	type DevicePortalConsumerOptions,
+} from './useDevicePortalConsumer'
 
-export const DevicePortalConsumer: FunctionComponent<{
+export const DevicePortalConsumer = <Value = string, Message = string>({
+	room,
+	children,
+	...options
+}: {
 	room: string
-	websocketSignalingServer?: string
 	children: (data: {
-		value: string
-		sendMessageToProvider: (message: string) => void
+		value: Value
+		sendMessageToProvider: (message: Message) => void
 	}) => ReactNode
-}> = ({ room, websocketSignalingServer, children }) => {
-	const { value, sendMessageToProvider } = useDevicePortalConsumer(room, {
-		websocketSignalingServer,
-	})
+} & DevicePortalConsumerOptions<Value, Message>) => {
+	const { value, sendMessageToProvider } = useDevicePortalConsumer<
+		Value,
+		Message
+	>(room, options)
 	return <>{children({ value, sendMessageToProvider })}</>
 }

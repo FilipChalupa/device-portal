@@ -1,6 +1,15 @@
 import { useMemo, useState, type Dispatch, type SetStateAction } from 'react'
 import { Responder } from '@device-portal/client'
 
+export type Serializer<T> = (value: T) => string
+export type Deserializer<T> = (value: string) => T
+
+export type DevicePortalConsumerOptions<Value = string, Message = string> = {
+	websocketSignalingServer?: string
+	serializeMessage?: Serializer<Message>
+	deserializeValue?: Deserializer<Value>
+}
+
 type State = {
 	room: string
 	value: string
@@ -19,12 +28,13 @@ const responders: {
 	}
 } = {}
 
-export const useDevicePortalConsumer = (
+export const useDevicePortalConsumer = <Value = string, Message = string>(
 	room: string,
-	options: {
-		websocketSignalingServer?: string
-	} = {},
-): Pick<State, 'value' | 'sendMessageToProvider'> => {
+	options: DevicePortalConsumerOptions<Value, Message> = {},
+): {
+	value: Value
+	sendMessageToProvider: (message: Message) => void
+} => {
 	const [valueState, setValueState] = useState<State | null>(null)
 
 	const currentConsumer = useMemo(() => {
@@ -75,18 +85,32 @@ export const useDevicePortalConsumer = (
 		return responders[room].consumer
 	}, [room, options.websocketSignalingServer, setValueState])
 
-	// Cleanup on unmount (though this hook is currently designed for global persistence)
-	// useEffect(() => () => { responders[room]?.setValueStates.delete(setValueState) }, [room, setValueState]);
+	const deserializeValue = useMemo(
+		() =>
+			options.deserializeValue ?? ((value: string) => value as unknown as Value),
+		[options.deserializeValue],
+	)
+	const serializeMessage = useMemo(
+		() =>
+			options.serializeMessage ??
+			((message: Message) => message as unknown as string),
+		[options.serializeMessage],
+	)
 
 	if (valueState && valueState.room === room) {
 		return {
-			value: valueState.value,
-			sendMessageToProvider: valueState.sendMessageToProvider,
+			value: deserializeValue(valueState.value),
+			sendMessageToProvider: (message: Message) =>
+				valueState.sendMessageToProvider(serializeMessage(message)),
 		}
 	}
 
 	if (currentConsumer) {
-		return currentConsumer
+		return {
+			value: deserializeValue(currentConsumer.value),
+			sendMessageToProvider: (message: Message) =>
+				currentConsumer.sendMessageToProvider(serializeMessage(message)),
+		}
 	}
 
 	throw responders[room].firstValuePromise
