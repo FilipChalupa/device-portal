@@ -44,13 +44,22 @@ const ProviderComponent: FunctionComponent = () => {
 			)
 			switch (action.type) {
 				case 'increment':
-					setState((s) => ({ ...s, count: s.count + 1 }))
+					setState((previousState) => ({
+						...previousState,
+						count: previousState.count + 1,
+					}))
 					break
 				case 'decrement':
-					setState((s) => ({ ...s, count: s.count - 1 }))
+					setState((previousState) => ({
+						...previousState,
+						count: previousState.count - 1,
+					}))
 					break
 				case 'setColor':
-					setState((s) => ({ ...s, color: action.color }))
+					setState((previousState) => ({
+						...previousState,
+						color: action.color,
+					}))
 					break
 			}
 		},
@@ -78,7 +87,10 @@ const ProviderComponent: FunctionComponent = () => {
 				<button
 					type="button"
 					onClick={() => {
-						setState((s) => ({ ...s, count: s.count + 1 }))
+						setState((previousState) => ({
+							...previousState,
+							count: previousState.count + 1,
+						}))
 					}}
 				>
 					Local Increment

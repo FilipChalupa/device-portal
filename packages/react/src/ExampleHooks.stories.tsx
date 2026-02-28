@@ -51,7 +51,7 @@ const ProviderComponent: FunctionComponent = () => {
 				<button
 					type="button"
 					onClick={() => {
-						setState((previousValue) => previousValue - 1)
+						setState((previousState) => previousState - 1)
 					}}
 				>
 					decrease
@@ -59,7 +59,7 @@ const ProviderComponent: FunctionComponent = () => {
 				<button
 					type="button"
 					onClick={() => {
-						setState((previousValue) => previousValue + 1)
+						setState((previousState) => previousState + 1)
 					}}
 				>
 					increase
