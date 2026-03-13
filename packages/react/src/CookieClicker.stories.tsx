@@ -3,6 +3,7 @@ import { FunctionComponent, Suspense, useState } from 'react'
 import { DevicePortalConsumer } from './consumer/DevicePortalConsumer'
 import './CookieClicker.stories.css'
 import { DevicePortalProvider } from './provider/DevicePortalProvider'
+import { ShareLink } from './stories/ShareLink'
 import { websocketSignalingServer } from './stories/utilities/websocketSignalingServer'
 
 const meta: Meta<FunctionComponent> = {
@@ -22,26 +23,11 @@ const ServerEntrypoint: FunctionComponent = () => {
 		<div>
 			<h1>Cookie Clicker Server</h1>
 			<p>
-				Room name: <input readOnly value={room} />{' '}
-				{navigator.share && (
-					<button
-						type="button"
-						disabled={!navigator.share}
-						onClick={() => {
-							const shareUrl = new URL(
-								window.location.href.replace('-server', '-client'),
-							)
-							shareUrl.hash = room
-							navigator.share({
-								title: 'Join Cookie Clicker',
-								text: `Join my Cookie Clicker room: ${room}`,
-								url: shareUrl.toString(),
-							})
-						}}
-					>
-						Share Client Link
-					</button>
-				)}
+				<ShareLink
+					room={room}
+					title="Join Cookie Clicker"
+					text={`Join my Cookie Clicker room: ${room}`}
+				/>
 			</p>
 			Total click: <output>{counter}</output>
 			<DevicePortalProvider

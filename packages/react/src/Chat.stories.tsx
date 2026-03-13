@@ -9,6 +9,7 @@ import {
 import './Chat.stories.css'
 import { DevicePortalConsumer } from './consumer/DevicePortalConsumer'
 import { DevicePortalProvider } from './provider/DevicePortalProvider'
+import { ShareLink } from './stories/ShareLink'
 import { websocketSignalingServer } from './stories/utilities/websocketSignalingServer'
 
 type ChatMessage = {
@@ -71,44 +72,15 @@ const ServerEntrypoint: FunctionComponent = () => {
 		}
 	}
 
-	const shareUrl = new URL(window.location.href.replace('-server', '-client'))
-	shareUrl.hash = room
-
 	return (
 		<div className="chat-wrapper">
 			<h1>Chat</h1>
 			<div>
-				Room: <input readOnly value={room} />{' '}
-				{navigator.share ? (
-					<button
-						type="button"
-						onClick={() => {
-							navigator.share({
-								title: 'Join Chat',
-								text: `Join my Chat room: ${room}`,
-								url: shareUrl.toString(),
-							})
-						}}
-					>
-						Share Client Link
-					</button>
-				) : (
-					<button
-						type="button"
-						onClick={() => {
-							navigator.clipboard.writeText(shareUrl.toString())
-							alert('Copied to clipboard!')
-						}}
-					>
-						Copy Client Link
-					</button>
-				)}{' '}
-				<button
-					type="button"
-					onClick={() => window.open(shareUrl.toString(), '_blank')}
-				>
-					Open Consumer
-				</button>
+				<ShareLink
+					room={room}
+					title="Join Chat"
+					text={`Join my Chat room: ${room}`}
+				/>
 			</div>
 
 			<ChatHistory messages={messages} />
