@@ -45,7 +45,7 @@ export const ShareLink: FunctionComponent<ShareLinkProps> = ({
 				type="button"
 				onClick={() => window.open(shareUrl.toString(), '_blank')}
 			>
-				Open Consumer
+				Open Client
 			</button>
 		</>
 	)
