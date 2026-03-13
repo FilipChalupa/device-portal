@@ -167,15 +167,15 @@ For privacy or offline-only applications where you know all peers are on the sam
 
 ```jsx
 useDevicePortalProvider('my-room', {
-  value: 'secret-data',
-  localDeviceOnly: true
-});
+	value: 'secret-data',
+	localDeviceOnly: true,
+})
 
 // ...
 
 useDevicePortalConsumer('my-room', {
-  localDeviceOnly: true
-});
+	localDeviceOnly: true,
+})
 ```
 
 ## Development

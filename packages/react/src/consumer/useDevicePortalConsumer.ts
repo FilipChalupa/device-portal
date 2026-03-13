@@ -75,7 +75,12 @@ export const useDevicePortalConsumer = (
 		responders[room].setValueStates.add(setValueState)
 
 		return responders[room].consumer
-	}, [room, options.websocketSignalingServer, options.localDeviceOnly, setValueState])
+	}, [
+		room,
+		options.websocketSignalingServer,
+		options.localDeviceOnly,
+		setValueState,
+	])
 
 	// Cleanup on unmount (though this hook is currently designed for global persistence)
 	// useEffect(() => () => { responders[room]?.setValueStates.delete(setValueState) }, [room, setValueState]);

@@ -79,10 +79,10 @@ If you want to ensure no external network requests are made for signaling, you c
 
 ```typescript
 const initiator = new Initiator('my-room', {
-	localDeviceOnly: true
-});
+	localDeviceOnly: true,
+})
 
 const responder = new Responder('my-room', {
-	localDeviceOnly: true
-});
+	localDeviceOnly: true,
+})
 ```
