@@ -63,6 +63,26 @@ responder.send('I received your message!')
 
 - Core WebRTC abstraction (`Peer`, `Initiator`, `Responder`)
 - Signaling server client implementation
+- **Local shortcut**: Uses `BroadcastChannel` for instant signaling between tabs in the same browser, reducing network dependency.
+- **Local only mode**: Support for strictly local signaling without any external signaling server.
 - Peer ID branding and utilities
 - Automatic reconnection logic
 - Support for multiple consumers per producer
+
+## Local Device Shortcut
+
+When both the `Initiator` and `Responder` are running in the same browser (different tabs or same tab), `@device-portal/client` automatically utilizes `BroadcastChannel` for signaling. This provides a faster connection and works even if the signaling server is unreachable.
+
+### Local Only Mode
+
+If you want to ensure no external network requests are made for signaling, you can use the `localDeviceOnly` option. This is useful for privacy or offline-only applications where all peers are guaranteed to be in the same browser.
+
+```typescript
+const initiator = new Initiator('my-room', {
+	localDeviceOnly: true
+});
+
+const responder = new Responder('my-room', {
+	localDeviceOnly: true
+});
+```

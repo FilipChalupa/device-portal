@@ -157,6 +157,27 @@ const ConsumerComponent = () => {
 
 The WebRTC connection is designed to be resilient. If the connection to the signaling server is temporarily lost, any established peer-to-peer connections will remain active. The client will attempt to reconnect to the signaling server in the background to handle any future connection negotiations.
 
+### Local Signaling Shortcut
+
+When peers are in the same browser (different tabs or same tab), the library automatically uses `BroadcastChannel` for signaling. This results in a near-instant connection and reduces reliance on the external signaling server.
+
+### Local Only Mode
+
+For privacy or offline-only applications where you know all peers are on the same local device/browser, you can disable external signaling entirely by passing `localDeviceOnly: true`:
+
+```jsx
+useDevicePortalProvider('my-room', {
+  value: 'secret-data',
+  localDeviceOnly: true
+});
+
+// ...
+
+useDevicePortalConsumer('my-room', {
+  localDeviceOnly: true
+});
+```
+
 ## Development
 
 Run
