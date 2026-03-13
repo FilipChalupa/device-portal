@@ -1,5 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { FunctionComponent, Suspense, useCallback, useState } from 'react'
+import {
+	FunctionComponent,
+	Suspense,
+	useCallback,
+	useState,
+	type SubmitEvent,
+} from 'react'
 import './Chat.stories.css'
 import { DevicePortalConsumer } from './consumer/DevicePortalConsumer'
 import { DevicePortalProvider } from './provider/DevicePortalProvider'
@@ -18,11 +24,11 @@ const ChatHistory: FunctionComponent<{ messages: ChatMessage[] }> = ({
 	return (
 		<div className="chat-messages">
 			{messages.length === 0 && <p>No messages yet.</p>}
-			{messages.map((msg) => (
-				<div key={msg.id} className={`chat-message ${msg.sender}`}>
-					<small>{new Date(msg.timestamp).toLocaleTimeString()}</small>
+			{messages.map((message) => (
+				<div key={message.id} className={`chat-message ${message.sender}`}>
+					<small>{new Date(message.timestamp).toLocaleTimeString()}</small>
 					<br />
-					<strong>{msg.sender}:</strong> {msg.text}
+					<strong>{message.sender}:</strong> {message.text}
 				</div>
 			))}
 		</div>
@@ -43,22 +49,22 @@ const ServerEntrypoint: FunctionComponent = () => {
 
 	const addMessage = useCallback(
 		(text: string, sender: 'provider' | 'consumer') => {
-			setMessages((prev) => {
+			setMessages((previous) => {
 				const newMessage: ChatMessage = {
 					id: Math.random().toString(36).substring(2, 9),
 					text,
 					sender,
 					timestamp: Date.now(),
 				}
-				const nextMessages = [...prev, newMessage]
+				const nextMessages = [...previous, newMessage]
 				return nextMessages.slice(-5)
 			})
 		},
 		[],
 	)
 
-	const handleSend = (e: React.FormEvent) => {
-		e.preventDefault()
+	const handleSend = (event: SubmitEvent) => {
+		event.preventDefault()
 		if (inputText.trim()) {
 			addMessage(inputText, 'provider')
 			setInputText('')
@@ -70,7 +76,7 @@ const ServerEntrypoint: FunctionComponent = () => {
 
 	return (
 		<div className="chat-wrapper">
-			<h1>Chat Provider</h1>
+			<h1>Chat</h1>
 			<div>
 				Room: <input readOnly value={room} />{' '}
 				{navigator.share ? (
@@ -96,7 +102,13 @@ const ServerEntrypoint: FunctionComponent = () => {
 					>
 						Copy Client Link
 					</button>
-				)}
+				)}{' '}
+				<button
+					type="button"
+					onClick={() => window.open(shareUrl.toString(), '_blank')}
+				>
+					Open Consumer
+				</button>
 			</div>
 
 			<ChatHistory messages={messages} />
@@ -106,7 +118,7 @@ const ServerEntrypoint: FunctionComponent = () => {
 					type="text"
 					value={inputText}
 					onChange={(e) => setInputText(e.target.value)}
-					placeholder="Message as provider..."
+					placeholder="Message as provider…"
 				/>
 				<button type="submit">Send</button>
 			</form>
@@ -121,26 +133,9 @@ const ServerEntrypoint: FunctionComponent = () => {
 				maxClients={10}
 			/>
 
-			<div className="remote-consumers">
-				<h3>Remote Consumers</h3>
-				<div className="remote-consumers-grid">
-					{Array.from({ length: 9 }).map((_, i) => (
-						<button
-							key={i}
-							type="button"
-							onClick={() => window.open(shareUrl.toString(), '_blank')}
-						>
-							Open Consumer {i + 1}
-						</button>
-					))}
-				</div>
-			</div>
-
-			<hr />
-
 			<div className="local-consumer">
 				<h3>Local Consumer (Same Page)</h3>
-				<Suspense fallback={<p>Connecting local consumer...</p>}>
+				<Suspense fallback={<p>Connecting local consumer…</p>}>
 					<ClientView room={room} />
 				</Suspense>
 			</div>
@@ -159,8 +154,8 @@ const ClientView: FunctionComponent<{ room: string }> = ({ room }) => {
 			{({ value, sendMessageToProvider }) => {
 				const messages: ChatMessage[] = value ? JSON.parse(value) : []
 
-				const handleSend = (e: React.FormEvent) => {
-					e.preventDefault()
+				const handleSend = (event: SubmitEvent) => {
+					event.preventDefault()
 					if (inputText.trim()) {
 						sendMessageToProvider(inputText)
 						setInputText('')
@@ -175,7 +170,7 @@ const ClientView: FunctionComponent<{ room: string }> = ({ room }) => {
 								type="text"
 								value={inputText}
 								onChange={(e) => setInputText(e.target.value)}
-								placeholder="Message as consumer..."
+								placeholder="Message as consumer…"
 							/>
 							<button type="submit">Send</button>
 						</form>
