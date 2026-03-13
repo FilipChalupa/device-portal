@@ -8,6 +8,7 @@ export type DevicePortalProviderOptions = {
 	websocketSignalingServer?: string
 	onMessageFromConsumer?: (value: string, peerId: PeerId) => void
 	maxClients?: number
+	localDeviceOnly?: boolean
 }
 
 export const useDevicePortalProvider = (
@@ -29,6 +30,7 @@ export const useDevicePortalProvider = (
 			},
 			websocketSignalingServer: options.websocketSignalingServer,
 			maxClients: options.maxClients,
+			localDeviceOnly: options.localDeviceOnly,
 		})
 		setInitiator(initiator)
 		setPeers(initiator.peers)
@@ -38,7 +40,12 @@ export const useDevicePortalProvider = (
 			setInitiator(null)
 			setPeers([])
 		}
-	}, [room, options.websocketSignalingServer, options.maxClients])
+	}, [
+		room,
+		options.websocketSignalingServer,
+		options.maxClients,
+		options.localDeviceOnly,
+	])
 
 	useEffect(() => {
 		if (options.value === undefined) {

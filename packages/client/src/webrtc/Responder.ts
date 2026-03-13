@@ -5,6 +5,19 @@ export class Responder extends Peer {
 	protected role = 'responder' as const
 	private reconnectTimeout: ReturnType<typeof setTimeout> | null = null
 
+	constructor(
+		room: string,
+		options: {
+			onMessage?: (value: string, peerId: PeerId) => void
+			sendLastValueOnConnectAndReconnect?: boolean
+			websocketSignalingServer?: string
+			iceServers?: Array<RTCIceServer>
+			localDeviceOnly?: boolean
+		} = {},
+	) {
+		super(room, options)
+	}
+
 	protected onConnected(): void {
 		// Responder waits for an offer
 		this.startReconnectionTimer()

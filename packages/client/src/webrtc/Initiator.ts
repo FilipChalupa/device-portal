@@ -29,6 +29,7 @@ export class Initiator extends Peer {
 			websocketSignalingServer?: string
 			iceServers?: Array<RTCIceServer>
 			maxClients?: number
+			localDeviceOnly?: boolean
 		} = {},
 	) {
 		super(room, options)
@@ -57,6 +58,18 @@ export class Initiator extends Peer {
 
 	protected async handlePeerJoined(peerId: PeerId) {
 		console.log(`[Initiator] Peer ${peerId} joined`)
+		if (this.connections.has(peerId)) {
+			const client = this.connections.get(peerId)!
+			if (
+				client.connection.connectionState === 'connected' ||
+				client.connection.connectionState === 'connecting'
+			) {
+				console.log(
+					`[Initiator] Connection to ${peerId} already exists or is connecting, skipping.`,
+				)
+				return
+			}
+		}
 		if (this.connections.size >= this.maxClients) {
 			console.log(
 				`[Initiator] Max clients reached, adding ${peerId} to waiting list`,

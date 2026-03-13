@@ -14,7 +14,9 @@ export abstract class Peer {
 	protected readonly sendLastValueOnConnectAndReconnect: boolean
 	protected readonly websocketSignalingServer: string
 	protected readonly iceServers: Array<RTCIceServer>
+	protected readonly localDeviceOnly: boolean
 	protected socket: WebSocket | null = null
+	protected broadcastChannel: BroadcastChannel | null = null
 	protected candidatesQueue: RTCIceCandidateInit[] = []
 	protected peerId: PeerId | null = null
 
@@ -25,6 +27,7 @@ export abstract class Peer {
 			onMessage?: (value: string, peerId: PeerId) => void
 			sendLastValueOnConnectAndReconnect?: boolean
 			iceServers?: Array<RTCIceServer>
+			localDeviceOnly?: boolean
 		} = {},
 	) {
 		this.onMessage = options.onMessage
@@ -35,12 +38,32 @@ export abstract class Peer {
 			settings.defaultWebsocketSignalingServer
 		).replace(/\/+$/, '')}/v0/`
 		this.iceServers = options.iceServers ?? settings.iceServers
+		this.localDeviceOnly = options.localDeviceOnly ?? false
 		this.run()
 	}
 
 	protected async run() {
 		try {
-			await this.connect()
+			if ('window' in globalThis) {
+				this.broadcastChannel = new BroadcastChannel(
+					`device-portal-room-${this.room}`,
+				)
+				this.broadcastChannel.onmessage = (event) => {
+					this.handleSignalingMessage(event.data)
+				}
+			}
+
+			if (this.localDeviceOnly) {
+				this.peerId = this.generatePeerId()
+				this.initializeConnectionAndChannel()
+				this.onConnected()
+				this.sendLocalDiscovery()
+			} else {
+				await this.connect()
+				if (this.peerId) {
+					this.sendLocalDiscovery()
+				}
+			}
 		} catch (error) {
 			queueMicrotask(() => {
 				throw error
@@ -68,32 +91,7 @@ export abstract class Peer {
 
 			this.socket.onmessage = (event) => {
 				const message = JSON.parse(event.data)
-				console.log(`[Peer] Received signaling message: ${message.type}`)
-				switch (message.type) {
-					case 'identity':
-						this.peerId = message.data.peerId
-						console.log(`[Peer] My peer ID is: ${this.peerId}`)
-						break
-					case 'peer-joined':
-						if (message.data?.peerId) {
-							this.handlePeerJoined(message.data.peerId)
-						}
-						break
-					case 'peer-left':
-						if (message.data?.peerId) {
-							this.handlePeerLeft(message.data.peerId)
-						}
-						break
-					case 'offer':
-						this.handleOffer(message.data, message.from)
-						break
-					case 'answer':
-						this.handleAnswer(message.data, message.from)
-						break
-					case 'ice-candidate':
-						this.handleIceCandidate(message.data, message.from)
-						break
-				}
+				this.handleSignalingMessage(message)
 			}
 
 			this.socket.onclose = async () => {
@@ -111,6 +109,60 @@ export abstract class Peer {
 				reject(error)
 			}
 		})
+	}
+
+	protected handleSignalingMessage(message: any) {
+		console.log(`[Peer] Received signaling message: ${message.type}`)
+		switch (message.type) {
+			case 'identity':
+				this.peerId = message.data.peerId
+				console.log(`[Peer] My peer ID is: ${this.peerId}`)
+				this.sendLocalDiscovery()
+				break
+			case 'peer-joined':
+			case 'local-discovery':
+				if (message.data?.peerId && message.data.peerId !== this.peerId) {
+					this.handlePeerJoined(message.data.peerId)
+					if (message.type === 'local-discovery' && !message.data.to) {
+						// Respond to discovery if it wasn't directed specifically to us
+						this.sendLocalDiscovery(message.data.peerId)
+					}
+				}
+				break
+			case 'peer-left':
+				if (message.data?.peerId) {
+					this.handlePeerLeft(message.data.peerId)
+				}
+				break
+			case 'offer':
+				if (!message.to || message.to === this.peerId) {
+					this.handleOffer(message.data, message.from)
+				}
+				break
+			case 'answer':
+				if (!message.to || message.to === this.peerId) {
+					this.handleAnswer(message.data, message.from)
+				}
+				break
+			case 'ice-candidate':
+				if (!message.to || message.to === this.peerId) {
+					this.handleIceCandidate(message.data, message.from)
+				}
+				break
+		}
+	}
+
+	protected generatePeerId(): PeerId {
+		if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+			return crypto.randomUUID() as PeerId
+		}
+		return Math.random().toString(36).substring(2, 15) as PeerId
+	}
+
+	protected sendLocalDiscovery(to?: PeerId) {
+		if (this.peerId) {
+			this.sendMessage('local-discovery', { peerId: this.peerId, to }, to)
+		}
 	}
 
 	protected abstract handleOffer(
@@ -178,6 +230,10 @@ export abstract class Peer {
 			}
 			this.socket = null
 		}
+		if (this.broadcastChannel) {
+			this.broadcastChannel.close()
+			this.broadcastChannel = null
+		}
 	}
 
 	public destroy() {
@@ -186,13 +242,15 @@ export abstract class Peer {
 	}
 
 	protected sendMessage(type: string, data: any, to?: PeerId) {
+		const message = { type, room: this.room, data, to, from: this.peerId }
 		if (this.socket?.readyState === WebSocket.OPEN) {
 			console.log(
 				`[Peer] Sending signaling message: ${type}${to ? ` to ${to}` : ''}`,
 			)
-			this.socket.send(JSON.stringify({ type, room: this.room, data, to }))
-		} else {
-			console.warn(`[Peer] Cannot send message ${type}, WebSocket not open`)
+			this.socket.send(JSON.stringify(message))
+		}
+		if (this.broadcastChannel) {
+			this.broadcastChannel.postMessage(message)
 		}
 	}
 
