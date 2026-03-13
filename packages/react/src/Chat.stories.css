@@ -6,6 +6,7 @@
 	border: 1px solid #ccc;
 	border-radius: 4px;
 	max-width: 600px;
+	font-family: sans-serif;
 }
 
 .chat-messages {
