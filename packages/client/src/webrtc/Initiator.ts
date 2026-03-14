@@ -13,6 +13,7 @@ export class Initiator extends Peer {
 	protected role = 'initiator' as const
 	protected connections = new Map<PeerId, ClientConnection>()
 	protected waitingPeers = new Set<PeerId>()
+	protected pendingPeers = new Set<PeerId>()
 	protected readonly maxClients: number
 	protected peerListeners = new Map<PeerId, Set<(value: string) => void>>()
 	protected onPeersChange: ((peers: PeerId[]) => void) | undefined
@@ -58,6 +59,12 @@ export class Initiator extends Peer {
 
 	protected async handlePeerJoined(peerId: PeerId) {
 		console.log(`[Initiator] Peer ${peerId} joined`)
+		if (this.pendingPeers.has(peerId)) {
+			console.log(
+				`[Initiator] Already connecting to ${peerId} (pending), skipping.`,
+			)
+			return
+		}
 		if (this.connections.has(peerId)) {
 			const client = this.connections.get(peerId)!
 			if (
@@ -77,8 +84,13 @@ export class Initiator extends Peer {
 			this.waitingPeers.add(peerId)
 			return
 		}
-		await this.createAndSendOffer(peerId)
-		this.onPeersChange?.(this.peers)
+		this.pendingPeers.add(peerId)
+		try {
+			await this.createAndSendOffer(peerId)
+			this.onPeersChange?.(this.peers)
+		} finally {
+			this.pendingPeers.delete(peerId)
+		}
 	}
 
 	protected handlePeerLeft(peerId: PeerId) {
@@ -104,12 +116,20 @@ export class Initiator extends Peer {
 
 		const nextPeerId = this.waitingPeers.values().next().value
 		if (nextPeerId) {
+			if (this.pendingPeers.has(nextPeerId)) {
+				return
+			}
 			console.log(
 				`[Initiator] Slot available, connecting waiting peer: ${nextPeerId}`,
 			)
 			this.waitingPeers.delete(nextPeerId)
-			await this.createAndSendOffer(nextPeerId)
-			this.onPeersChange?.(this.peers)
+			this.pendingPeers.add(nextPeerId)
+			try {
+				await this.createAndSendOffer(nextPeerId)
+				this.onPeersChange?.(this.peers)
+			} finally {
+				this.pendingPeers.delete(nextPeerId)
+			}
 		}
 	}
 
@@ -194,6 +214,12 @@ export class Initiator extends Peer {
 	) {
 		const client = this.connections.get(fromPeerId)
 		if (client) {
+			if (client.connection.signalingState === 'stable') {
+				console.log(
+					`[Initiator] Connection to ${fromPeerId} is already stable, skipping answer.`,
+				)
+				return
+			}
 			console.log(`[Initiator] Handling answer from ${fromPeerId}`)
 			await client.connection.setRemoteDescription(answer)
 			// Process queued candidates

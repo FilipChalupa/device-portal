@@ -67,12 +67,17 @@ app.get(
 								if (client !== webSocket.raw) {
 									// Notify existing peer about the new peer
 									client.send(
-										JSON.stringify({ type: 'peer-joined', data: { peerId } }),
+										JSON.stringify({
+											id: crypto.randomUUID(),
+											type: 'peer-joined',
+											data: { peerId },
+										}),
 									)
 									// Notify the new peer about the existing peer
 									const existingPeerId = webSocketToPeerId.get(client)
 									webSocket.send(
 										JSON.stringify({
+											id: crypto.randomUUID(),
 											type: 'peer-joined',
 											data: { peerId: existingPeerId },
 										}),
@@ -103,6 +108,7 @@ app.get(
 
 									client.send(
 										JSON.stringify({
+											id: (message as any).id,
 											type: message.type,
 											from: peerId,
 											data: message.data,
@@ -127,7 +133,11 @@ app.get(
 					for (const client of roomPeers) {
 						if (client.readyState === 1 /* WebSocket.OPEN */) {
 							client.send(
-								JSON.stringify({ type: 'peer-left', data: { peerId } }),
+								JSON.stringify({
+									id: crypto.randomUUID(),
+									type: 'peer-left',
+									data: { peerId },
+								}),
 							)
 						}
 					}

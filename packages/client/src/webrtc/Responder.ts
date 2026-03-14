@@ -4,6 +4,7 @@ import { PeerId } from './PeerId'
 export class Responder extends Peer {
 	protected role = 'responder' as const
 	private reconnectTimeout: ReturnType<typeof setTimeout> | null = null
+	private isHandlingOffer = false
 
 	constructor(
 		room: string,
@@ -71,36 +72,47 @@ export class Responder extends Peer {
 		offer: RTCSessionDescriptionInit,
 		fromPeerId: PeerId,
 	) {
-		console.log(`[Responder] Handling offer from ${fromPeerId}`)
-		this.stopReconnectionTimer()
-		this.initializeConnectionAndChannel()
-		if (!this.connection) {
-			throw new Error('Connection is not initialized')
-		}
-
-		this.connection.oniceconnectionstatechange = () => {
+		if (this.isHandlingOffer) {
 			console.log(
-				`[Responder] ICE connection state: ${this.connection?.iceConnectionState}`,
+				`[Responder] Already handling an offer from ${fromPeerId}, skipping.`,
 			)
-			if (
-				this.connection?.iceConnectionState === 'failed' ||
-				this.connection?.iceConnectionState === 'disconnected' ||
-				this.connection?.iceConnectionState === 'closed'
-			) {
-				this.startReconnectionTimer()
-			} else if (
-				this.connection?.iceConnectionState === 'connected' ||
-				this.connection?.iceConnectionState === 'completed'
-			) {
-				this.stopReconnectionTimer()
-			}
+			return
 		}
+		this.isHandlingOffer = true
+		try {
+			console.log(`[Responder] Handling offer from ${fromPeerId}`)
+			this.stopReconnectionTimer()
+			this.initializeConnectionAndChannel()
+			if (!this.connection) {
+				throw new Error('Connection is not initialized')
+			}
 
-		await this.connection.setRemoteDescription(offer)
-		await this.processCandidatesQueue()
-		console.log('[Responder] Creating answer')
-		const answer = await this.connection.createAnswer()
-		await this.setAndShareLocalDescription(answer, fromPeerId)
+			this.connection.oniceconnectionstatechange = () => {
+				console.log(
+					`[Responder] ICE connection state: ${this.connection?.iceConnectionState}`,
+				)
+				if (
+					this.connection?.iceConnectionState === 'failed' ||
+					this.connection?.iceConnectionState === 'disconnected' ||
+					this.connection?.iceConnectionState === 'closed'
+				) {
+					this.startReconnectionTimer()
+				} else if (
+					this.connection?.iceConnectionState === 'connected' ||
+					this.connection?.iceConnectionState === 'completed'
+				) {
+					this.stopReconnectionTimer()
+				}
+			}
+
+			await this.connection.setRemoteDescription(offer)
+			await this.processCandidatesQueue()
+			console.log('[Responder] Creating answer')
+			const answer = await this.connection.createAnswer()
+			await this.setAndShareLocalDescription(answer, fromPeerId)
+		} finally {
+			this.isHandlingOffer = false
+		}
 	}
 
 	public destroy() {

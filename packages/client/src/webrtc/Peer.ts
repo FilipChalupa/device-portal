@@ -19,6 +19,7 @@ export abstract class Peer {
 	protected broadcastChannel: BroadcastChannel | null = null
 	protected candidatesQueue: RTCIceCandidateInit[] = []
 	protected peerId: PeerId | null = null
+	private seenMessageIds = new Set<string>()
 
 	constructor(
 		protected readonly room: string,
@@ -112,12 +113,27 @@ export abstract class Peer {
 	}
 
 	protected handleSignalingMessage(message: any) {
+		if (message.id && this.seenMessageIds.has(message.id)) {
+			return
+		}
+		if (message.id) {
+			this.seenMessageIds.add(message.id)
+			if (this.seenMessageIds.size > 100) {
+				const firstValue = this.seenMessageIds.values().next().value
+				if (firstValue) {
+					this.seenMessageIds.delete(firstValue)
+				}
+			}
+		}
+
 		console.log(`[Peer] Received signaling message: ${message.type}`)
 		switch (message.type) {
 			case 'identity':
-				this.peerId = message.data.peerId
-				console.log(`[Peer] My peer ID is: ${this.peerId}`)
-				this.sendLocalDiscovery()
+				if (!this.peerId || this.peerId.startsWith('temp-')) {
+					this.peerId = message.data.peerId
+					console.log(`[Peer] My peer ID is: ${this.peerId}`)
+					this.sendLocalDiscovery()
+				}
 				break
 			case 'peer-joined':
 			case 'local-discovery':
@@ -242,7 +258,11 @@ export abstract class Peer {
 	}
 
 	protected sendMessage(type: string, data: any, to?: PeerId) {
-		const message = { type, room: this.room, data, to, from: this.peerId }
+		if (!this.peerId) {
+			this.peerId = `temp-${this.generatePeerId()}` as PeerId
+		}
+		const id = crypto.randomUUID()
+		const message = { id, type, room: this.room, data, to, from: this.peerId }
 		if (this.socket?.readyState === WebSocket.OPEN) {
 			console.log(
 				`[Peer] Sending signaling message: ${type}${to ? ` to ${to}` : ''}`,
