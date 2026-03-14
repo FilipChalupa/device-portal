@@ -12,6 +12,9 @@ RUN npm ci && npm run build
 # Runtime stage
 FROM node:22-alpine
 
+# Install curl for health checks
+RUN apk add --no-cache curl
+
 WORKDIR /app
 
 # Copy root package files
