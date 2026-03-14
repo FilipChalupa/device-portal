@@ -46,46 +46,53 @@ export const useDevicePortalConsumer = (
 ): Pick<State, 'value' | 'sendMessageToProvider'> => {
 	const [valueState, setValueState] = useState<State | null>(null)
 
-	useEffect(() => {
-		if (!responders[room]) {
-			console.log(
-				`[useDevicePortalConsumer] Creating new Responder for room: ${room}`,
-			)
+	// Initialize the responder synchronously if it doesn't exist
+	if (!responders[room]) {
+		console.log(
+			`[useDevicePortalConsumer] Creating new Responder for room: ${room}`,
+		)
 
-			const { promise: firstValuePromise, resolve: firstValueResolve } =
-				withResolvers<string>()
+		const { promise: firstValuePromise, resolve: firstValueResolve } =
+			withResolvers<string>()
 
-			const sendMessageToProvider = (value: string) => {
-				responders[room].responder.send(value)
-			}
-
-			const responder = new Responder(room, {
-				onMessage: (value) => {
-					const consumer = { value, sendMessageToProvider }
-					responders[room].consumer = consumer
-					for (const setState of responders[room].setValueStates) {
-						setState({ room, value, sendMessageToProvider })
-					}
-					firstValueResolve(value)
-				},
-				sendLastValueOnConnectAndReconnect: false,
-				websocketSignalingServer: options.websocketSignalingServer,
-				localDeviceOnly: options.localDeviceOnly,
-			})
-
-			responders[room] = {
-				responder,
-				firstValuePromise,
-				consumer: null,
-				setValueStates: new Set(),
-			}
+		const sendMessageToProvider = (value: string) => {
+			responders[room].responder.send(value)
 		}
 
-		responders[room].setValueStates.add(setValueState)
+		const responder = new Responder(room, {
+			onMessage: (value) => {
+				const consumer = { value, sendMessageToProvider }
+				responders[room].consumer = consumer
 
-		// If we already have a consumer value, sync it to the new component's state
-		if (responders[room].consumer) {
-			const consumer = responders[room].consumer!
+				// Resolve the suspension promise
+				firstValueResolve(value)
+
+				// Only trigger state updates for components that have already mounted
+				// components currently suspended will re-render when firstValuePromise resolves
+				for (const setState of responders[room].setValueStates) {
+					setState({ room, value, sendMessageToProvider })
+				}
+			},
+			sendLastValueOnConnectAndReconnect: false,
+			websocketSignalingServer: options.websocketSignalingServer,
+			localDeviceOnly: options.localDeviceOnly,
+		})
+
+		responders[room] = {
+			responder,
+			firstValuePromise,
+			consumer: null,
+			setValueStates: new Set(),
+		}
+	}
+
+	useEffect(() => {
+		const roomEntry = responders[room]
+		roomEntry.setValueStates.add(setValueState)
+
+		// If we already have a value, sync it immediately on mount
+		if (roomEntry.consumer) {
+			const consumer = roomEntry.consumer!
 			setValueState({
 				room,
 				value: consumer.value,
@@ -94,10 +101,11 @@ export const useDevicePortalConsumer = (
 		}
 
 		return () => {
-			responders[room]?.setValueStates.delete(setValueState)
+			roomEntry.setValueStates.delete(setValueState)
 		}
-	}, [room, options.websocketSignalingServer, options.localDeviceOnly])
+	}, [room, setValueState])
 
+	// 1. If we have local state, use it
 	if (valueState && valueState.room === room) {
 		return {
 			value: valueState.value,
@@ -105,14 +113,11 @@ export const useDevicePortalConsumer = (
 		}
 	}
 
-	if (responders[room]?.consumer) {
+	// 2. If the shared responder already has a value, use it (handles re-renders after suspension)
+	if (responders[room].consumer) {
 		return responders[room].consumer!
 	}
 
-	if (responders[room] && (responders[room] as any).firstValuePromise) {
-		throw responders[room].firstValuePromise
-	}
-
-	// First render fallback: suspend while useEffect is pending
-	throw withResolvers<string>().promise
+	// 3. Otherwise, suspend on the first value promise
+	throw responders[room].firstValuePromise
 }
