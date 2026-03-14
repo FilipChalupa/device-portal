@@ -39,14 +39,14 @@
 		"react": "18 || 19"
 	},
 	"dependencies": {
-		"@device-portal/client": "*",
-		"@device-portal/constants": "*"
+		"@device-portal/client": "*"
 	},
 	"devDependencies": {
 		"@babel/core": "^7.24.0",
 		"@babel/preset-env": "^7.24.0",
 		"@babel/preset-react": "^7.24.0",
 		"@babel/preset-typescript": "^7.24.0",
+		"@device-portal/constants": "*",
 		"@rollup/plugin-babel": "^6.0.4",
 		"@rollup/plugin-commonjs": "^25.0.7",
 		"@rollup/plugin-node-resolve": "^15.2.3",
