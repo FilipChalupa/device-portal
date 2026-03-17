@@ -43,8 +43,8 @@ export abstract class Peer {
 			options.webSocketSignalingServer === null
 				? null
 				: (options.webSocketSignalingServer ??
-					settings.defaultWebsocketSignalingServer)
-		this.iceServers = options.iceServers ?? settings.iceServers
+					settings.default.webSocketSignalingServer)
+		this.iceServers = options.iceServers ?? settings.default.iceServers
 		this.browserDirect = options.browserDirect ?? true
 		this.run()
 	}
