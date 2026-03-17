@@ -1,5 +1,5 @@
 import { BrowserDirectOption, Peer } from './Peer'
-import { PeerId } from './PeerId'
+import { PeerId } from '@device-portal/constants'
 import { getExponentialBackoffDelay } from '../utilities/backoff'
 
 export class Responder extends Peer {

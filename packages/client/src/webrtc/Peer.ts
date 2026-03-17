@@ -1,11 +1,12 @@
 import {
 	defaultPort,
+	PeerId,
+	SignalingMessage,
 	SignalingMessageSchema,
 } from '@device-portal/constants'
 import { delay } from '../delay'
 import { settings } from '../settings'
 import { getExponentialBackoffDelay } from '../utilities/backoff'
-import { PeerId } from './PeerId'
 
 export type BrowserDirectOption = false | 'same-window-only' | true
 
@@ -153,14 +154,13 @@ export abstract class Peer {
 			return
 		}
 
-		const message = result.data
+		const message: SignalingMessage = result.data
 
-		const messageId = (message as any).id
-		if (messageId && this.seenMessageIds.has(messageId)) {
+		if (message.id && this.seenMessageIds.has(message.id)) {
 			return
 		}
-		if (messageId) {
-			this.seenMessageIds.add(messageId)
+		if (message.id) {
+			this.seenMessageIds.add(message.id)
 			if (this.seenMessageIds.size > 1000) {
 				const firstValue = this.seenMessageIds.values().next().value
 				if (firstValue) {
@@ -177,56 +177,52 @@ export abstract class Peer {
 		switch (message.type) {
 			case 'identity':
 				if (!this.peerId || this.peerId.startsWith('temp-')) {
-					this.peerId = message.data.peerId as PeerId
+					this.peerId = message.data.peerId
 					console.log(`[Peer] My peer ID is: ${this.peerId}`)
 					this.announce()
 				}
 				break
 			case 'peer-joined':
-				if (message.data?.peerId) {
-					this.handlePeerJoined(message.data.peerId as PeerId)
+				this.handlePeerJoined(message.data.peerId)
+				break
+			case 'direct-discovery': {
+				const fromPeerId = message.from
+				this.directPeers.add(fromPeerId)
+				this.handlePeerJoined(fromPeerId)
+				// Respond if it was a broadcast
+				if (!message.to) {
+					this.sendDirectSignaling({
+						type: 'direct-discovery',
+						from: this.peerId!,
+						to: fromPeerId,
+					})
 				}
 				break
-			case 'direct-discovery':
-				if (message.from) {
-					const fromPeerId = message.from as PeerId
-					this.directPeers.add(fromPeerId)
-					this.handlePeerJoined(fromPeerId)
-					// Respond if it was a broadcast
-					if (!message.to) {
-						this.sendDirectSignaling({
-							type: 'direct-discovery',
-							from: this.peerId!,
-							to: message.from,
-						})
-					}
-				}
-				break
+			}
 			case 'direct-message':
 				if (message.to === this.peerId) {
-					this.onMessage?.(message.data, message.from as PeerId)
+					this.onMessage?.(message.data, message.from)
 				}
 				break
-			case 'peer-left':
-				if (message.data?.peerId) {
-					const leftPeerId = message.data.peerId as PeerId
-					this.directPeers.delete(leftPeerId)
-					this.handlePeerLeft(leftPeerId)
-				}
+			case 'peer-left': {
+				const leftPeerId = message.data.peerId
+				this.directPeers.delete(leftPeerId)
+				this.handlePeerLeft(leftPeerId)
 				break
+			}
 			case 'offer':
 				if (!message.to || message.to === this.peerId) {
-					this.handleOffer(message.data, message.from as PeerId)
+					this.handleOffer(message.data, message.from)
 				}
 				break
 			case 'answer':
 				if (!message.to || message.to === this.peerId) {
-					this.handleAnswer(message.data, message.from as PeerId)
+					this.handleAnswer(message.data, message.from)
 				}
 				break
 			case 'ice-candidate':
 				if (!message.to || message.to === this.peerId) {
-					this.handleIceCandidate(message.data, message.from as PeerId)
+					this.handleIceCandidate(message.data, message.from)
 				}
 				break
 		}
