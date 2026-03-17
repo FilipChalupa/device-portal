@@ -21,7 +21,7 @@ export class Responder extends Peer {
 		super(room, options)
 	}
 
-	protected onConnected(): void {
+	protected override onConnected(): void {
 		// Responder waits for an offer
 		this.startReconnectionTimer()
 	}
@@ -42,6 +42,16 @@ export class Responder extends Peer {
 				this.channel?.close()
 				this.channel = null
 			}
+
+			// Send last value to the newly joined direct peer
+			if (this.value && this.sendLastValueOnConnectAndReconnect) {
+				this.sendDirectSignaling({
+					type: 'direct-message',
+					from: this.peerId,
+					data: this.value.value,
+					to: peerId,
+				})
+			}
 		}
 	}
 
@@ -57,7 +67,7 @@ export class Responder extends Peer {
 		}
 		const delayMs = getExponentialBackoffDelay(this.reconnectTimerAttempts++)
 		console.log(`[Responder] Starting reconnection timer in ${delayMs}ms...`)
-		this.reconnectTimeout = setTimeout(() => {
+		this.reconnectTimeout = setTimeout(async () => {
 			this.reconnectTimeout = null
 			if (this.isDestroyed) {
 				return
@@ -71,6 +81,7 @@ export class Responder extends Peer {
 				console.log(
 					'[Responder] Attempting to re-join room for reconnection...',
 				)
+				await this.ensureSignaling()
 				this.announce()
 				this.startReconnectionTimer() // Schedule next attempt if it still fails
 			}

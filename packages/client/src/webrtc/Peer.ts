@@ -33,7 +33,8 @@ export abstract class Peer {
 	protected readonly iceServers: Array<RTCIceServer>
 	protected readonly browserDirect: BrowserDirectOption
 	protected socket: WebSocket | null = null
-	protected broadcastChannel: BroadcastChannel | null = null
+	protected sendBroadcastChannel: BroadcastChannel | null = null
+	protected listenBroadcastChannel: BroadcastChannel | null = null
 	protected candidatesQueue: RTCIceCandidateInit[] = []
 	protected peerId: PeerId | null = null
 	private seenMessageIds = new Set<string>()
@@ -60,7 +61,19 @@ export abstract class Peer {
 					settings.default.webSocketSignalingServer)
 		this.iceServers = options.iceServers ?? settings.default.iceServers
 		this.browserDirect = options.browserDirect ?? true
-		this.run()
+		queueMicrotask(() => {
+			if (!this.isDestroyed) {
+				this.run()
+			}
+		})
+	}
+
+	private get sendChannelName() {
+		return `device-portal-room-${this.room}-${this.role === 'initiator' ? 'i2r' : 'r2i'}`
+	}
+
+	private get listenChannelName() {
+		return `device-portal-room-${this.room}-${this.role === 'initiator' ? 'r2i' : 'i2r'}`
 	}
 
 	protected async run() {
@@ -69,21 +82,26 @@ export abstract class Peer {
 
 			if (this.browserDirect !== false) {
 				if (this.browserDirect === true && 'window' in globalThis) {
-					this.broadcastChannel = new BroadcastChannel(
-						`device-portal-room-${this.room}`,
-					)
-					this.broadcastChannel.onmessage = (event) => {
+					this.sendBroadcastChannel = new BroadcastChannel(this.sendChannelName)
+					this.listenBroadcastChannel = new BroadcastChannel(this.listenChannelName)
+					this.listenBroadcastChannel.onmessage = (event) => {
 						this.handleSignalingMessage(event.data)
 					}
 				}
 
 				sameTabBus.addEventListener(
-					`message:${this.room}`,
+					`message:${this.listenChannelName}`,
 					this.handleSameTabMessage as any,
 				)
+
+				// Announce direct presence immediately to discover existing direct peers
+				this.announceDirect()
+
+				// Wait a bit to see if any direct peers respond
+				await delay(200)
 			}
 
-			if (this.webSocketSignalingServer) {
+			if (this.webSocketSignalingServer && this.shouldConnectToWebSocket()) {
 				await this.connect()
 			}
 
@@ -95,10 +113,35 @@ export abstract class Peer {
 		}
 	}
 
+	/**
+	 * Determines if the peer should connect to the WebSocket signaling server.
+	 * Can be overridden by subclasses.
+	 */
+	protected shouldConnectToWebSocket(): boolean {
+		return this.directPeers.size === 0
+	}
+
+	/**
+	 * Ensures that the signaling server connection is active if needed.
+	 */
+	protected async ensureSignaling() {
+		if (!this.socket && this.webSocketSignalingServer && !this.isDestroyed) {
+			try {
+				await this.connect()
+				this.announce()
+			} catch (error) {
+				console.error('[Peer] Failed to connect to signaling server:', error)
+			}
+		}
+	}
+
 	protected announce() {
 		if (this.socket?.readyState === WebSocket.OPEN) {
 			this.socket.send(JSON.stringify({ type: 'join-room', room: this.room }))
 		}
+	}
+
+	protected announceDirect() {
 		if (this.browserDirect !== false) {
 			this.sendDirectSignaling({
 				type: 'direct-discovery',
@@ -207,8 +250,9 @@ export abstract class Peer {
 				break
 			}
 			case 'direct-message':
-				if (message.to === this.peerId) {
+				if (!message.to || message.to === this.peerId) {
 					this.onMessage?.(message.data, message.from)
+					this.onDirectMessageReceived(message.from, message.data)
 				}
 				break
 			case 'peer-left': {
@@ -252,7 +296,9 @@ export abstract class Peer {
 	): void
 	protected abstract handlePeerJoined(peerId: PeerId): void
 	protected abstract handlePeerLeft(peerId: PeerId): void
-	protected abstract onConnected(): void
+	protected onConnected(): void {}
+
+	protected onDirectMessageReceived(from: PeerId, data: any) {}
 
 	protected async handleIceCandidate(
 		candidate: RTCIceCandidateInit,
@@ -302,12 +348,16 @@ export abstract class Peer {
 			}
 			this.socket = null
 		}
-		if (this.broadcastChannel) {
-			this.broadcastChannel.close()
-			this.broadcastChannel = null
+		if (this.sendBroadcastChannel) {
+			this.sendBroadcastChannel.close()
+			this.sendBroadcastChannel = null
+		}
+		if (this.listenBroadcastChannel) {
+			this.listenBroadcastChannel.close()
+			this.listenBroadcastChannel = null
 		}
 		sameTabBus.removeEventListener(
-			`message:${this.room}`,
+			`message:${this.listenChannelName}`,
 			this.handleSameTabMessage as any,
 		)
 	}
@@ -325,11 +375,11 @@ export abstract class Peer {
 		if (this.seenMessageIds.has(message.id)) return
 		this.seenMessageIds.add(message.id)
 
-		if (this.broadcastChannel) {
-			this.broadcastChannel.postMessage(message)
+		if (this.sendBroadcastChannel) {
+			this.sendBroadcastChannel.postMessage(message)
 		}
 		sameTabBus.dispatchEvent(
-			new CustomEvent(`message:${this.room}`, {
+			new CustomEvent(`message:${this.sendChannelName}`, {
 				detail: message,
 			}),
 		)

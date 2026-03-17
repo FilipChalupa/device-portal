@@ -57,10 +57,6 @@ export class Initiator extends Peer {
 		}
 	}
 
-	protected onConnected(): void {
-		console.log('[Initiator] Connected to signaling server')
-	}
-
 	protected async handlePeerJoined(peerId: PeerId) {
 		console.log(`[Initiator] Peer ${peerId} joined`)
 
@@ -77,6 +73,17 @@ export class Initiator extends Peer {
 				existingClient.connection.close()
 				this.connections.delete(peerId)
 			}
+
+			// Send last value to the newly joined direct peer
+			if (this.value && this.sendLastValueOnConnectAndReconnect) {
+				this.sendDirectSignaling({
+					type: 'direct-message',
+					from: this.peerId,
+					data: this.value.value,
+					to: peerId,
+				})
+			}
+
 			this.onPeersChange?.(this.peers)
 			return
 		}
@@ -115,6 +122,10 @@ export class Initiator extends Peer {
 		}
 	}
 
+	protected override shouldConnectToWebSocket(): boolean {
+		return this.peers.length < this.maxClients
+	}
+
 	protected handlePeerLeft(peerId: PeerId) {
 		console.log(`[Initiator] Peer ${peerId} left`)
 		this.waitingPeers.delete(peerId)
@@ -128,6 +139,10 @@ export class Initiator extends Peer {
 		} else {
 			// Might be a direct peer
 			this.onPeersChange?.(this.peers)
+		}
+
+		if (this.shouldConnectToWebSocket()) {
+			this.ensureSignaling()
 		}
 	}
 
@@ -251,6 +266,15 @@ export class Initiator extends Peer {
 			while (client.candidatesQueue.length > 0) {
 				const candidate = client.candidatesQueue.shift()!
 				await client.connection.addIceCandidate(new RTCIceCandidate(candidate))
+			}
+		}
+	}
+
+	protected override onDirectMessageReceived(from: PeerId, data: any) {
+		const listeners = this.peerListeners.get(from)
+		if (listeners) {
+			for (const listener of listeners) {
+				listener(data)
 			}
 		}
 	}
