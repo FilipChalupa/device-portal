@@ -7,22 +7,13 @@ import { cors } from 'hono/cors'
 import { dirname, relative, resolve } from 'path'
 import { fileURLToPath } from 'url'
 import { WebSocket } from 'ws'
-import { defaultPort } from '@device-portal/constants'
+import {
+	defaultPort,
+	SignalingMessage,
+	SignalingMessageSchema,
+} from '@device-portal/constants'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-
-type JoinRoomMessage = {
-	type: 'join-room'
-	room: string
-}
-
-type RtcMessage = {
-	type: 'offer' | 'answer' | 'ice-candidate'
-	to?: string
-	data: any
-}
-
-type SignalingMessage = JoinRoomMessage | RtcMessage
 
 const app = new Hono()
 
@@ -47,7 +38,18 @@ app.get(
 			},
 			onMessage(event, webSocket) {
 				const peerId = webSocketToPeerId.get(webSocket.raw!)!
-				const message = JSON.parse(event.data as string) as SignalingMessage
+				const data = JSON.parse(event.data as string)
+				const result = SignalingMessageSchema.safeParse(data)
+
+				if (!result.success) {
+					console.error(
+						`Invalid message received from ${peerId}:`,
+						result.error.format(),
+					)
+					return
+				}
+
+				const message = result.data as SignalingMessage
 
 				switch (message.type) {
 					case 'join-room': {

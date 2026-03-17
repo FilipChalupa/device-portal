@@ -1,3 +1,7 @@
+import {
+	defaultPort,
+	SignalingMessageSchema,
+} from '@device-portal/constants'
 import { delay } from '../delay'
 import { settings } from '../settings'
 import { getExponentialBackoffDelay } from '../utilities/backoff'
@@ -142,12 +146,21 @@ export abstract class Peer {
 		})
 	}
 
-	protected handleSignalingMessage(message: any) {
-		if (message.id && this.seenMessageIds.has(message.id)) {
+	protected handleSignalingMessage(data: any) {
+		const result = SignalingMessageSchema.safeParse(data)
+		if (!result.success) {
+			console.error('[Peer] Invalid signaling message received:', result.error)
 			return
 		}
-		if (message.id) {
-			this.seenMessageIds.add(message.id)
+
+		const message = result.data
+
+		const messageId = (message as any).id
+		if (messageId && this.seenMessageIds.has(messageId)) {
+			return
+		}
+		if (messageId) {
+			this.seenMessageIds.add(messageId)
 			if (this.seenMessageIds.size > 1000) {
 				const firstValue = this.seenMessageIds.values().next().value
 				if (firstValue) {
@@ -156,7 +169,7 @@ export abstract class Peer {
 			}
 		}
 
-		if (message.from === this.peerId) {
+		if ('from' in message && message.from === this.peerId) {
 			return
 		}
 
@@ -164,20 +177,21 @@ export abstract class Peer {
 		switch (message.type) {
 			case 'identity':
 				if (!this.peerId || this.peerId.startsWith('temp-')) {
-					this.peerId = message.data.peerId
+					this.peerId = message.data.peerId as PeerId
 					console.log(`[Peer] My peer ID is: ${this.peerId}`)
 					this.announce()
 				}
 				break
 			case 'peer-joined':
 				if (message.data?.peerId) {
-					this.handlePeerJoined(message.data.peerId)
+					this.handlePeerJoined(message.data.peerId as PeerId)
 				}
 				break
 			case 'direct-discovery':
 				if (message.from) {
-					this.directPeers.add(message.from)
-					this.handlePeerJoined(message.from)
+					const fromPeerId = message.from as PeerId
+					this.directPeers.add(fromPeerId)
+					this.handlePeerJoined(fromPeerId)
 					// Respond if it was a broadcast
 					if (!message.to) {
 						this.sendDirectSignaling({
@@ -190,28 +204,29 @@ export abstract class Peer {
 				break
 			case 'direct-message':
 				if (message.to === this.peerId) {
-					this.onMessage?.(message.data, message.from)
+					this.onMessage?.(message.data, message.from as PeerId)
 				}
 				break
 			case 'peer-left':
 				if (message.data?.peerId) {
-					this.directPeers.delete(message.data.peerId)
-					this.handlePeerLeft(message.data.peerId)
+					const leftPeerId = message.data.peerId as PeerId
+					this.directPeers.delete(leftPeerId)
+					this.handlePeerLeft(leftPeerId)
 				}
 				break
 			case 'offer':
 				if (!message.to || message.to === this.peerId) {
-					this.handleOffer(message.data, message.from)
+					this.handleOffer(message.data, message.from as PeerId)
 				}
 				break
 			case 'answer':
 				if (!message.to || message.to === this.peerId) {
-					this.handleAnswer(message.data, message.from)
+					this.handleAnswer(message.data, message.from as PeerId)
 				}
 				break
 			case 'ice-candidate':
 				if (!message.to || message.to === this.peerId) {
-					this.handleIceCandidate(message.data, message.from)
+					this.handleIceCandidate(message.data, message.from as PeerId)
 				}
 				break
 		}

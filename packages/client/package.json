@@ -45,5 +45,8 @@
 	},
 	"files": [
 		"/dist/"
-	]
+	],
+	"dependencies": {
+		"zod": "^4.3.6"
+	}
 }
