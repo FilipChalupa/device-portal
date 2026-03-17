@@ -37,7 +37,7 @@ const ProviderComponent: FunctionComponent = () => {
 				)
 			}
 		},
-		webSocketSignalingServer: webSocketSignalingServer,
+		webSocketSignalingServer,
 		maxClients: 1,
 	})
 
