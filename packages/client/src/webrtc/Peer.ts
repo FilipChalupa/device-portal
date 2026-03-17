@@ -1,5 +1,6 @@
 import { delay } from '../delay'
 import { settings } from '../settings'
+import { getExponentialBackoffDelay } from '../utilities/backoff'
 import { PeerId } from './PeerId'
 
 export type BrowserDirectOption = false | 'same-window-only' | true
@@ -25,6 +26,7 @@ export abstract class Peer {
 	protected peerId: PeerId | null = null
 	private seenMessageIds = new Set<string>()
 	protected directPeers = new Set<PeerId>()
+	private reconnectAttempts = 0
 
 	constructor(
 		protected readonly room: string,
@@ -108,6 +110,7 @@ export abstract class Peer {
 
 			this.socket.onopen = () => {
 				console.log(`[Peer] WebSocket opened for room: ${this.room}`)
+				this.reconnectAttempts = 0
 				this.socket?.send(
 					JSON.stringify({ type: 'join-room', room: this.room }),
 				)
@@ -123,8 +126,11 @@ export abstract class Peer {
 				console.log('[Peer] WebSocket closed')
 				this.socket = null
 				if (!this.isDestroyed) {
-					console.log('[Peer] Attempting reconnect in 1s...')
-					await delay(1000)
+					const reconnectDelay = getExponentialBackoffDelay(
+						this.reconnectAttempts++,
+					)
+					console.log(`[Peer] Attempting reconnect in ${reconnectDelay}ms...`)
+					await delay(reconnectDelay)
 					await this.run() // Reconnect
 				}
 			}

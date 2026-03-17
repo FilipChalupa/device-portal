@@ -1,10 +1,12 @@
 import { BrowserDirectOption, Peer } from './Peer'
 import { PeerId } from './PeerId'
+import { getExponentialBackoffDelay } from '../utilities/backoff'
 
 export class Responder extends Peer {
 	protected role = 'responder' as const
 	private reconnectTimeout: ReturnType<typeof setTimeout> | null = null
 	private isHandlingOffer = false
+	private reconnectTimerAttempts = 0
 
 	constructor(
 		room: string,
@@ -38,7 +40,8 @@ export class Responder extends Peer {
 		if (this.reconnectTimeout || this.isDestroyed) {
 			return
 		}
-		console.log('[Responder] Starting reconnection timer...')
+		const delayMs = getExponentialBackoffDelay(this.reconnectTimerAttempts++)
+		console.log(`[Responder] Starting reconnection timer in ${delayMs}ms...`)
 		this.reconnectTimeout = setTimeout(() => {
 			this.reconnectTimeout = null
 			if (this.isDestroyed) {
@@ -56,7 +59,7 @@ export class Responder extends Peer {
 				this.announce()
 				this.startReconnectionTimer() // Schedule next attempt if it still fails
 			}
-		}, 3000)
+		}, delayMs)
 	}
 
 	private stopReconnectionTimer() {
@@ -64,6 +67,7 @@ export class Responder extends Peer {
 			clearTimeout(this.reconnectTimeout)
 			this.reconnectTimeout = null
 		}
+		this.reconnectTimerAttempts = 0
 	}
 
 	protected async handleOffer(
