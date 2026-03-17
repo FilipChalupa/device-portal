@@ -1,18 +1,19 @@
 import { type FunctionComponent, type ReactNode } from 'react'
+import { type BrowserDirectOption } from '@device-portal/client'
 import { useDevicePortalConsumer } from './useDevicePortalConsumer'
 
 export const DevicePortalConsumer: FunctionComponent<{
 	room: string
-	websocketSignalingServer?: string
-	localDeviceOnly?: boolean
+	webSocketSignalingServer?: string | null
+	browserDirect?: BrowserDirectOption
 	children: (data: {
 		value: string
 		sendMessageToProvider: (message: string) => void
 	}) => ReactNode
-}> = ({ room, websocketSignalingServer, localDeviceOnly, children }) => {
+}> = ({ room, webSocketSignalingServer, browserDirect, children }) => {
 	const { value, sendMessageToProvider } = useDevicePortalConsumer(room, {
-		websocketSignalingServer,
-		localDeviceOnly,
+		webSocketSignalingServer,
+		browserDirect,
 	})
 	return <>{children({ value, sendMessageToProvider })}</>
 }

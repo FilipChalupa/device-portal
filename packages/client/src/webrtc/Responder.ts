@@ -1,4 +1,4 @@
-import { Peer } from './Peer'
+import { BrowserDirectOption, Peer } from './Peer'
 import { PeerId } from './PeerId'
 
 export class Responder extends Peer {
@@ -11,9 +11,9 @@ export class Responder extends Peer {
 		options: {
 			onMessage?: (value: string, peerId: PeerId) => void
 			sendLastValueOnConnectAndReconnect?: boolean
-			websocketSignalingServer?: string
+			webSocketSignalingServer?: string | null
 			iceServers?: Array<RTCIceServer>
-			localDeviceOnly?: boolean
+			browserDirect?: BrowserDirectOption
 		} = {},
 	) {
 		super(room, options)
@@ -53,9 +53,7 @@ export class Responder extends Peer {
 				console.log(
 					'[Responder] Attempting to re-join room for reconnection...',
 				)
-				this.socket?.send(
-					JSON.stringify({ type: 'join-room', room: this.room }),
-				)
+				this.announce()
 				this.startReconnectionTimer() // Schedule next attempt if it still fails
 			}
 		}, 3000)
@@ -78,6 +76,14 @@ export class Responder extends Peer {
 			)
 			return
 		}
+
+		if (this.directPeers.has(fromPeerId)) {
+			console.log(
+				`[Responder] Peer ${fromPeerId} is a direct peer, ignoring WebRTC offer.`,
+			)
+			return
+		}
+
 		this.isHandlingOffer = true
 		try {
 			console.log(`[Responder] Handling offer from ${fromPeerId}`)

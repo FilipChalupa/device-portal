@@ -1,5 +1,5 @@
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react'
-import { Responder } from '@device-portal/client'
+import { Responder, type BrowserDirectOption } from '@device-portal/client'
 
 type State = {
 	room: string
@@ -40,8 +40,8 @@ const responders: {
 export const useDevicePortalConsumer = (
 	room: string,
 	options: {
-		websocketSignalingServer?: string
-		localDeviceOnly?: boolean
+		webSocketSignalingServer?: string | null
+		browserDirect?: BrowserDirectOption
 	} = {},
 ): Pick<State, 'value' | 'sendMessageToProvider'> => {
 	const [valueState, setValueState] = useState<State | null>(null)
@@ -74,8 +74,8 @@ export const useDevicePortalConsumer = (
 				}
 			},
 			sendLastValueOnConnectAndReconnect: false,
-			websocketSignalingServer: options.websocketSignalingServer,
-			localDeviceOnly: options.localDeviceOnly,
+			webSocketSignalingServer: options.webSocketSignalingServer,
+			browserDirect: options.browserDirect,
 		})
 
 		responders[room] = {

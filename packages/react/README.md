@@ -32,7 +32,7 @@ const AppA = () => {
 	const [value, setValue] = useState(0)
 	useDevicePortalProvider('my-test-room', {
 		value: value.toString(),
-		websocketSignalingServer: 'wss://device-portal.filipchalupa.cz',
+		webSocketServer: 'wss://device-portal.filipchalupa.cz',
 	})
 
 	return (
@@ -69,7 +69,7 @@ const AppB = () => {
 
 const ConsumerComponent = () => {
 	const { value } = useDevicePortalConsumer('my-test-room', {
-		websocketSignalingServer: 'wss://device-portal.filipchalupa.cz',
+		webSocketServer: 'wss://device-portal.filipchalupa.cz',
 	})
 
 	return (
@@ -157,24 +157,26 @@ const ConsumerComponent = () => {
 
 The WebRTC connection is designed to be resilient. If the connection to the signaling server is temporarily lost, any established peer-to-peer connections will remain active. The client will attempt to reconnect to the signaling server in the background to handle any future connection negotiations.
 
-### Local Signaling Shortcut
+### Browser Direct Communication
 
-When peers are in the same browser (different tabs or same tab), the library automatically uses `BroadcastChannel` for signaling. This results in a near-instant connection and reduces reliance on the external signaling server.
+When peers are in the same browser (different tabs or same tab), the library automatically uses direct browser APIs for communication instead of WebRTC. This results in a near-instant connection and works offline.
 
-### Local Only Mode
+By default, `browserDirect` is `true`.
 
-For privacy or offline-only applications where you know all peers are on the same local device/browser, you can disable external signaling entirely by passing `localDeviceOnly: true`:
+### Browser Direct Only Mode
+
+For privacy or offline-only applications where you know all peers are on the same browser, you can disable external signaling entirely by passing `webSocketServer: null`:
 
 ```jsx
 useDevicePortalProvider('my-room', {
 	value: 'secret-data',
-	localDeviceOnly: true,
+	webSocketServer: null,
 })
 
 // ...
 
 useDevicePortalConsumer('my-room', {
-	localDeviceOnly: true,
+	webSocketServer: null,
 })
 ```
 

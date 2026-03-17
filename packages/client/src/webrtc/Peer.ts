@@ -2,6 +2,10 @@ import { delay } from '../delay'
 import { settings } from '../settings'
 import { PeerId } from './PeerId'
 
+export type BrowserDirectOption = false | 'same-window-only' | true
+
+const sameTabBus = new EventTarget()
+
 export abstract class Peer {
 	protected isDestroyed = false
 	protected connection: RTCPeerConnection | null = null
@@ -12,59 +16,64 @@ export abstract class Peer {
 		| ((value: string, peerId: PeerId) => void)
 		| undefined
 	protected readonly sendLastValueOnConnectAndReconnect: boolean
-	protected readonly websocketSignalingServer: string
+	protected readonly webSocketSignalingServer: string | null
 	protected readonly iceServers: Array<RTCIceServer>
-	protected readonly localDeviceOnly: boolean
+	protected readonly browserDirect: BrowserDirectOption
 	protected socket: WebSocket | null = null
 	protected broadcastChannel: BroadcastChannel | null = null
 	protected candidatesQueue: RTCIceCandidateInit[] = []
 	protected peerId: PeerId | null = null
 	private seenMessageIds = new Set<string>()
+	protected directPeers = new Set<PeerId>()
 
 	constructor(
 		protected readonly room: string,
 		options: {
-			websocketSignalingServer?: string
+			webSocketSignalingServer?: string | null
 			onMessage?: (value: string, peerId: PeerId) => void
 			sendLastValueOnConnectAndReconnect?: boolean
 			iceServers?: Array<RTCIceServer>
-			localDeviceOnly?: boolean
+			browserDirect?: BrowserDirectOption
 		} = {},
 	) {
 		this.onMessage = options.onMessage
 		this.sendLastValueOnConnectAndReconnect =
 			options.sendLastValueOnConnectAndReconnect ?? true
-		this.websocketSignalingServer = `${(
-			options.websocketSignalingServer ??
-			settings.defaultWebsocketSignalingServer
-		).replace(/\/+$/, '')}/v0/`
+		this.webSocketSignalingServer =
+			options.webSocketSignalingServer === null
+				? null
+				: (options.webSocketSignalingServer ??
+					settings.defaultWebsocketSignalingServer)
 		this.iceServers = options.iceServers ?? settings.iceServers
-		this.localDeviceOnly = options.localDeviceOnly ?? false
+		this.browserDirect = options.browserDirect ?? true
 		this.run()
 	}
 
 	protected async run() {
 		try {
-			if ('window' in globalThis) {
-				this.broadcastChannel = new BroadcastChannel(
-					`device-portal-room-${this.room}`,
-				)
-				this.broadcastChannel.onmessage = (event) => {
-					this.handleSignalingMessage(event.data)
+			this.peerId = this.generatePeerId()
+
+			if (this.browserDirect !== false) {
+				if (this.browserDirect === true && 'window' in globalThis) {
+					this.broadcastChannel = new BroadcastChannel(
+						`device-portal-room-${this.room}`,
+					)
+					this.broadcastChannel.onmessage = (event) => {
+						this.handleSignalingMessage(event.data)
+					}
 				}
+
+				sameTabBus.addEventListener(
+					`message:${this.room}`,
+					this.handleSameTabMessage as any,
+				)
 			}
 
-			if (this.localDeviceOnly) {
-				this.peerId = this.generatePeerId()
-				this.initializeConnectionAndChannel()
-				this.onConnected()
-				this.sendLocalDiscovery()
-			} else {
+			if (this.webSocketSignalingServer) {
 				await this.connect()
-				if (this.peerId) {
-					this.sendLocalDiscovery()
-				}
 			}
+
+			this.announce()
 		} catch (error) {
 			queueMicrotask(() => {
 				throw error
@@ -72,21 +81,36 @@ export abstract class Peer {
 		}
 	}
 
+	protected announce() {
+		if (this.socket?.readyState === WebSocket.OPEN) {
+			this.socket.send(JSON.stringify({ type: 'join-room', room: this.room }))
+		}
+		if (this.browserDirect !== false) {
+			this.sendDirectSignaling({
+				type: 'direct-discovery',
+				from: this.peerId,
+			})
+		}
+	}
+
+	private handleSameTabMessage = (event: CustomEvent<any>) => {
+		this.handleSignalingMessage(event.detail)
+	}
+
 	protected connect(): Promise<void> {
 		return new Promise((resolve, reject) => {
-			if (this.isDestroyed) {
-				return reject(new Error('Peer is destroyed'))
+			if (this.isDestroyed || !this.webSocketSignalingServer) {
+				return reject(new Error('Peer is destroyed or no server provided'))
 			}
 
-			this.socket = new WebSocket(this.websocketSignalingServer)
+			const url = `${this.webSocketSignalingServer.replace(/\/+$/, '')}/v0/`
+			this.socket = new WebSocket(url)
 
 			this.socket.onopen = () => {
 				console.log(`[Peer] WebSocket opened for room: ${this.room}`)
 				this.socket?.send(
 					JSON.stringify({ type: 'join-room', room: this.room }),
 				)
-				this.initializeConnectionAndChannel()
-				this.onConnected()
 				resolve()
 			}
 
@@ -118,12 +142,16 @@ export abstract class Peer {
 		}
 		if (message.id) {
 			this.seenMessageIds.add(message.id)
-			if (this.seenMessageIds.size > 100) {
+			if (this.seenMessageIds.size > 1000) {
 				const firstValue = this.seenMessageIds.values().next().value
 				if (firstValue) {
 					this.seenMessageIds.delete(firstValue)
 				}
 			}
+		}
+
+		if (message.from === this.peerId) {
+			return
 		}
 
 		console.log(`[Peer] Received signaling message: ${message.type}`)
@@ -132,21 +160,36 @@ export abstract class Peer {
 				if (!this.peerId || this.peerId.startsWith('temp-')) {
 					this.peerId = message.data.peerId
 					console.log(`[Peer] My peer ID is: ${this.peerId}`)
-					this.sendLocalDiscovery()
+					this.announce()
 				}
 				break
 			case 'peer-joined':
-			case 'local-discovery':
-				if (message.data?.peerId && message.data.peerId !== this.peerId) {
+				if (message.data?.peerId) {
 					this.handlePeerJoined(message.data.peerId)
-					if (message.type === 'local-discovery' && !message.data.to) {
-						// Respond to discovery if it wasn't directed specifically to us
-						this.sendLocalDiscovery(message.data.peerId)
+				}
+				break
+			case 'direct-discovery':
+				if (message.from) {
+					this.directPeers.add(message.from)
+					this.handlePeerJoined(message.from)
+					// Respond if it was a broadcast
+					if (!message.to) {
+						this.sendDirectSignaling({
+							type: 'direct-discovery',
+							from: this.peerId!,
+							to: message.from,
+						})
 					}
+				}
+				break
+			case 'direct-message':
+				if (message.to === this.peerId) {
+					this.onMessage?.(message.data, message.from)
 				}
 				break
 			case 'peer-left':
 				if (message.data?.peerId) {
+					this.directPeers.delete(message.data.peerId)
 					this.handlePeerLeft(message.data.peerId)
 				}
 				break
@@ -173,12 +216,6 @@ export abstract class Peer {
 			return crypto.randomUUID() as PeerId
 		}
 		return Math.random().toString(36).substring(2, 15) as PeerId
-	}
-
-	protected sendLocalDiscovery(to?: PeerId) {
-		if (this.peerId) {
-			this.sendMessage('local-discovery', { peerId: this.peerId, to }, to)
-		}
 	}
 
 	protected abstract handleOffer(
@@ -217,11 +254,6 @@ export abstract class Peer {
 		if (!this.connection) {
 			return
 		}
-		if (this.candidatesQueue.length > 0) {
-			console.log(
-				`[Peer] Processing ${this.candidatesQueue.length} queued ICE candidates`,
-			)
-		}
 		while (this.candidatesQueue.length > 0) {
 			const candidate = this.candidatesQueue.shift()!
 			try {
@@ -250,6 +282,10 @@ export abstract class Peer {
 			this.broadcastChannel.close()
 			this.broadcastChannel = null
 		}
+		sameTabBus.removeEventListener(
+			`message:${this.room}`,
+			this.handleSameTabMessage as any,
+		)
 	}
 
 	public destroy() {
@@ -257,10 +293,33 @@ export abstract class Peer {
 		this.close()
 	}
 
+	protected sendDirectSignaling(message: any) {
+		if (!message.id) {
+			message.id = crypto.randomUUID()
+		}
+		message.room = this.room
+		if (this.seenMessageIds.has(message.id)) return
+		this.seenMessageIds.add(message.id)
+
+		if (this.broadcastChannel) {
+			this.broadcastChannel.postMessage(message)
+		}
+		sameTabBus.dispatchEvent(
+			new CustomEvent(`message:${this.room}`, {
+				detail: message,
+			}),
+		)
+	}
+
 	protected sendMessage(type: string, data: any, to?: PeerId) {
 		if (!this.peerId) {
 			this.peerId = `temp-${this.generatePeerId()}` as PeerId
 		}
+
+		// If it's a direct peer, we don't send signaling for negotiation
+		// because we bypass WebRTC. But wait, sendMessage is used for signaling.
+		// If we are already connected via direct, we shouldn't even be here for WebRTC.
+
 		const id = crypto.randomUUID()
 		const message = { id, type, room: this.room, data, to, from: this.peerId }
 		if (this.socket?.readyState === WebSocket.OPEN) {
@@ -268,9 +327,6 @@ export abstract class Peer {
 				`[Peer] Sending signaling message: ${type}${to ? ` to ${to}` : ''}`,
 			)
 			this.socket.send(JSON.stringify(message))
-		}
-		if (this.broadcastChannel) {
-			this.broadcastChannel.postMessage(message)
 		}
 	}
 
@@ -297,6 +353,19 @@ export abstract class Peer {
 	}
 
 	public send(value: string) {
+		// Send to direct peers
+		if (this.browserDirect !== false) {
+			this.sendDirectSignaling({
+				type: 'direct-message',
+				from: this.peerId,
+				data: value,
+				// Currently broadcasting to ALL direct peers in the room
+				// In a more advanced impl, we might want to target specific peers
+				to: null, // Broadcast on direct channel
+			})
+		}
+
+		// Send to WebRTC peers
 		if (this.channel?.readyState === 'open') {
 			this.channel.send(value)
 		}

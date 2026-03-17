@@ -1,14 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
-import { Initiator, type PeerId } from '@device-portal/client'
+import {
+	Initiator,
+	type PeerId,
+	type BrowserDirectOption,
+} from '@device-portal/client'
 
 // @TODO: warn if one room is used by multiple useDevicePortalProvider hooks more than once at the same time
 
 export type DevicePortalProviderOptions = {
 	value?: string
-	websocketSignalingServer?: string
+	webSocketSignalingServer?: string | null
 	onMessageFromConsumer?: (value: string, peerId: PeerId) => void
 	maxClients?: number
-	localDeviceOnly?: boolean
+	browserDirect?: BrowserDirectOption
 }
 
 export const useDevicePortalProvider = (
@@ -28,9 +32,9 @@ export const useDevicePortalProvider = (
 			onPeersChange: (peers) => {
 				setPeers(peers)
 			},
-			websocketSignalingServer: options.websocketSignalingServer,
+			webSocketSignalingServer: options.webSocketSignalingServer,
 			maxClients: options.maxClients,
-			localDeviceOnly: options.localDeviceOnly,
+			browserDirect: options.browserDirect,
 		})
 		setInitiator(initiator)
 		setPeers(initiator.peers)
@@ -42,9 +46,9 @@ export const useDevicePortalProvider = (
 		}
 	}, [
 		room,
-		options.websocketSignalingServer,
+		options.webSocketSignalingServer,
 		options.maxClients,
-		options.localDeviceOnly,
+		options.browserDirect,
 	])
 
 	useEffect(() => {

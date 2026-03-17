@@ -4,7 +4,7 @@ import { DevicePortalConsumer } from './consumer/DevicePortalConsumer'
 import './CookieClicker.stories.css'
 import { DevicePortalProvider } from './provider/DevicePortalProvider'
 import { ShareLink } from './stories/ShareLink'
-import { websocketSignalingServer } from './stories/utilities/websocketSignalingServer'
+import { webSocketSignalingServer } from './stories/utilities/websocketSignalingServer'
 
 const meta: Meta<FunctionComponent> = {
 	title: 'CookieClicker',
@@ -36,7 +36,7 @@ const ServerEntrypoint: FunctionComponent = () => {
 				onMessageFromConsumer={(message) => {
 					setCounter((previous) => previous + parseInt(message, 10))
 				}}
-				websocketSignalingServer={websocketSignalingServer}
+				webSocketSignalingServer={webSocketSignalingServer}
 				maxClients={5}
 			/>
 		</div>
@@ -81,7 +81,7 @@ const ClientEntrypoint: FunctionComponent = () => {
 				<Suspense fallback={<p>Connecting…</p>}>
 					<DevicePortalConsumer
 						room={room}
-						websocketSignalingServer={websocketSignalingServer}
+						webSocketSignalingServer={webSocketSignalingServer}
 					>
 						{({ value: sharedCountString, sendMessageToProvider }) => {
 							const sharedCount = parseInt(sharedCountString, 10) || 0
