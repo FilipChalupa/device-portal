@@ -1,5 +1,4 @@
 import {
-	defaultPort,
 	PeerId,
 	SignalingMessage,
 	SignalingMessageSchema,
@@ -8,7 +7,15 @@ import { delay } from '../delay'
 import { settings } from '../settings'
 import { getExponentialBackoffDelay } from '../utilities/backoff'
 
-export type BrowserDirectOption = false | 'same-window-only' | true
+/**
+ * Options for direct browser signaling, bypassing the signaling server for peers in the same browser.
+ *
+ * - `true`: (Default) Enables direct signaling via `BroadcastChannel` (for different tabs/windows)
+ *   and an internal event bus (for the same tab).
+ * - `'same-window-only'`: Only enables signaling via the internal event bus for the same tab.
+ * - `false`: Disables all direct signaling, forcing all communication through the signaling server.
+ */
+export type BrowserDirectOption = boolean | 'same-window-only'
 
 const sameTabBus = new EventTarget()
 
