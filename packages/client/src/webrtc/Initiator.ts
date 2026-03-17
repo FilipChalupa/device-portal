@@ -9,6 +9,13 @@ type ClientConnection = {
 	value?: { value: string }
 }
 
+/**
+ * The Initiator acts as the "producer" or "server" in a WebRTC room.
+ * It coordinates with the signaling server to discover and connect to Responders.
+ * 
+ * It automatically initiates WebRTC connections with joining peers and manages 
+ * multiple concurrent client connections.
+ */
 export class Initiator extends Peer {
 	protected role = 'initiator' as const
 	protected connections = new Map<PeerId, ClientConnection>()
@@ -21,6 +28,19 @@ export class Initiator extends Peer {
 		| ((value: string, peerId: PeerId) => void)
 		| undefined
 
+	/**
+	 * Creates a new Initiator.
+	 * 
+	 * @param room - The unique room ID to join.
+	 * @param options - Configuration options.
+	 * @param options.onMessage - Callback when any client sends a message.
+	 * @param options.onPeersChange - Callback when the list of connected peers changes.
+	 * @param options.sendLastValueOnConnectAndReconnect - Whether to automatically send the last 'send()' value to new clients.
+	 * @param options.webSocketSignalingServer - URL of the signaling server, or null to disable.
+	 * @param options.iceServers - Custom RTCIceServer configuration.
+	 * @param options.maxClients - Maximum number of concurrent WebRTC connections (default: 1).
+	 * @param options.browserDirect - Browser direct signaling options.
+	 */
 	constructor(
 		room: string,
 		options: {

@@ -2,12 +2,28 @@ import { BrowserDirectOption, Peer } from './Peer'
 import { PeerId } from '@device-portal/constants'
 import { getExponentialBackoffDelay } from '../utilities/backoff'
 
+/**
+ * The Responder acts as the "consumer" or "client" in a WebRTC room.
+ * It coordinates with the signaling server to join a room and waits for 
+ * an Initiator to establish a WebRTC connection.
+ */
 export class Responder extends Peer {
 	protected role = 'responder' as const
 	private reconnectTimeout: ReturnType<typeof setTimeout> | null = null
 	private isHandlingOffer = false
 	private reconnectTimerAttempts = 0
 
+	/**
+	 * Creates a new Responder.
+	 * 
+	 * @param room - The unique room ID to join.
+	 * @param options - Configuration options.
+	 * @param options.onMessage - Callback when the initiator sends a message.
+	 * @param options.sendLastValueOnConnectAndReconnect - Whether to automatically send the last 'send()' value to the initiator on reconnect.
+	 * @param options.webSocketSignalingServer - URL of the signaling server, or null to disable.
+	 * @param options.iceServers - Custom RTCIceServer configuration.
+	 * @param options.browserDirect - Browser direct signaling options.
+	 */
 	constructor(
 		room: string,
 		options: {

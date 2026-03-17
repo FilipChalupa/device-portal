@@ -93,11 +93,11 @@ To use a custom signaling server or disable it:
 
 ```typescript
 const initiator = new Initiator('my-room', {
-	webSocketServer: 'wss://your-server.com',
+	webSocketSignalingServer: 'wss://your-server.com',
 })
 
 // Disable signaling server (Browser Direct only)
 const responder = new Responder('my-room', {
-	webSocketServer: null,
+	webSocketSignalingServer: null,
 })
 ```

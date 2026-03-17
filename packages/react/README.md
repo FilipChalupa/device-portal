@@ -32,7 +32,7 @@ const AppA = () => {
 	const [value, setValue] = useState(0)
 	useDevicePortalProvider('my-test-room', {
 		value: value.toString(),
-		webSocketServer: 'wss://device-portal.filipchalupa.cz',
+		webSocketSignalingServer: 'wss://device-portal.filipchalupa.cz',
 	})
 
 	return (
@@ -69,7 +69,7 @@ const AppB = () => {
 
 const ConsumerComponent = () => {
 	const { value } = useDevicePortalConsumer('my-test-room', {
-		webSocketServer: 'wss://device-portal.filipchalupa.cz',
+		webSocketSignalingServer: 'wss://device-portal.filipchalupa.cz',
 	})
 
 	return (
@@ -165,18 +165,18 @@ By default, `browserDirect` is `true`.
 
 ### Browser Direct Only Mode
 
-For privacy or offline-only applications where you know all peers are on the same browser, you can disable external signaling entirely by passing `webSocketServer: null`:
+For privacy or offline-only applications where you know all peers are on the same browser, you can disable external signaling entirely by passing `webSocketSignalingServer: null`:
 
 ```jsx
 useDevicePortalProvider('my-room', {
 	value: 'secret-data',
-	webSocketServer: null,
+	webSocketSignalingServer: null,
 })
 
 // ...
 
 useDevicePortalConsumer('my-room', {
-	webSocketServer: null,
+	webSocketSignalingServer: null,
 })
 ```
 
