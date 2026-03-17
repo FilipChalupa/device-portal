@@ -18,7 +18,7 @@
 		"dev:package": "rollup -c -w",
 		"build:package": "rollup -c",
 		"test:package": "npm run build:package",
-		"dev:storybook": "storybook dev -p 6006",
+		"dev:storybook": "storybook dev -p 7007",
 		"build:storybook": "storybook build"
 	},
 	"repository": {
