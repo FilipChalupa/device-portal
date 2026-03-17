@@ -65,7 +65,18 @@ export class Initiator extends Peer {
 		console.log(`[Initiator] Peer ${peerId} joined`)
 
 		if (this.directPeers.has(peerId)) {
-			console.log(`[Initiator] Peer ${peerId} is a direct peer, skipping WebRTC.`)
+			console.log(
+				`[Initiator] Peer ${peerId} is a direct peer, skipping WebRTC.`,
+			)
+			const existingClient = this.connections.get(peerId)
+			if (existingClient) {
+				console.log(
+					`[Initiator] Closing redundant WebRTC connection to direct peer ${peerId}`,
+				)
+				existingClient.channel.close()
+				existingClient.connection.close()
+				this.connections.delete(peerId)
+			}
 			this.onPeersChange?.(this.peers)
 			return
 		}
@@ -263,6 +274,18 @@ export class Initiator extends Peer {
 
 	public send(value: string) {
 		this.value = { value }
+
+		// Send to direct peers
+		if (this.browserDirect !== false) {
+			this.sendDirectSignaling({
+				type: 'direct-message',
+				from: this.peerId,
+				data: value,
+				to: null,
+			})
+		}
+
+		// Send to WebRTC peers
 		for (const client of this.connections.values()) {
 			if (client.channel.readyState === 'open') {
 				client.channel.send(value)
@@ -271,6 +294,17 @@ export class Initiator extends Peer {
 	}
 
 	public sendToPeer(peerId: PeerId, value: string) {
+		// Try direct first
+		if (this.browserDirect !== false && this.directPeers.has(peerId)) {
+			this.sendDirectSignaling({
+				type: 'direct-message',
+				from: this.peerId,
+				data: value,
+				to: peerId,
+			})
+			return
+		}
+
 		const client = this.connections.get(peerId)
 		if (!client) return
 		client.value = { value }

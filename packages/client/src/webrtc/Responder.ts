@@ -28,6 +28,21 @@ export class Responder extends Peer {
 
 	protected handlePeerJoined(peerId: PeerId) {
 		// Responder does not need to do anything when a peer joins, it waits for an offer
+		// But if they are direct, we should clear any existing WebRTC connection
+		if (this.directPeers.has(peerId)) {
+			console.log(
+				`[Responder] Peer ${peerId} is a direct peer, ensuring no WebRTC exists.`,
+			)
+			if (this.connection) {
+				console.log(
+					`[Responder] Closing redundant WebRTC connection to direct peer ${peerId}`,
+				)
+				this.connection.close()
+				this.connection = null
+				this.channel?.close()
+				this.channel = null
+			}
+		}
 	}
 
 	protected handlePeerLeft(peerId: PeerId) {
