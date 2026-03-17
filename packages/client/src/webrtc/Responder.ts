@@ -4,7 +4,7 @@ import { getExponentialBackoffDelay } from '../utilities/backoff'
 
 /**
  * The Responder acts as the "consumer" or "client" in a WebRTC room.
- * It coordinates with the signaling server to join a room and waits for 
+ * It coordinates with the signaling server to join a room and waits for
  * an Initiator to establish a WebRTC connection.
  */
 export class Responder extends Peer {
@@ -15,7 +15,7 @@ export class Responder extends Peer {
 
 	/**
 	 * Creates a new Responder.
-	 * 
+	 *
 	 * @param room - The unique room ID to join.
 	 * @param options - Configuration options.
 	 * @param options.onMessage - Callback when the initiator sends a message.

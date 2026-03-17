@@ -12,8 +12,8 @@ type ClientConnection = {
 /**
  * The Initiator acts as the "producer" or "server" in a WebRTC room.
  * It coordinates with the signaling server to discover and connect to Responders.
- * 
- * It automatically initiates WebRTC connections with joining peers and manages 
+ *
+ * It automatically initiates WebRTC connections with joining peers and manages
  * multiple concurrent client connections.
  */
 export class Initiator extends Peer {
@@ -30,7 +30,7 @@ export class Initiator extends Peer {
 
 	/**
 	 * Creates a new Initiator.
-	 * 
+	 *
 	 * @param room - The unique room ID to join.
 	 * @param options - Configuration options.
 	 * @param options.onMessage - Callback when any client sends a message.

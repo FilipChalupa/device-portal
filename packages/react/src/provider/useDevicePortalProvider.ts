@@ -27,7 +27,7 @@ export type DevicePortalProviderOptions = {
 
 /**
  * A React hook that creates a Device Portal room and shares a value with all joining consumers.
- * 
+ *
  * @param room - The unique room ID.
  * @param options - Provider configuration options.
  * @returns An object containing the list of connected peers and the underlying Initiator instance.
@@ -49,7 +49,8 @@ export const useDevicePortalProvider = (
 			onPeersChange: (peers) => {
 				setPeers(peers)
 			},
-			sendLastValueOnConnectAndReconnect: options.sendLastValueOnConnectAndReconnect,
+			sendLastValueOnConnectAndReconnect:
+				options.sendLastValueOnConnectAndReconnect,
 			webSocketSignalingServer: options.webSocketSignalingServer,
 			maxClients: options.maxClients,
 			browserDirect: options.browserDirect,

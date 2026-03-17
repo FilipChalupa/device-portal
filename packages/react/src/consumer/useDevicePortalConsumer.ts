@@ -52,7 +52,7 @@ export type DevicePortalConsumerOptions = {
 /**
  * A React hook that joins a Device Portal room and receives value from the provider.
  * This hook suspends the component until the first value is received.
- * 
+ *
  * @param room - The unique room ID.
  * @param options - Consumer configuration options.
  * @returns An object containing the current value and a function to send messages back to the provider.
@@ -90,7 +90,8 @@ export const useDevicePortalConsumer = (
 					setState({ room, value, sendMessageToProvider })
 				}
 			},
-			sendLastValueOnConnectAndReconnect: options.sendLastValueOnConnectAndReconnect ?? false,
+			sendLastValueOnConnectAndReconnect:
+				options.sendLastValueOnConnectAndReconnect ?? false,
 			webSocketSignalingServer: options.webSocketSignalingServer,
 			browserDirect: options.browserDirect,
 		})

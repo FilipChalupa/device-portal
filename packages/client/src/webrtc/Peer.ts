@@ -83,7 +83,9 @@ export abstract class Peer {
 			if (this.browserDirect !== false) {
 				if (this.browserDirect === true && 'window' in globalThis) {
 					this.sendBroadcastChannel = new BroadcastChannel(this.sendChannelName)
-					this.listenBroadcastChannel = new BroadcastChannel(this.listenChannelName)
+					this.listenBroadcastChannel = new BroadcastChannel(
+						this.listenChannelName,
+					)
 					this.listenBroadcastChannel.onmessage = (event) => {
 						this.handleSignalingMessage(event.data)
 					}

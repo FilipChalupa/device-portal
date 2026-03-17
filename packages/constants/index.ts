@@ -83,6 +83,8 @@ export type RtcMessage = z.infer<typeof RtcMessageSchema>
 export type IdentityMessage = z.infer<typeof IdentityMessageSchema>
 export type PeerJoinedMessage = z.infer<typeof PeerJoinedMessageSchema>
 export type PeerLeftMessage = z.infer<typeof PeerLeftMessageSchema>
-export type DirectDiscoveryMessage = z.infer<typeof DirectDiscoveryMessageSchema>
+export type DirectDiscoveryMessage = z.infer<
+	typeof DirectDiscoveryMessageSchema
+>
 export type DirectMessage = z.infer<typeof DirectMessageSchema>
 export type SignalingMessage = z.infer<typeof SignalingMessageSchema>
