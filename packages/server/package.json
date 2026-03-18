@@ -11,7 +11,7 @@
 	"scripts": {
 		"build": "tsup && chmod +x dist/main.js",
 		"start": "node dist/main.js",
-		"dev": "tsx watch src/main.ts",
+		"dev": "tsup --watch",
 		"test": "tsc --noEmit"
 	},
 	"repository": {
@@ -42,7 +42,6 @@
 		"@types/node": "^20.0.0",
 		"@types/ws": "^8.5.3",
 		"tsup": "^8.0.0",
-		"tsx": "^4.21.0",
 		"typescript": "^5.9.3"
 	}
 }
