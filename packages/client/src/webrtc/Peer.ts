@@ -2,7 +2,7 @@ import {
 	PeerId,
 	SignalingMessage,
 	SignalingMessageSchema,
-} from '@device-portal/constants'
+} from '../../../shared/constants'
 import { delay } from '../delay'
 import { settings } from '../settings'
 import { getExponentialBackoffDelay } from '../utilities/backoff'

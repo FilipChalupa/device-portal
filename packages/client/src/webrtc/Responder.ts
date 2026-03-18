@@ -1,6 +1,6 @@
-import { BrowserDirectOption, Peer } from './Peer'
-import { PeerId } from '@device-portal/constants'
+import { PeerId } from '../../../shared/constants'
 import { getExponentialBackoffDelay } from '../utilities/backoff'
+import { BrowserDirectOption, Peer } from './Peer'
 
 /**
  * The Responder acts as the "consumer" or "client" in a WebRTC room.

@@ -1,7 +1,7 @@
 import type { StorybookConfig } from '@storybook/react-vite'
 import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { defaultPort } from '../../constants/index.ts'
+import { defaultPort } from '../../shared/constants.ts'
 
 const config: StorybookConfig = {
 	stories: ['../src/**/*.mdx', '../src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
@@ -28,9 +28,6 @@ const config: StorybookConfig = {
 				alias: {
 					'@device-portal/client': fileURLToPath(
 						import.meta.resolve('../../client/src/index.ts'),
-					),
-					'@device-portal/constants': fileURLToPath(
-						import.meta.resolve('../../constants/index.ts'),
 					),
 					'@storybook/addon-docs/mdx-react-shim': fileURLToPath(
 						import.meta.resolve('@storybook/addon-docs/mdx-react-shim'),

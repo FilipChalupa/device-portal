@@ -25,18 +25,12 @@ COPY package.json package-lock.json ./
 COPY packages/client/package.json ./packages/client/
 COPY packages/react/package.json ./packages/react/
 COPY packages/server/package.json ./packages/server/
-COPY packages/constants/package.json ./packages/constants/
 
-# Install ONLY production dependencies for the server (and its workspace dependencies like constants)
-# Note: npm ci --omit=dev -w @device-portal/server might not correctly link workspaces if not careful,
-# but it should if package.json files are there.
+# Install ONLY production dependencies for the server
 RUN npm ci --omit=dev -w @device-portal/server
 
 # Copy built outputs for everything the server needs at runtime
-# Ensure they are copied to the correct paths so symlinks work
 COPY --from=builder /app/packages/server/dist ./packages/server/dist
-COPY --from=builder /app/packages/server/scripts ./packages/server/scripts
-COPY --from=builder /app/packages/constants/dist ./packages/constants/dist
 COPY --from=builder /app/packages/react/storybook-static ./packages/react/storybook-static
 
 # Expose the default port

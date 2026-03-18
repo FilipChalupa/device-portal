@@ -11,7 +11,7 @@ import {
 	defaultPort,
 	SignalingMessage,
 	SignalingMessageSchema,
-} from '@device-portal/constants'
+} from '../../shared/constants'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 

@@ -3,13 +3,13 @@
 	"version": "0.0.0",
 	"description": "Base WebRTC logic for Device Portal.",
 	"type": "module",
-	"main": "./dist/index.js",
-	"types": "./dist/index.d.ts",
+	"main": "./dist/client/src/index.js",
+	"types": "./dist/client/src/index.d.ts",
 	"exports": {
 		".": {
-			"types": "./dist/index.d.ts",
-			"import": "./dist/index.js",
-			"default": "./dist/index.js"
+			"types": "./dist/client/src/index.d.ts",
+			"import": "./dist/client/src/index.js",
+			"default": "./dist/client/src/index.js"
 		}
 	},
 	"scripts": {

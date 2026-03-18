@@ -1,12 +1,11 @@
 import commonjs from '@rollup/plugin-commonjs'
 import resolve from '@rollup/plugin-node-resolve'
+import strip from '@rollup/plugin-strip'
 import path from 'path'
 import del from 'rollup-plugin-delete'
 import typescript from 'rollup-plugin-typescript2'
-import strip from '@rollup/plugin-strip'
-import packageJson from './package.json' with { type: 'json' }
 
-const outputDirectory = path.parse(packageJson.main).dir
+const outputDirectory = 'dist'
 
 export default (args) => {
 	const isWatch = args.watch
@@ -18,7 +17,9 @@ export default (args) => {
 			format: 'esm',
 			sourcemap: true,
 			preserveModules: true,
+			preserveModulesRoot: path.resolve('..'),
 		},
+		external: ['zod'],
 		plugins: [
 			del({ targets: outputDirectory + '/*' }),
 			resolve({

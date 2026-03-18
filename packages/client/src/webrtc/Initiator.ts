@@ -1,6 +1,6 @@
-import { BrowserDirectOption, Peer } from './Peer'
+import { PeerId } from '../../../shared/constants'
 import { settings } from '../settings'
-import { PeerId } from '@device-portal/constants'
+import { BrowserDirectOption, Peer } from './Peer'
 
 type ClientConnection = {
 	connection: RTCPeerConnection
