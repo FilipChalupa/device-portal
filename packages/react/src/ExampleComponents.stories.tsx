@@ -11,7 +11,7 @@ import { DevicePortalConsumer } from './consumer/DevicePortalConsumer'
 import './Example.stories.css'
 import { DevicePortalProvider } from './provider/DevicePortalProvider'
 import { getLocalStorageRoom } from './stories/utilities/getLocalStorageRoom'
-import { websocketSignalingServer } from './stories/utilities/websocketSignalingServer'
+import { webSocketSignalingServer } from './stories/utilities/websocketSignalingServer'
 
 const meta: Meta<FunctionComponent> = {
 	title: 'Counter/Components',
@@ -33,7 +33,7 @@ const ProviderComponent: FunctionComponent = () => {
 			<div style={{ marginTop: '0.5em', display: 'grid', rowGap: '0.5em' }}>
 				<DevicePortalProvider
 					room={room}
-					websocketSignalingServer={websocketSignalingServer}
+					webSocketSignalingServer={webSocketSignalingServer}
 					maxClients={5}
 					onMessageFromConsumer={(value, peerId) => {
 						console.log(
@@ -99,7 +99,7 @@ const ConsumerComponent: FunctionComponent = () => {
 	return (
 		<DevicePortalConsumer
 			room={room}
-			websocketSignalingServer={websocketSignalingServer}
+			webSocketSignalingServer={webSocketSignalingServer}
 		>
 			{({ value, sendMessageToProvider }) => (
 				<div>

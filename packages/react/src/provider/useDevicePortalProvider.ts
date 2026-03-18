@@ -1,16 +1,37 @@
 import { useEffect, useRef, useState } from 'react'
-import { Initiator, type PeerId } from '@device-portal/client'
+import {
+	Initiator,
+	type PeerId,
+	type BrowserDirectOption,
+} from '@device-portal/client'
 
 // @TODO: warn if one room is used by multiple useDevicePortalProvider hooks more than once at the same time
 
+/**
+ * Configuration options for the Device Portal Provider.
+ */
 export type DevicePortalProviderOptions = {
+	/** The value to share with all connected consumers. */
 	value?: string
-	websocketSignalingServer?: string
+	/** URL of the signaling server, or null to disable. */
+	webSocketSignalingServer?: string | null
+	/** Callback when a consumer sends a message back to the provider. */
 	onMessageFromConsumer?: (value: string, peerId: PeerId) => void
+	/** Whether to automatically send the last 'value' to new consumers. Default: true. */
+	sendLastValueOnConnectAndReconnect?: boolean
+	/** Maximum number of concurrent consumer connections. Default: 1. */
 	maxClients?: number
-	localDeviceOnly?: boolean
+	/** Browser direct signaling options. */
+	browserDirect?: BrowserDirectOption
 }
 
+/**
+ * A React hook that creates a Device Portal room and shares a value with all joining consumers.
+ *
+ * @param room - The unique room ID.
+ * @param options - Provider configuration options.
+ * @returns An object containing the list of connected peers and the underlying Initiator instance.
+ */
 export const useDevicePortalProvider = (
 	room: string,
 	options: DevicePortalProviderOptions = {},
@@ -28,9 +49,11 @@ export const useDevicePortalProvider = (
 			onPeersChange: (peers) => {
 				setPeers(peers)
 			},
-			websocketSignalingServer: options.websocketSignalingServer,
+			sendLastValueOnConnectAndReconnect:
+				options.sendLastValueOnConnectAndReconnect,
+			webSocketSignalingServer: options.webSocketSignalingServer,
 			maxClients: options.maxClients,
-			localDeviceOnly: options.localDeviceOnly,
+			browserDirect: options.browserDirect,
 		})
 		setInitiator(initiator)
 		setPeers(initiator.peers)
@@ -42,9 +65,9 @@ export const useDevicePortalProvider = (
 		}
 	}, [
 		room,
-		options.websocketSignalingServer,
+		options.webSocketSignalingServer,
 		options.maxClients,
-		options.localDeviceOnly,
+		options.browserDirect,
 	])
 
 	useEffect(() => {

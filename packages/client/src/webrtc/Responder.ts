@@ -1,31 +1,74 @@
-import { Peer } from './Peer'
-import { PeerId } from './PeerId'
+import { PeerId } from '../../../shared/constants'
+import { getExponentialBackoffDelay } from '../utilities/backoff'
+import { BrowserDirectOption, Peer } from './Peer'
 
+/**
+ * The Responder acts as the "consumer" or "client" in a WebRTC room.
+ * It coordinates with the signaling server to join a room and waits for
+ * an Initiator to establish a WebRTC connection.
+ */
 export class Responder extends Peer {
 	protected role = 'responder' as const
 	private reconnectTimeout: ReturnType<typeof setTimeout> | null = null
 	private isHandlingOffer = false
+	private reconnectTimerAttempts = 0
 
+	/**
+	 * Creates a new Responder.
+	 *
+	 * @param room - The unique room ID to join.
+	 * @param options - Configuration options.
+	 * @param options.onMessage - Callback when the initiator sends a message.
+	 * @param options.sendLastValueOnConnectAndReconnect - Whether to automatically send the last 'send()' value to the initiator on reconnect.
+	 * @param options.webSocketSignalingServer - URL of the signaling server, or null to disable.
+	 * @param options.iceServers - Custom RTCIceServer configuration.
+	 * @param options.browserDirect - Browser direct signaling options.
+	 */
 	constructor(
 		room: string,
 		options: {
 			onMessage?: (value: string, peerId: PeerId) => void
 			sendLastValueOnConnectAndReconnect?: boolean
-			websocketSignalingServer?: string
+			webSocketSignalingServer?: string | null
 			iceServers?: Array<RTCIceServer>
-			localDeviceOnly?: boolean
+			browserDirect?: BrowserDirectOption
 		} = {},
 	) {
 		super(room, options)
 	}
 
-	protected onConnected(): void {
+	protected override onConnected(): void {
 		// Responder waits for an offer
 		this.startReconnectionTimer()
 	}
 
 	protected handlePeerJoined(peerId: PeerId) {
 		// Responder does not need to do anything when a peer joins, it waits for an offer
+		// But if they are direct, we should clear any existing WebRTC connection
+		if (this.directPeers.has(peerId)) {
+			console.log(
+				`[Responder] Peer ${peerId} is a direct peer, ensuring no WebRTC exists.`,
+			)
+			if (this.connection) {
+				console.log(
+					`[Responder] Closing redundant WebRTC connection to direct peer ${peerId}`,
+				)
+				this.connection.close()
+				this.connection = null
+				this.channel?.close()
+				this.channel = null
+			}
+
+			// Send last value to the newly joined direct peer
+			if (this.value && this.sendLastValueOnConnectAndReconnect) {
+				this.sendDirectSignaling({
+					type: 'direct-message',
+					from: this.peerId,
+					data: this.value.value,
+					to: peerId,
+				})
+			}
+		}
 	}
 
 	protected handlePeerLeft(peerId: PeerId) {
@@ -38,8 +81,9 @@ export class Responder extends Peer {
 		if (this.reconnectTimeout || this.isDestroyed) {
 			return
 		}
-		console.log('[Responder] Starting reconnection timer...')
-		this.reconnectTimeout = setTimeout(() => {
+		const delayMs = getExponentialBackoffDelay(this.reconnectTimerAttempts++)
+		console.log(`[Responder] Starting reconnection timer in ${delayMs}ms...`)
+		this.reconnectTimeout = setTimeout(async () => {
 			this.reconnectTimeout = null
 			if (this.isDestroyed) {
 				return
@@ -53,12 +97,11 @@ export class Responder extends Peer {
 				console.log(
 					'[Responder] Attempting to re-join room for reconnection...',
 				)
-				this.socket?.send(
-					JSON.stringify({ type: 'join-room', room: this.room }),
-				)
+				await this.ensureSignaling()
+				this.announce()
 				this.startReconnectionTimer() // Schedule next attempt if it still fails
 			}
-		}, 3000)
+		}, delayMs)
 	}
 
 	private stopReconnectionTimer() {
@@ -66,6 +109,7 @@ export class Responder extends Peer {
 			clearTimeout(this.reconnectTimeout)
 			this.reconnectTimeout = null
 		}
+		this.reconnectTimerAttempts = 0
 	}
 
 	protected async handleOffer(
@@ -78,6 +122,14 @@ export class Responder extends Peer {
 			)
 			return
 		}
+
+		if (this.directPeers.has(fromPeerId)) {
+			console.log(
+				`[Responder] Peer ${fromPeerId} is a direct peer, ignoring WebRTC offer.`,
+			)
+			return
+		}
+
 		this.isHandlingOffer = true
 		try {
 			console.log(`[Responder] Handling offer from ${fromPeerId}`)

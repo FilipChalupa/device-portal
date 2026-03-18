@@ -1,6 +1,6 @@
-import { Peer } from './Peer'
+import { PeerId } from '../../../shared/constants'
 import { settings } from '../settings'
-import { PeerId } from './PeerId'
+import { BrowserDirectOption, Peer } from './Peer'
 
 type ClientConnection = {
 	connection: RTCPeerConnection
@@ -9,6 +9,13 @@ type ClientConnection = {
 	value?: { value: string }
 }
 
+/**
+ * The Initiator acts as the "producer" or "server" in a WebRTC room.
+ * It coordinates with the signaling server to discover and connect to Responders.
+ *
+ * It automatically initiates WebRTC connections with joining peers and manages
+ * multiple concurrent client connections.
+ */
 export class Initiator extends Peer {
 	protected role = 'initiator' as const
 	protected connections = new Map<PeerId, ClientConnection>()
@@ -21,16 +28,29 @@ export class Initiator extends Peer {
 		| ((value: string, peerId: PeerId) => void)
 		| undefined
 
+	/**
+	 * Creates a new Initiator.
+	 *
+	 * @param room - The unique room ID to join.
+	 * @param options - Configuration options.
+	 * @param options.onMessage - Callback when any client sends a message.
+	 * @param options.onPeersChange - Callback when the list of connected peers changes.
+	 * @param options.sendLastValueOnConnectAndReconnect - Whether to automatically send the last 'send()' value to new clients.
+	 * @param options.webSocketSignalingServer - URL of the signaling server, or null to disable.
+	 * @param options.iceServers - Custom RTCIceServer configuration.
+	 * @param options.maxClients - Maximum number of concurrent WebRTC connections (default: 1).
+	 * @param options.browserDirect - Browser direct signaling options.
+	 */
 	constructor(
 		room: string,
 		options: {
 			onMessage?: (value: string, peerId: PeerId) => void
 			onPeersChange?: (peers: PeerId[]) => void
 			sendLastValueOnConnectAndReconnect?: boolean
-			websocketSignalingServer?: string
+			webSocketSignalingServer?: string | null
 			iceServers?: Array<RTCIceServer>
 			maxClients?: number
-			localDeviceOnly?: boolean
+			browserDirect?: BrowserDirectOption
 		} = {},
 	) {
 		super(room, options)
@@ -40,7 +60,11 @@ export class Initiator extends Peer {
 	}
 
 	public get peers(): PeerId[] {
-		return Array.from(this.connections.keys())
+		const allPeers = new Set<PeerId>([
+			...Array.from(this.connections.keys()),
+			...Array.from(this.directPeers),
+		])
+		return Array.from(allPeers)
 	}
 
 	public addPeerListener(peerId: PeerId, listener: (value: string) => void) {
@@ -53,12 +77,37 @@ export class Initiator extends Peer {
 		}
 	}
 
-	protected onConnected(): void {
-		console.log('[Initiator] Connected to signaling server')
-	}
-
 	protected async handlePeerJoined(peerId: PeerId) {
 		console.log(`[Initiator] Peer ${peerId} joined`)
+
+		if (this.directPeers.has(peerId)) {
+			console.log(
+				`[Initiator] Peer ${peerId} is a direct peer, skipping WebRTC.`,
+			)
+			const existingClient = this.connections.get(peerId)
+			if (existingClient) {
+				console.log(
+					`[Initiator] Closing redundant WebRTC connection to direct peer ${peerId}`,
+				)
+				existingClient.channel.close()
+				existingClient.connection.close()
+				this.connections.delete(peerId)
+			}
+
+			// Send last value to the newly joined direct peer
+			if (this.value && this.sendLastValueOnConnectAndReconnect) {
+				this.sendDirectSignaling({
+					type: 'direct-message',
+					from: this.peerId,
+					data: this.value.value,
+					to: peerId,
+				})
+			}
+
+			this.onPeersChange?.(this.peers)
+			return
+		}
+
 		if (this.pendingPeers.has(peerId)) {
 			console.log(
 				`[Initiator] Already connecting to ${peerId} (pending), skipping.`,
@@ -93,6 +142,10 @@ export class Initiator extends Peer {
 		}
 	}
 
+	protected override shouldConnectToWebSocket(): boolean {
+		return this.peers.length < this.maxClients
+	}
+
 	protected handlePeerLeft(peerId: PeerId) {
 		console.log(`[Initiator] Peer ${peerId} left`)
 		this.waitingPeers.delete(peerId)
@@ -103,6 +156,13 @@ export class Initiator extends Peer {
 			this.connections.delete(peerId)
 			this.onPeersChange?.(this.peers)
 			this.processWaitingPeers()
+		} else {
+			// Might be a direct peer
+			this.onPeersChange?.(this.peers)
+		}
+
+		if (this.shouldConnectToWebSocket()) {
+			this.ensureSignaling()
 		}
 	}
 
@@ -230,6 +290,15 @@ export class Initiator extends Peer {
 		}
 	}
 
+	protected override onDirectMessageReceived(from: PeerId, data: any) {
+		const listeners = this.peerListeners.get(from)
+		if (listeners) {
+			for (const listener of listeners) {
+				listener(data)
+			}
+		}
+	}
+
 	protected async handleIceCandidate(
 		candidate: RTCIceCandidateInit,
 		fromPeerId?: PeerId,
@@ -249,6 +318,18 @@ export class Initiator extends Peer {
 
 	public send(value: string) {
 		this.value = { value }
+
+		// Send to direct peers
+		if (this.browserDirect !== false) {
+			this.sendDirectSignaling({
+				type: 'direct-message',
+				from: this.peerId,
+				data: value,
+				to: null,
+			})
+		}
+
+		// Send to WebRTC peers
 		for (const client of this.connections.values()) {
 			if (client.channel.readyState === 'open') {
 				client.channel.send(value)
@@ -257,6 +338,17 @@ export class Initiator extends Peer {
 	}
 
 	public sendToPeer(peerId: PeerId, value: string) {
+		// Try direct first
+		if (this.browserDirect !== false && this.directPeers.has(peerId)) {
+			this.sendDirectSignaling({
+				type: 'direct-message',
+				from: this.peerId,
+				data: value,
+				to: peerId,
+			})
+			return
+		}
+
 		const client = this.connections.get(peerId)
 		if (!client) return
 		client.value = { value }

@@ -4,7 +4,7 @@ import { useDevicePortalConsumer } from './consumer/useDevicePortalConsumer'
 import './Example.stories.css'
 import { useDevicePortalProvider } from './provider/useDevicePortalProvider'
 import { getLocalStorageRoom } from './stories/utilities/getLocalStorageRoom'
-import { websocketSignalingServer } from './stories/utilities/websocketSignalingServer'
+import { webSocketSignalingServer } from './stories/utilities/websocketSignalingServer'
 
 const meta: Meta<FunctionComponent> = {
 	title: 'Counter/Hooks',
@@ -37,7 +37,7 @@ const ProviderComponent: FunctionComponent = () => {
 				)
 			}
 		},
-		websocketSignalingServer,
+		webSocketSignalingServer,
 		maxClients: 1,
 	})
 
@@ -73,7 +73,7 @@ const ConsumerComponent: FunctionComponent = () => {
 	const room = getLocalStorageRoom()
 	console.log('[ConsumerComponent] Rendering')
 	const { value, sendMessageToProvider } = useDevicePortalConsumer(room, {
-		websocketSignalingServer,
+		webSocketSignalingServer,
 	})
 	return (
 		<div>

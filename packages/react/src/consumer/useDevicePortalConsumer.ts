@@ -1,5 +1,5 @@
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react'
-import { Responder } from '@device-portal/client'
+import { Responder, type BrowserDirectOption } from '@device-portal/client'
 
 type State = {
 	room: string
@@ -37,12 +37,29 @@ const responders: {
 	}
 } = {}
 
+/**
+ * Configuration options for the Device Portal Consumer.
+ */
+export type DevicePortalConsumerOptions = {
+	/** URL of the signaling server, or null to disable. */
+	webSocketSignalingServer?: string | null
+	/** Browser direct signaling options. */
+	browserDirect?: BrowserDirectOption
+	/** Whether to automatically send the last 'send()' value back to the provider on reconnect. Default: false. */
+	sendLastValueOnConnectAndReconnect?: boolean
+}
+
+/**
+ * A React hook that joins a Device Portal room and receives value from the provider.
+ * This hook suspends the component until the first value is received.
+ *
+ * @param room - The unique room ID.
+ * @param options - Consumer configuration options.
+ * @returns An object containing the current value and a function to send messages back to the provider.
+ */
 export const useDevicePortalConsumer = (
 	room: string,
-	options: {
-		websocketSignalingServer?: string
-		localDeviceOnly?: boolean
-	} = {},
+	options: DevicePortalConsumerOptions = {},
 ): Pick<State, 'value' | 'sendMessageToProvider'> => {
 	const [valueState, setValueState] = useState<State | null>(null)
 
@@ -73,9 +90,10 @@ export const useDevicePortalConsumer = (
 					setState({ room, value, sendMessageToProvider })
 				}
 			},
-			sendLastValueOnConnectAndReconnect: false,
-			websocketSignalingServer: options.websocketSignalingServer,
-			localDeviceOnly: options.localDeviceOnly,
+			sendLastValueOnConnectAndReconnect:
+				options.sendLastValueOnConnectAndReconnect ?? false,
+			webSocketSignalingServer: options.webSocketSignalingServer,
+			browserDirect: options.browserDirect,
 		})
 
 		responders[room] = {

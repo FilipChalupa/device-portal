@@ -10,7 +10,7 @@ import './Chat.stories.css'
 import { DevicePortalConsumer } from './consumer/DevicePortalConsumer'
 import { DevicePortalProvider } from './provider/DevicePortalProvider'
 import { ShareLink } from './stories/ShareLink'
-import { websocketSignalingServer } from './stories/utilities/websocketSignalingServer'
+import { webSocketSignalingServer } from './stories/utilities/websocketSignalingServer'
 
 type ChatMessage = {
 	id: string
@@ -101,7 +101,7 @@ const ServerEntrypoint: FunctionComponent = () => {
 				onMessageFromConsumer={(text) => {
 					addMessage(text, 'consumer')
 				}}
-				websocketSignalingServer={websocketSignalingServer}
+				webSocketSignalingServer={webSocketSignalingServer}
 				maxClients={10}
 			/>
 
@@ -121,7 +121,7 @@ const ClientView: FunctionComponent<{ room: string }> = ({ room }) => {
 	return (
 		<DevicePortalConsumer
 			room={room}
-			websocketSignalingServer={websocketSignalingServer}
+			webSocketSignalingServer={webSocketSignalingServer}
 		>
 			{({ value, sendMessageToProvider }) => {
 				const messages: ChatMessage[] = value ? JSON.parse(value) : []

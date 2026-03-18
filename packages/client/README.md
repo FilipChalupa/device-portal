@@ -63,26 +63,41 @@ responder.send('I received your message!')
 
 - Core WebRTC abstraction (`Peer`, `Initiator`, `Responder`)
 - Signaling server client implementation
-- **Local shortcut**: Uses `BroadcastChannel` for instant signaling between tabs in the same browser, reducing network dependency.
-- **Local only mode**: Support for strictly local signaling without any external signaling server.
+- **Browser Direct**: High-performance internal communication using `BroadcastChannel` and `EventTarget` when peers are in the same browser, bypassing WebRTC entirely for local communication.
+- **Offline/Serverless support**: Can work entirely without a signaling server for same-browser scenarios.
 - Peer ID branding and utilities
 - Automatic reconnection logic
 - Support for multiple consumers per producer
 
-## Local Device Shortcut
+## Browser Direct
 
-When both the `Initiator` and `Responder` are running in the same browser (different tabs or same tab), `@device-portal/client` automatically utilizes `BroadcastChannel` for signaling. This provides a faster connection and works even if the signaling server is unreachable.
+When both the `Initiator` and `Responder` are running in the same browser (different tabs or same tab), `@device-portal/client` can utilize direct browser APIs (`BroadcastChannel` and `EventTarget`) for communication instead of WebRTC. This is faster, more reliable, and works offline.
 
-### Local Only Mode
+By default, `browserDirect` is `true`.
 
-If you want to ensure no external network requests are made for signaling, you can use the `localDeviceOnly` option. This is useful for privacy or offline-only applications where all peers are guaranteed to be in the same browser.
+### Browser Direct Options
+
+- `true` (default): Communication across all tabs in the same browser.
+- `'same-window-only'`: Communication only within the same tab/window.
+- `false`: Disable direct browser communication (always use WebRTC).
 
 ```typescript
 const initiator = new Initiator('my-room', {
-	localDeviceOnly: true,
+	browserDirect: 'same-window-only',
+})
+```
+
+### Signaling Server
+
+To use a custom signaling server or disable it:
+
+```typescript
+const initiator = new Initiator('my-room', {
+	webSocketSignalingServer: 'wss://your-server.com',
 })
 
+// Disable signaling server (Browser Direct only)
 const responder = new Responder('my-room', {
-	localDeviceOnly: true,
+	webSocketSignalingServer: null,
 })
 ```
