@@ -61,6 +61,7 @@ export abstract class Peer {
 					settings.default.webSocketSignalingServer)
 		this.iceServers = options.iceServers ?? settings.default.iceServers
 		this.browserDirect = options.browserDirect ?? true
+		this.peerId = this.generatePeerId()
 		queueMicrotask(() => {
 			if (!this.isDestroyed) {
 				this.run()
@@ -78,8 +79,6 @@ export abstract class Peer {
 
 	protected async run() {
 		try {
-			this.peerId = this.generatePeerId()
-
 			if (this.browserDirect !== false) {
 				if (this.browserDirect === true && 'window' in globalThis) {
 					this.sendBroadcastChannel = new BroadcastChannel(this.sendChannelName)
