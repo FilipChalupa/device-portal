@@ -20,13 +20,14 @@
 		"build:server": "npm run -w @device-portal/server build",
 		"dev:server": "npm run -w @device-portal/server dev",
 		"test:server": "npm run -w @device-portal/server test",
-		"test": "npm run test:client && npm run test:react && npm run test:server",
+		"test": "npm run test:client && npm run build:client && npm run test:react && npm run test:server",
 		"fix": "prettier --check . --write",
 		"lint": "prettier --check ."
 	},
 	"devDependencies": {
 		"concurrently": "^9.2.1",
 		"prettier": "^3.0.3",
-		"typescript": "^5.9.3"
+		"typescript": "^5.9.3",
+		"vitest": "^4.1.0"
 	}
 }

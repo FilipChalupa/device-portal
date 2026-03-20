@@ -15,7 +15,7 @@
 	"scripts": {
 		"dev": "rollup -c -w",
 		"build": "rollup -c",
-		"test": "npm run build"
+		"test": "vitest run"
 	},
 	"repository": {
 		"type": "git",

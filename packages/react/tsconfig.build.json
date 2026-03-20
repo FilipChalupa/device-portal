@@ -3,7 +3,9 @@
 	"compilerOptions": {
 		"rootDir": "src",
 		"baseUrl": ".",
-		"paths": {}
+		"paths": {
+			"@device-portal/client": ["../client/src/index.ts"]
+		}
 	},
 	"exclude": [
 		"node_modules",
