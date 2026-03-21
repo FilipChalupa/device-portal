@@ -4,4 +4,3 @@ export * from './settings'
 export * from './webrtc/Initiator'
 export * from './webrtc/Peer'
 export * from './webrtc/Responder'
-

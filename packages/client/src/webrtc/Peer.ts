@@ -1,8 +1,4 @@
-import {
-	PeerId,
-	SignalingMessage,
-	SignalingMessageSchema,
-} from '../constants'
+import { PeerId, SignalingMessage, SignalingMessageSchema } from '../constants'
 import { delay } from '../delay'
 import { settings } from '../settings'
 import { getExponentialBackoffDelay } from '../utilities/backoff'
