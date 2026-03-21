@@ -1,4 +1,4 @@
-import { PeerId } from '../../../shared/constants'
+import { PeerId } from '../constants'
 import { getExponentialBackoffDelay } from '../utilities/backoff'
 import { BrowserDirectOption, Peer } from './Peer'
 

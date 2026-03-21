@@ -1,4 +1,4 @@
-import { PeerId } from '../../../shared/constants'
+import { PeerId } from '../constants'
 import { settings } from '../settings'
 import { BrowserDirectOption, Peer } from './Peer'
 

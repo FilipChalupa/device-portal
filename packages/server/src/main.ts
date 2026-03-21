@@ -1,3 +1,8 @@
+import {
+	defaultPort,
+	SignalingMessage,
+	SignalingMessageSchema,
+} from '@device-portal/client'
 import { serve } from '@hono/node-server'
 import { serveStatic } from '@hono/node-server/serve-static'
 import { createNodeWebSocket } from '@hono/node-ws'
@@ -7,11 +12,6 @@ import { cors } from 'hono/cors'
 import { dirname, relative, resolve } from 'path'
 import { fileURLToPath } from 'url'
 import { WebSocket } from 'ws'
-import {
-	defaultPort,
-	SignalingMessage,
-	SignalingMessageSchema,
-} from '../../shared/constants'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 

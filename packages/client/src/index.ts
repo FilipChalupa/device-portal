@@ -1,6 +1,7 @@
-export * from '../../shared/constants'
+export * from './constants'
 export * from './delay'
 export * from './settings'
 export * from './webrtc/Initiator'
 export * from './webrtc/Peer'
 export * from './webrtc/Responder'
+

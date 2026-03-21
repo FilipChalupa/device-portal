@@ -1,7 +1,6 @@
 import commonjs from '@rollup/plugin-commonjs'
 import resolve from '@rollup/plugin-node-resolve'
 import strip from '@rollup/plugin-strip'
-import path from 'path'
 import del from 'rollup-plugin-delete'
 import typescript from 'rollup-plugin-typescript2'
 
@@ -17,7 +16,7 @@ export default (args) => {
 			format: 'esm',
 			sourcemap: true,
 			preserveModules: true,
-			preserveModulesRoot: path.resolve('..'),
+			preserveModulesRoot: 'src',
 		},
 		external: ['zod'],
 		plugins: [
