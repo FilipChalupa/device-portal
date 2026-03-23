@@ -110,9 +110,10 @@ app.get(
 
 									client.send(
 										JSON.stringify({
-											id: (message as any).id,
+											id: message.id,
 											type: message.type,
 											from: peerId,
+											to: message.to,
 											data: message.data,
 										}),
 									)
