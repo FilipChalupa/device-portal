@@ -1,5 +1,5 @@
 import { Consumer, type BrowserDirectOption } from '@device-portal/client'
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 
 type State = {
 	value: string
@@ -24,7 +24,7 @@ const withResolvers = <T>() => {
 	return { promise, resolve: resolve!, reject: reject! }
 }
 
-// Keyed by instance ID so each hook invocation gets its own Responder.
+// Keyed by instance ID so each hook invocation gets its own Consumer.
 // Module-level cache is needed to survive React Suspense throws.
 const instances: {
 	[id: string]: {
@@ -32,6 +32,7 @@ const instances: {
 		firstValuePromise: Promise<string>
 		state: null | State
 		setValue: ((state: State) => void) | null
+		room: string
 	}
 } = {}
 
@@ -77,6 +78,7 @@ function createInstance(
 		firstValuePromise,
 		state: null,
 		setValue: null,
+		room,
 	}
 }
 
@@ -91,7 +93,7 @@ function destroyInstance(instanceId: string) {
 
 /**
  * A React hook that joins a Device Portal room and receives value from the provider.
- * Each hook invocation creates its own Responder, so the provider sees each consumer as a separate peer.
+ * Each hook invocation creates its own Consumer, so the provider sees each consumer as a separate peer.
  * This hook suspends the component until the first value is received.
  *
  * @param room - The unique room ID.
@@ -104,13 +106,26 @@ export const useDevicePortalConsumer = (
 ): Pick<State, 'value' | 'sendMessageToProvider'> => {
 	const instanceId = useId()
 	const [valueState, setValueState] = useState<State | null>(null)
+	const destroyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+		null,
+	)
 
 	if (!instances[instanceId]) {
 		createInstance(instanceId, room, options)
 	}
 
 	useEffect(() => {
-		// Recreate if the instance was created during render with different options
+		// Cancel any pending destruction from a previous cleanup (React Strict Mode remount)
+		if (destroyTimeoutRef.current !== null) {
+			clearTimeout(destroyTimeoutRef.current)
+			destroyTimeoutRef.current = null
+		}
+
+		// If instance exists but was created for a different room, destroy and recreate
+		if (instances[instanceId] && instances[instanceId].room !== room) {
+			destroyInstance(instanceId)
+		}
+
 		if (!instances[instanceId]) {
 			createInstance(instanceId, room, options)
 		}
@@ -123,8 +138,16 @@ export const useDevicePortalConsumer = (
 		}
 
 		return () => {
-			destroyInstance(instanceId)
+			instance.setValue = null
 			setValueState(null)
+			// Defer destruction so the instance survives React Strict Mode's
+			// unmount-remount cycle. If the effect re-runs (Strict Mode), it
+			// cancels this timeout. If the component truly unmounts, the
+			// timeout fires and destroys the instance.
+			destroyTimeoutRef.current = setTimeout(() => {
+				destroyTimeoutRef.current = null
+				destroyInstance(instanceId)
+			}, 0)
 		}
 	}, [
 		instanceId,

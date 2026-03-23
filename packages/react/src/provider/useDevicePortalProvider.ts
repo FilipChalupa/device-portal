@@ -36,13 +36,41 @@ export const useDevicePortalProvider = (
 	room: string,
 	options: DevicePortalProviderOptions = {},
 ) => {
-	const [initiator, setInitiator] = useState<Provider | null>(null)
+	const [provider, setProvider] = useState<Provider | null>(null)
 	const [peers, setPeers] = useState<PeerId[]>([])
 	const onMessageFromConsumerRef = useRef(options.onMessageFromConsumer)
 	onMessageFromConsumerRef.current = options.onMessageFromConsumer
+	const providerRef = useRef<Provider | null>(null)
+	const destroyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+		null,
+	)
 
 	useEffect(() => {
-		const initiator = new Provider(room, {
+		// Cancel any pending destruction from a previous cleanup (React Strict Mode remount)
+		if (destroyTimeoutRef.current !== null) {
+			clearTimeout(destroyTimeoutRef.current)
+			destroyTimeoutRef.current = null
+		}
+
+		// Reuse existing provider if it matches (Strict Mode remount)
+		if (providerRef.current) {
+			setProvider(providerRef.current)
+			setPeers(providerRef.current.peers)
+			return () => {
+				const currentProvider = providerRef.current
+				destroyTimeoutRef.current = setTimeout(() => {
+					destroyTimeoutRef.current = null
+					if (currentProvider) {
+						currentProvider.destroy()
+						providerRef.current = null
+						setProvider(null)
+						setPeers([])
+					}
+				}, 0)
+			}
+		}
+
+		const newProvider = new Provider(room, {
 			onMessage: (value, peerId) => {
 				onMessageFromConsumerRef.current?.(value, peerId)
 			},
@@ -55,13 +83,23 @@ export const useDevicePortalProvider = (
 			maxClients: options.maxClients,
 			browserDirect: options.browserDirect,
 		})
-		setInitiator(initiator)
-		setPeers(initiator.peers)
+		providerRef.current = newProvider
+		setProvider(newProvider)
+		setPeers(newProvider.peers)
 
 		return () => {
-			initiator.destroy()
-			setInitiator(null)
-			setPeers([])
+			const currentProvider = providerRef.current
+			destroyTimeoutRef.current = setTimeout(() => {
+				destroyTimeoutRef.current = null
+				if (currentProvider) {
+					currentProvider.destroy()
+					if (providerRef.current === currentProvider) {
+						providerRef.current = null
+					}
+					setProvider(null)
+					setPeers([])
+				}
+			}, 0)
 		}
 	}, [
 		room,
@@ -75,8 +113,8 @@ export const useDevicePortalProvider = (
 		if (options.value === undefined) {
 			return
 		}
-		initiator?.send(options.value)
-	}, [options.value, initiator])
+		provider?.send(options.value)
+	}, [options.value, provider])
 
-	return { peers, initiator }
+	return { peers, initiator: provider }
 }
