@@ -64,13 +64,16 @@ const ServerEntrypoint: FunctionComponent = () => {
 		[],
 	)
 
-	const handleSend = (event: SubmitEvent) => {
-		event.preventDefault()
-		if (inputText.trim()) {
-			addMessage(inputText, 'provider')
-			setInputText('')
-		}
-	}
+	const handleSend = useCallback(
+		(event: SubmitEvent) => {
+			event.preventDefault()
+			if (inputText.trim()) {
+				addMessage(inputText, 'provider')
+				setInputText('')
+			}
+		},
+		[inputText, addMessage],
+	)
 
 	return (
 		<div className="chat-wrapper">
