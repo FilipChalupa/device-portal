@@ -4,7 +4,7 @@ import {
 	type BrowserDirectOption,
 	type PeerId,
 } from '@device-portal/client'
-import { useCallback, useEffect, useId, useRef, useSyncExternalStore } from 'react'
+import { use, useCallback, useEffect, useId, useRef, useState } from 'react'
 
 /**
  * Configuration options for the Device Portal Consumer.
@@ -21,9 +21,6 @@ export type DevicePortalConsumerOptions = {
 // ---------------------------------------------------------------------------
 // Module-level cache for Consumer entries.
 //
-// Each entry holds the Consumer instance, a Suspense promise, the latest
-// snapshot, and a set of subscribers (used by useSyncExternalStore).
-//
 // Why module-level? The cache must survive React Suspense throws (which
 // discard in-progress render state) and React Strict Mode's synchronous
 // unmount/remount cycle.  The entry is keyed by `useId()` which is stable
@@ -36,11 +33,11 @@ export type DevicePortalConsumerOptions = {
 type ConsumerEntry = {
 	consumer: Consumer
 	firstValuePromise: Promise<string>
-	snapshot: string | undefined
-	subscribers: Set<() => void>
+	latestValue: string | undefined
+	setValue: ((value: string) => void) | null
 	destroyTimer: ReturnType<typeof setTimeout> | null
 	room: string
-	optionsSnapshot: string // JSON-serialisable key for shallow comparison
+	optionsSnapshot: string
 }
 
 const entries = new Map<string, ConsumerEntry>()
@@ -73,7 +70,7 @@ function getOrCreateEntry(
 		entries.delete(key)
 	}
 
-	// Create a deferred promise for Suspense
+	// Create a deferred promise for Suspense via use()
 	let resolveFirst!: (value: string) => void
 	const firstValuePromise = new Promise<string>((resolve) => {
 		resolveFirst = resolve
@@ -82,8 +79,8 @@ function getOrCreateEntry(
 	const entry: ConsumerEntry = {
 		consumer: undefined!, // assigned below
 		firstValuePromise,
-		snapshot: undefined,
-		subscribers: new Set(),
+		latestValue: undefined,
+		setValue: null,
 		destroyTimer: null,
 		room,
 		optionsSnapshot: newOptionsKey,
@@ -91,11 +88,9 @@ function getOrCreateEntry(
 
 	entry.consumer = new Consumer(room, {
 		onMessage: (value) => {
-			entry.snapshot = value
+			entry.latestValue = value
 			resolveFirst(value)
-			for (const subscriber of entry.subscribers) {
-				subscriber()
-			}
+			entry.setValue?.(value)
 		},
 		sendLastValueOnConnectAndReconnect:
 			options.sendLastValueOnConnectAndReconnect ?? false,
@@ -112,15 +107,9 @@ function scheduleDestroy(key: string) {
 	const entry = entries.get(key)
 	if (!entry || entry.destroyTimer !== null) return
 
-	// Grace period – Strict Mode remounts happen synchronously within the
-	// same commit, so even a short timeout survives them.
 	entry.destroyTimer = setTimeout(() => {
-		if (entry.subscribers.size === 0) {
-			entry.consumer.destroy()
-			entries.delete(key)
-		} else {
-			entry.destroyTimer = null
-		}
+		entry.consumer.destroy()
+		entries.delete(key)
 	}, 5_000)
 }
 
@@ -128,6 +117,8 @@ function scheduleDestroy(key: string) {
  * A React hook that joins a Device Portal room and receives values from the
  * provider.  **Suspends** the component until the first value is received —
  * wrap the consumer in a `<Suspense>` boundary.
+ *
+ * Requires React 19+. Uses `use()` for Suspense integration.
  *
  * Safe under React Strict Mode and concurrent features: the underlying
  * Consumer is cached with a grace-period cleanup so synchronous
@@ -144,18 +135,30 @@ export const useDevicePortalConsumer = (
 	sendMessageToProvider: (message: string) => void
 } => {
 	const instanceId = useId()
-	// Stable peer ID that survives Strict Mode unmount/remount cycles.
 	const peerIdRef = useRef<PeerId>(generatePeerId())
 
-	// Idempotent: second render in Strict Mode reuses the cached entry.
 	const entry = getOrCreateEntry(instanceId, room, peerIdRef.current, options)
 
-	// Effect ensures the entry stays alive while mounted and schedules
-	// cleanup on unmount.  Strict Mode's immediate remount cancels the
-	// scheduled destruction inside getOrCreateEntry.
+	// Suspends until the first value arrives (React 19 use() API).
+	const firstValue = use(entry.firstValuePromise)
+
+	// After the first value, track subsequent updates via useState.
+	const [value, setValue] = useState(() => entry.latestValue ?? firstValue)
+
+	// Wire up the entry's setValue so the Consumer can push updates.
+	entry.setValue = setValue
+
 	useEffect(() => {
-		getOrCreateEntry(instanceId, room, peerIdRef.current, options)
+		const e = getOrCreateEntry(instanceId, room, peerIdRef.current, options)
+		e.setValue = setValue
+
+		// Sync in case a value arrived between render and effect commit.
+		if (e.latestValue !== undefined) {
+			setValue(e.latestValue)
+		}
+
 		return () => {
+			e.setValue = null
 			scheduleDestroy(instanceId)
 		}
 	}, [
@@ -166,31 +169,12 @@ export const useDevicePortalConsumer = (
 		options.sendLastValueOnConnectAndReconnect,
 	])
 
-	// Subscribe to value updates via React's blessed external-store API.
-	const value = useSyncExternalStore(
-		useCallback(
-			(onStoreChange: () => void) => {
-				entry.subscribers.add(onStoreChange)
-				return () => {
-					entry.subscribers.delete(onStoreChange)
-				}
-			},
-			[entry],
-		),
-		() => entry.snapshot,
-	)
-
 	const sendMessageToProvider = useCallback(
 		(message: string) => {
 			entry.consumer.send(message)
 		},
 		[entry],
 	)
-
-	// Suspend until the first value arrives.
-	if (value === undefined) {
-		throw entry.firstValuePromise
-	}
 
 	return { value, sendMessageToProvider }
 }
