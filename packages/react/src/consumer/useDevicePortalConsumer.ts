@@ -1,8 +1,7 @@
-import { useEffect, useState, type Dispatch, type SetStateAction } from 'react'
 import { Responder, type BrowserDirectOption } from '@device-portal/client'
+import { useEffect, useState } from 'react'
 
 type State = {
-	room: string
 	value: string
 	sendMessageToProvider: (value: string) => void
 }
@@ -25,15 +24,14 @@ const withResolvers = <T>() => {
 	return { promise, resolve: resolve!, reject: reject! }
 }
 
-const responders: {
-	[room: string]: {
+// Keyed by instance ID so each hook invocation gets its own Responder.
+// Module-level cache is needed to survive React Suspense throws.
+const instances: {
+	[id: string]: {
 		responder: Responder
 		firstValuePromise: Promise<string>
-		consumer: null | {
-			value: string
-			sendMessageToProvider: (value: string) => void
-		}
-		setValueStates: Set<Dispatch<SetStateAction<State | null>>>
+		consumer: null | State
+		setValue: ((state: State) => void) | null
 	}
 } = {}
 
@@ -51,6 +49,7 @@ export type DevicePortalConsumerOptions = {
 
 /**
  * A React hook that joins a Device Portal room and receives value from the provider.
+ * Each hook invocation creates its own Responder, so the provider sees each consumer as a separate peer.
  * This hook suspends the component until the first value is received.
  *
  * @param room - The unique room ID.
@@ -61,34 +60,23 @@ export const useDevicePortalConsumer = (
 	room: string,
 	options: DevicePortalConsumerOptions = {},
 ): Pick<State, 'value' | 'sendMessageToProvider'> => {
+	const [instanceId] = useState(() => crypto.randomUUID())
 	const [valueState, setValueState] = useState<State | null>(null)
 
-	// Initialize the responder synchronously if it doesn't exist
-	if (!responders[room]) {
-		console.log(
-			`[useDevicePortalConsumer] Creating new Responder for room: ${room}`,
-		)
-
+	if (!instances[instanceId]) {
 		const { promise: firstValuePromise, resolve: firstValueResolve } =
 			withResolvers<string>()
 
 		const sendMessageToProvider = (value: string) => {
-			responders[room].responder.send(value)
+			instances[instanceId].responder.send(value)
 		}
 
 		const responder = new Responder(room, {
 			onMessage: (value) => {
 				const consumer = { value, sendMessageToProvider }
-				responders[room].consumer = consumer
-
-				// Resolve the suspension promise
+				instances[instanceId].consumer = consumer
 				firstValueResolve(value)
-
-				// Only trigger state updates for components that have already mounted
-				// components currently suspended will re-render when firstValuePromise resolves
-				for (const setState of responders[room].setValueStates) {
-					setState({ room, value, sendMessageToProvider })
-				}
+				instances[instanceId].setValue?.(consumer)
 			},
 			sendLastValueOnConnectAndReconnect:
 				options.sendLastValueOnConnectAndReconnect ?? false,
@@ -96,50 +84,39 @@ export const useDevicePortalConsumer = (
 			browserDirect: options.browserDirect,
 		})
 
-		responders[room] = {
+		instances[instanceId] = {
 			responder,
 			firstValuePromise,
 			consumer: null,
-			setValueStates: new Set(),
+			setValue: null,
 		}
 	}
 
 	useEffect(() => {
-		const roomEntry = responders[room]
-		roomEntry.setValueStates.add(setValueState)
+		const instance = instances[instanceId]
+		instance.setValue = setValueState
 
-		// If we already have a value, sync it immediately on mount
-		if (roomEntry.consumer) {
-			const consumer = roomEntry.consumer!
-			setValueState({
-				room,
-				value: consumer.value,
-				sendMessageToProvider: consumer.sendMessageToProvider,
-			})
+		if (instance.consumer) {
+			setValueState(instance.consumer)
 		}
 
 		return () => {
-			roomEntry.setValueStates.delete(setValueState)
-			if (roomEntry.setValueStates.size === 0) {
-				roomEntry.responder.destroy()
-				delete responders[room]
-			}
+			instance.setValue = null
+			instance.responder.destroy()
+			delete instances[instanceId]
 		}
-	}, [room, setValueState])
+	}, [instanceId, setValueState])
 
 	// 1. If we have local state, use it
-	if (valueState && valueState.room === room) {
-		return {
-			value: valueState.value,
-			sendMessageToProvider: valueState.sendMessageToProvider,
-		}
+	if (valueState) {
+		return valueState
 	}
 
-	// 2. If the shared responder already has a value, use it (handles re-renders after suspension)
-	if (responders[room].consumer) {
-		return responders[room].consumer!
+	// 2. If the responder already has a value, use it (handles re-renders after suspension)
+	if (instances[instanceId].consumer) {
+		return instances[instanceId].consumer!
 	}
 
 	// 3. Otherwise, suspend on the first value promise
-	throw responders[room].firstValuePromise
+	throw instances[instanceId].firstValuePromise
 }
