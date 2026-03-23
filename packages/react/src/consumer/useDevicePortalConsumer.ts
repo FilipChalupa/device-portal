@@ -1,5 +1,5 @@
 import { Responder, type BrowserDirectOption } from '@device-portal/client'
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 
 type State = {
 	value: string
@@ -60,7 +60,7 @@ export const useDevicePortalConsumer = (
 	room: string,
 	options: DevicePortalConsumerOptions = {},
 ): Pick<State, 'value' | 'sendMessageToProvider'> => {
-	const [instanceId] = useState(() => crypto.randomUUID())
+	const instanceId = useId()
 	const [valueState, setValueState] = useState<State | null>(null)
 
 	if (!instances[instanceId]) {
