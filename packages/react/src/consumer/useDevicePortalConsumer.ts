@@ -47,6 +47,48 @@ export type DevicePortalConsumerOptions = {
 	sendLastValueOnConnectAndReconnect?: boolean
 }
 
+function createInstance(
+	instanceId: string,
+	room: string,
+	options: DevicePortalConsumerOptions,
+) {
+	const { promise: firstValuePromise, resolve: firstValueResolve } =
+		withResolvers<string>()
+
+	const sendMessageToProvider = (value: string) => {
+		instances[instanceId].responder.send(value)
+	}
+
+	const responder = new Responder(room, {
+		onMessage: (value) => {
+			const consumer = { value, sendMessageToProvider }
+			instances[instanceId].consumer = consumer
+			firstValueResolve(value)
+			instances[instanceId].setValue?.(consumer)
+		},
+		sendLastValueOnConnectAndReconnect:
+			options.sendLastValueOnConnectAndReconnect ?? false,
+		webSocketSignalingServer: options.webSocketSignalingServer,
+		browserDirect: options.browserDirect,
+	})
+
+	instances[instanceId] = {
+		responder,
+		firstValuePromise,
+		consumer: null,
+		setValue: null,
+	}
+}
+
+function destroyInstance(instanceId: string) {
+	const instance = instances[instanceId]
+	if (instance) {
+		instance.setValue = null
+		instance.responder.destroy()
+		delete instances[instanceId]
+	}
+}
+
 /**
  * A React hook that joins a Device Portal room and receives value from the provider.
  * Each hook invocation creates its own Responder, so the provider sees each consumer as a separate peer.
@@ -64,35 +106,15 @@ export const useDevicePortalConsumer = (
 	const [valueState, setValueState] = useState<State | null>(null)
 
 	if (!instances[instanceId]) {
-		const { promise: firstValuePromise, resolve: firstValueResolve } =
-			withResolvers<string>()
-
-		const sendMessageToProvider = (value: string) => {
-			instances[instanceId].responder.send(value)
-		}
-
-		const responder = new Responder(room, {
-			onMessage: (value) => {
-				const consumer = { value, sendMessageToProvider }
-				instances[instanceId].consumer = consumer
-				firstValueResolve(value)
-				instances[instanceId].setValue?.(consumer)
-			},
-			sendLastValueOnConnectAndReconnect:
-				options.sendLastValueOnConnectAndReconnect ?? false,
-			webSocketSignalingServer: options.webSocketSignalingServer,
-			browserDirect: options.browserDirect,
-		})
-
-		instances[instanceId] = {
-			responder,
-			firstValuePromise,
-			consumer: null,
-			setValue: null,
-		}
+		createInstance(instanceId, room, options)
 	}
 
 	useEffect(() => {
+		// Recreate if the instance was created during render with different options
+		if (!instances[instanceId]) {
+			createInstance(instanceId, room, options)
+		}
+
 		const instance = instances[instanceId]
 		instance.setValue = setValueState
 
@@ -101,11 +123,16 @@ export const useDevicePortalConsumer = (
 		}
 
 		return () => {
-			instance.setValue = null
-			instance.responder.destroy()
-			delete instances[instanceId]
+			destroyInstance(instanceId)
+			setValueState(null)
 		}
-	}, [instanceId, setValueState])
+	}, [
+		instanceId,
+		room,
+		options.webSocketSignalingServer,
+		options.browserDirect,
+		options.sendLastValueOnConnectAndReconnect,
+	])
 
 	// 1. If we have local state, use it
 	if (valueState) {
