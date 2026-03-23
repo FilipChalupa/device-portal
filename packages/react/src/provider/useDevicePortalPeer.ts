@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react'
 import { Provider, type PeerId } from '@device-portal/client'
+import { useEffect, useRef } from 'react'
 
 export type PeerOptions = {
 	value?: string
@@ -7,7 +7,7 @@ export type PeerOptions = {
 }
 
 export const useDevicePortalPeer = (
-	initiator: Provider,
+	provider: Provider,
 	peerId: PeerId,
 	options: PeerOptions = {},
 ) => {
@@ -15,17 +15,17 @@ export const useDevicePortalPeer = (
 	onMessageFromConsumerRef.current = options.onMessageFromConsumer
 
 	useEffect(() => {
-		const unsubscribe = initiator.addPeerListener(peerId, (value) => {
+		const unsubscribe = provider.addPeerListener(peerId, (value) => {
 			onMessageFromConsumerRef.current?.(value)
 		})
 
 		return unsubscribe
-	}, [initiator, peerId])
+	}, [provider, peerId])
 
 	useEffect(() => {
 		if (options.value === undefined) {
 			return
 		}
-		initiator.sendToPeer(peerId, options.value)
-	}, [initiator, peerId, options.value])
+		provider.sendToPeer(peerId, options.value)
+	}, [provider, peerId, options.value])
 }

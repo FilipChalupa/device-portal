@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
 import {
 	Provider,
-	type PeerId,
 	type BrowserDirectOption,
+	type PeerId,
 } from '@device-portal/client'
+import { useEffect, useRef, useState } from 'react'
 
 // @TODO: warn if one room is used by multiple useDevicePortalProvider hooks more than once at the same time
 
@@ -116,5 +116,5 @@ export const useDevicePortalProvider = (
 		provider?.send(options.value)
 	}, [options.value, provider])
 
-	return { peers, initiator: provider }
+	return { peers, provider }
 }

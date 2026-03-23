@@ -1,5 +1,5 @@
+import { type PeerId, type Provider } from '@device-portal/client'
 import { Fragment, type FunctionComponent, type ReactNode } from 'react'
-import { type Provider, type PeerId } from '@device-portal/client'
 import { PeerOptions, useDevicePortalPeer } from './useDevicePortalPeer'
 import {
 	useDevicePortalProvider,
@@ -24,9 +24,9 @@ export const DevicePortalProvider: FunctionComponent<
 			  }
 		)
 > = ({ room, children, ...options }) => {
-	const { peers, initiator } = useDevicePortalProvider(room, options)
+	const { peers, provider } = useDevicePortalProvider(room, options)
 
-	if (!initiator || !children) {
+	if (!provider || !children) {
 		return null
 	}
 
@@ -34,7 +34,7 @@ export const DevicePortalProvider: FunctionComponent<
 		<Fragment key={peerId}>
 			{children(
 				(options) => (
-					<PeerBase peerId={peerId} initiator={initiator} options={options} />
+					<PeerBase peerId={peerId} provider={provider} options={options} />
 				),
 				peerId,
 			)}
@@ -44,9 +44,9 @@ export const DevicePortalProvider: FunctionComponent<
 
 const PeerBase: FunctionComponent<{
 	peerId: PeerId
-	initiator: Provider
+	provider: Provider
 	options: PeerOptions
-}> = ({ peerId, initiator, options }) => {
-	useDevicePortalPeer(initiator, peerId, options)
+}> = ({ peerId, provider, options }) => {
+	useDevicePortalPeer(provider, peerId, options)
 	return null
 }
