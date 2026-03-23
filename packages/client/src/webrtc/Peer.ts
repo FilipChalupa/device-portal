@@ -88,7 +88,7 @@ export abstract class Peer {
 
 				sameTabBus.addEventListener(
 					`message:${this.listenChannelName}`,
-					this.handleSameTabMessage as any,
+					this.handleSameTabMessage,
 				)
 
 				// Announce direct presence immediately to discover existing direct peers
@@ -150,8 +150,8 @@ export abstract class Peer {
 		}
 	}
 
-	private handleSameTabMessage = (event: CustomEvent<any>) => {
-		this.handleSignalingMessage(event.detail)
+	private handleSameTabMessage = (event: Event) => {
+		this.handleSignalingMessage((event as CustomEvent).detail)
 	}
 
 	protected connect(): Promise<void> {
@@ -212,10 +212,8 @@ export abstract class Peer {
 		if (message.id) {
 			this.seenMessageIds.add(message.id)
 			if (this.seenMessageIds.size > 1000) {
-				const firstValue = this.seenMessageIds.values().next().value
-				if (firstValue) {
-					this.seenMessageIds.delete(firstValue)
-				}
+				const idsToKeep = [...this.seenMessageIds].slice(-500)
+				this.seenMessageIds = new Set(idsToKeep)
 			}
 		}
 
@@ -358,7 +356,7 @@ export abstract class Peer {
 		}
 		sameTabBus.removeEventListener(
 			`message:${this.listenChannelName}`,
-			this.handleSameTabMessage as any,
+			this.handleSameTabMessage,
 		)
 	}
 
@@ -462,9 +460,9 @@ export abstract class Peer {
 			console.log(`Connection state: ${this.connection?.connectionState}`)
 		}
 
-		if (this.role === 'initiator') {
-			console.log('[Peer] Creating data channel')
-			this.channel = this.connection.createDataChannel(settings.channel.label)
+		this.connection.ondatachannel = (event) => {
+			console.log('[Peer] Data channel received (responder)')
+			this.channel = event.channel
 			this.channel.onopen = () => {
 				console.log('[Peer] Data channel opened')
 				if (this.value && this.sendLastValueOnConnectAndReconnect) {
@@ -475,23 +473,6 @@ export abstract class Peer {
 				console.log('[Peer] Data channel message received')
 				if (this.peerId) {
 					this.onMessage?.(event.data, this.peerId)
-				}
-			}
-		} else {
-			this.connection.ondatachannel = (event) => {
-				console.log('[Peer] Data channel received (responder)')
-				this.channel = event.channel
-				this.channel.onopen = () => {
-					console.log('[Peer] Data channel opened')
-					if (this.value && this.sendLastValueOnConnectAndReconnect) {
-						this.channel?.send(this.value.value)
-					}
-				}
-				this.channel.onmessage = (event) => {
-					console.log('[Peer] Data channel message received')
-					if (this.peerId) {
-						this.onMessage?.(event.data, this.peerId)
-					}
 				}
 			}
 		}

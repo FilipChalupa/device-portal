@@ -65,6 +65,7 @@ export const useDevicePortalProvider = (
 		}
 	}, [
 		room,
+		options.sendLastValueOnConnectAndReconnect,
 		options.webSocketSignalingServer,
 		options.maxClients,
 		options.browserDirect,
