@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { Initiator, type PeerId } from '@device-portal/client'
+import { Provider, type PeerId } from '@device-portal/client'
 
 export type PeerOptions = {
 	value?: string
@@ -7,7 +7,7 @@ export type PeerOptions = {
 }
 
 export const useDevicePortalPeer = (
-	initiator: Initiator,
+	initiator: Provider,
 	peerId: PeerId,
 	options: PeerOptions = {},
 ) => {

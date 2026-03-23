@@ -1,5 +1,5 @@
 import { Fragment, type FunctionComponent, type ReactNode } from 'react'
-import { type Initiator, type PeerId } from '@device-portal/client'
+import { type Provider, type PeerId } from '@device-portal/client'
 import { PeerOptions, useDevicePortalPeer } from './useDevicePortalPeer'
 import {
 	useDevicePortalProvider,
@@ -44,7 +44,7 @@ export const DevicePortalProvider: FunctionComponent<
 
 const PeerBase: FunctionComponent<{
 	peerId: PeerId
-	initiator: Initiator
+	initiator: Provider
 	options: PeerOptions
 }> = ({ peerId, initiator, options }) => {
 	useDevicePortalPeer(initiator, peerId, options)

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import {
-	Initiator,
+	Provider,
 	type PeerId,
 	type BrowserDirectOption,
 } from '@device-portal/client'
@@ -30,19 +30,19 @@ export type DevicePortalProviderOptions = {
  *
  * @param room - The unique room ID.
  * @param options - Provider configuration options.
- * @returns An object containing the list of connected peers and the underlying Initiator instance.
+ * @returns An object containing the list of connected peers and the underlying Provider instance.
  */
 export const useDevicePortalProvider = (
 	room: string,
 	options: DevicePortalProviderOptions = {},
 ) => {
-	const [initiator, setInitiator] = useState<Initiator | null>(null)
+	const [initiator, setInitiator] = useState<Provider | null>(null)
 	const [peers, setPeers] = useState<PeerId[]>([])
 	const onMessageFromConsumerRef = useRef(options.onMessageFromConsumer)
 	onMessageFromConsumerRef.current = options.onMessageFromConsumer
 
 	useEffect(() => {
-		const initiator = new Initiator(room, {
+		const initiator = new Provider(room, {
 			onMessage: (value, peerId) => {
 				onMessageFromConsumerRef.current?.(value, peerId)
 			},

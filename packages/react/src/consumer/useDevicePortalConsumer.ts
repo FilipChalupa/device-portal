@@ -1,4 +1,4 @@
-import { Responder, type BrowserDirectOption } from '@device-portal/client'
+import { Consumer, type BrowserDirectOption } from '@device-portal/client'
 import { useEffect, useId, useState } from 'react'
 
 type State = {
@@ -28,9 +28,9 @@ const withResolvers = <T>() => {
 // Module-level cache is needed to survive React Suspense throws.
 const instances: {
 	[id: string]: {
-		responder: Responder
+		consumer: Consumer
 		firstValuePromise: Promise<string>
-		consumer: null | State
+		state: null | State
 		setValue: ((state: State) => void) | null
 	}
 } = {}
@@ -56,15 +56,15 @@ function createInstance(
 		withResolvers<string>()
 
 	const sendMessageToProvider = (value: string) => {
-		instances[instanceId].responder.send(value)
+		instances[instanceId].consumer.send(value)
 	}
 
-	const responder = new Responder(room, {
+	const consumer = new Consumer(room, {
 		onMessage: (value) => {
-			const consumer = { value, sendMessageToProvider }
-			instances[instanceId].consumer = consumer
+			const state = { value, sendMessageToProvider }
+			instances[instanceId].state = state
 			firstValueResolve(value)
-			instances[instanceId].setValue?.(consumer)
+			instances[instanceId].setValue?.(state)
 		},
 		sendLastValueOnConnectAndReconnect:
 			options.sendLastValueOnConnectAndReconnect ?? false,
@@ -73,9 +73,9 @@ function createInstance(
 	})
 
 	instances[instanceId] = {
-		responder,
+		consumer,
 		firstValuePromise,
-		consumer: null,
+		state: null,
 		setValue: null,
 	}
 }
@@ -84,7 +84,7 @@ function destroyInstance(instanceId: string) {
 	const instance = instances[instanceId]
 	if (instance) {
 		instance.setValue = null
-		instance.responder.destroy()
+		instance.consumer.destroy()
 		delete instances[instanceId]
 	}
 }
@@ -118,8 +118,8 @@ export const useDevicePortalConsumer = (
 		const instance = instances[instanceId]
 		instance.setValue = setValueState
 
-		if (instance.consumer) {
-			setValueState(instance.consumer)
+		if (instance.state) {
+			setValueState(instance.state)
 		}
 
 		return () => {
@@ -139,9 +139,9 @@ export const useDevicePortalConsumer = (
 		return valueState
 	}
 
-	// 2. If the responder already has a value, use it (handles re-renders after suspension)
-	if (instances[instanceId].consumer) {
-		return instances[instanceId].consumer!
+	// 2. If the consumer already has a value, use it (handles re-renders after suspension)
+	if (instances[instanceId].state) {
+		return instances[instanceId].state!
 	}
 
 	// 3. Otherwise, suspend on the first value promise
