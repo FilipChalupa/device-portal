@@ -1,4 +1,4 @@
-import { PeerId } from '../constants'
+import { PeerId, generatePeerId } from '../constants'
 import { delay } from '../delay'
 import { settings } from '../settings'
 import { DirectTransport, type BrowserDirectOption } from './DirectTransport'
@@ -49,6 +49,7 @@ export class Provider {
 			iceServers?: Array<RTCIceServer>
 			maxClients?: number
 			browserDirect?: BrowserDirectOption
+			peerId?: PeerId
 		} = {},
 	) {
 		this.onMessage = options.onMessage
@@ -63,7 +64,7 @@ export class Provider {
 		this.iceServers = options.iceServers ?? settings.default.iceServers
 		this.browserDirect = options.browserDirect ?? true
 		this.maxClients = options.maxClients ?? 1
-		this.peerId = this.generatePeerId()
+		this.peerId = options.peerId ?? generatePeerId()
 
 		queueMicrotask(() => {
 			if (!this.isDestroyed) {
@@ -440,10 +441,4 @@ export class Provider {
 		this.peerListeners.clear()
 	}
 
-	private generatePeerId(): PeerId {
-		if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-			return crypto.randomUUID() as PeerId
-		}
-		return Math.random().toString(36).substring(2, 15) as PeerId
-	}
 }

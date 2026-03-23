@@ -10,6 +10,13 @@ export type PeerId = Brand<string, 'PeerId'>
 
 export const PeerIdSchema = z.string().transform((val) => val as PeerId)
 
+export function generatePeerId(): PeerId {
+	if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+		return crypto.randomUUID() as PeerId
+	}
+	return Math.random().toString(36).substring(2, 15) as PeerId
+}
+
 export const defaultPort = 8080
 
 export const BaseMessageSchema = z.object({

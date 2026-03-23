@@ -1,5 +1,6 @@
 import {
 	Provider,
+	generatePeerId,
 	type BrowserDirectOption,
 	type PeerId,
 } from '@device-portal/client'
@@ -40,36 +41,10 @@ export const useDevicePortalProvider = (
 	const [peers, setPeers] = useState<PeerId[]>([])
 	const onMessageFromConsumerRef = useRef(options.onMessageFromConsumer)
 	onMessageFromConsumerRef.current = options.onMessageFromConsumer
-	const providerRef = useRef<Provider | null>(null)
-	const destroyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-		null,
-	)
+	// Stable peer ID that survives React Strict Mode unmount/remount cycles
+	const peerIdRef = useRef<PeerId>(generatePeerId())
 
 	useEffect(() => {
-		// Cancel any pending destruction from a previous cleanup (React Strict Mode remount)
-		if (destroyTimeoutRef.current !== null) {
-			clearTimeout(destroyTimeoutRef.current)
-			destroyTimeoutRef.current = null
-		}
-
-		// Reuse existing provider if it matches (Strict Mode remount)
-		if (providerRef.current) {
-			setProvider(providerRef.current)
-			setPeers(providerRef.current.peers)
-			return () => {
-				const currentProvider = providerRef.current
-				destroyTimeoutRef.current = setTimeout(() => {
-					destroyTimeoutRef.current = null
-					if (currentProvider) {
-						currentProvider.destroy()
-						providerRef.current = null
-						setProvider(null)
-						setPeers([])
-					}
-				}, 0)
-			}
-		}
-
 		const newProvider = new Provider(room, {
 			onMessage: (value, peerId) => {
 				onMessageFromConsumerRef.current?.(value, peerId)
@@ -82,24 +57,15 @@ export const useDevicePortalProvider = (
 			webSocketSignalingServer: options.webSocketSignalingServer,
 			maxClients: options.maxClients,
 			browserDirect: options.browserDirect,
+			peerId: peerIdRef.current,
 		})
-		providerRef.current = newProvider
 		setProvider(newProvider)
 		setPeers(newProvider.peers)
 
 		return () => {
-			const currentProvider = providerRef.current
-			destroyTimeoutRef.current = setTimeout(() => {
-				destroyTimeoutRef.current = null
-				if (currentProvider) {
-					currentProvider.destroy()
-					if (providerRef.current === currentProvider) {
-						providerRef.current = null
-					}
-					setProvider(null)
-					setPeers([])
-				}
-			}, 0)
+			newProvider.destroy()
+			setProvider(null)
+			setPeers([])
 		}
 	}, [
 		room,

@@ -1,4 +1,9 @@
-import { Consumer, type BrowserDirectOption } from '@device-portal/client'
+import {
+	Consumer,
+	generatePeerId,
+	type BrowserDirectOption,
+	type PeerId,
+} from '@device-portal/client'
 import { useEffect, useId, useRef, useState } from 'react'
 
 type State = {
@@ -32,7 +37,6 @@ const instances: {
 		firstValuePromise: Promise<string>
 		state: null | State
 		setValue: ((state: State) => void) | null
-		room: string
 	}
 } = {}
 
@@ -51,6 +55,7 @@ export type DevicePortalConsumerOptions = {
 function createInstance(
 	instanceId: string,
 	room: string,
+	peerId: PeerId,
 	options: DevicePortalConsumerOptions,
 ) {
 	const { promise: firstValuePromise, resolve: firstValueResolve } =
@@ -71,6 +76,7 @@ function createInstance(
 			options.sendLastValueOnConnectAndReconnect ?? false,
 		webSocketSignalingServer: options.webSocketSignalingServer,
 		browserDirect: options.browserDirect,
+		peerId,
 	})
 
 	instances[instanceId] = {
@@ -78,7 +84,6 @@ function createInstance(
 		firstValuePromise,
 		state: null,
 		setValue: null,
-		room,
 	}
 }
 
@@ -106,28 +111,18 @@ export const useDevicePortalConsumer = (
 ): Pick<State, 'value' | 'sendMessageToProvider'> => {
 	const instanceId = useId()
 	const [valueState, setValueState] = useState<State | null>(null)
-	const destroyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-		null,
-	)
+	// Stable peer ID that survives React Strict Mode unmount/remount cycles.
+	// Even if the Consumer is destroyed and recreated, it reuses the same peer ID,
+	// so the Provider doesn't see it as a new peer each time.
+	const peerIdRef = useRef<PeerId>(generatePeerId())
 
 	if (!instances[instanceId]) {
-		createInstance(instanceId, room, options)
+		createInstance(instanceId, room, peerIdRef.current, options)
 	}
 
 	useEffect(() => {
-		// Cancel any pending destruction from a previous cleanup (React Strict Mode remount)
-		if (destroyTimeoutRef.current !== null) {
-			clearTimeout(destroyTimeoutRef.current)
-			destroyTimeoutRef.current = null
-		}
-
-		// If instance exists but was created for a different room, destroy and recreate
-		if (instances[instanceId] && instances[instanceId].room !== room) {
-			destroyInstance(instanceId)
-		}
-
 		if (!instances[instanceId]) {
-			createInstance(instanceId, room, options)
+			createInstance(instanceId, room, peerIdRef.current, options)
 		}
 
 		const instance = instances[instanceId]
@@ -138,16 +133,8 @@ export const useDevicePortalConsumer = (
 		}
 
 		return () => {
-			instance.setValue = null
+			destroyInstance(instanceId)
 			setValueState(null)
-			// Defer destruction so the instance survives React Strict Mode's
-			// unmount-remount cycle. If the effect re-runs (Strict Mode), it
-			// cancels this timeout. If the component truly unmounts, the
-			// timeout fires and destroys the instance.
-			destroyTimeoutRef.current = setTimeout(() => {
-				destroyTimeoutRef.current = null
-				destroyInstance(instanceId)
-			}, 0)
 		}
 	}, [
 		instanceId,
