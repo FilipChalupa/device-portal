@@ -11,7 +11,7 @@
 	"scripts": {
 		"build": "tsup && chmod +x dist/main.js",
 		"start": "node dist/main.js",
-		"dev": "concurrently 'tsup --watch' 'node --watch dist/main.js'",
+		"dev": "concurrently 'tsup --watch' 'node --watch-path ./dist dist/main.js'",
 		"test": "tsc --noEmit"
 	},
 	"repository": {
