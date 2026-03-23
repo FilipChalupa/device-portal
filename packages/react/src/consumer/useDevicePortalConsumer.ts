@@ -120,6 +120,10 @@ export const useDevicePortalConsumer = (
 
 		return () => {
 			roomEntry.setValueStates.delete(setValueState)
+			if (roomEntry.setValueStates.size === 0) {
+				roomEntry.responder.destroy()
+				delete responders[room]
+			}
 		}
 	}, [room, setValueState])
 
