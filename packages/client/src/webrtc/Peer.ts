@@ -98,16 +98,19 @@ export abstract class Peer {
 				await delay(200)
 			}
 
-			if (this.webSocketSignalingServer && this.shouldConnectToWebSocket()) {
-				await this.connect()
-			}
-
-			this.announce()
+			await this.connectAndAnnounce()
 		} catch (error) {
 			queueMicrotask(() => {
 				throw error
 			})
 		}
+	}
+
+	private async connectAndAnnounce() {
+		if (this.webSocketSignalingServer && this.shouldConnectToWebSocket()) {
+			await this.connect()
+		}
+		this.announceWebSocket()
 	}
 
 	/**
@@ -125,14 +128,14 @@ export abstract class Peer {
 		if (!this.socket && this.webSocketSignalingServer && !this.isDestroyed) {
 			try {
 				await this.connect()
-				this.announce()
+				this.announceWebSocket()
 			} catch (error) {
 				console.error('[Peer] Failed to connect to signaling server:', error)
 			}
 		}
 	}
 
-	protected announce() {
+	protected announceWebSocket() {
 		if (this.socket?.readyState === WebSocket.OPEN) {
 			this.socket.send(JSON.stringify({ type: 'join-room', room: this.room }))
 		}
@@ -183,7 +186,7 @@ export abstract class Peer {
 					)
 					console.log(`[Peer] Attempting reconnect in ${reconnectDelay}ms...`)
 					await delay(reconnectDelay)
-					await this.run() // Reconnect
+					await this.connectAndAnnounce()
 				}
 			}
 
@@ -226,7 +229,7 @@ export abstract class Peer {
 				if (!this.peerId || this.peerId.startsWith('temp-')) {
 					this.peerId = message.data.peerId
 					console.log(`[Peer] My peer ID is: ${this.peerId}`)
-					this.announce()
+					this.announceWebSocket()
 				}
 				break
 			case 'peer-joined':

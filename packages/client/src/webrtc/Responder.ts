@@ -98,7 +98,7 @@ export class Responder extends Peer {
 					'[Responder] Attempting to re-join room for reconnection...',
 				)
 				await this.ensureSignaling()
-				this.announce()
+				this.announceWebSocket()
 				this.startReconnectionTimer() // Schedule next attempt if it still fails
 			}
 		}, delayMs)
