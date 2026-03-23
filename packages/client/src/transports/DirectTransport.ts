@@ -162,6 +162,12 @@ export class DirectTransport {
 
 	destroy() {
 		this.isDestroyed = true
+		// Notify peers we're leaving before closing channels
+		this.sendSignaling({
+			type: 'peer-left',
+			from: this.peerId,
+			data: { peerId: this.peerId },
+		})
 		if (this.sendBroadcastChannel) {
 			this.sendBroadcastChannel.close()
 			this.sendBroadcastChannel = null

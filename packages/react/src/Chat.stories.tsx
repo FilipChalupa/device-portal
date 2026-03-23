@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import {
 	FunctionComponent,
-	Suspense,
 	useCallback,
 	useState,
 	type SubmitEvent,
@@ -110,9 +109,7 @@ const ServerEntrypoint: FunctionComponent = () => {
 
 			<div className="local-consumer">
 				<h3>Local Consumer (Same Page)</h3>
-				<Suspense fallback={<p>Connecting local consumer…</p>}>
-					<ClientView room={room} />
-				</Suspense>
+				<ClientView room={room} />
 			</div>
 		</div>
 	)
@@ -127,6 +124,10 @@ const ClientView: FunctionComponent<{ room: string }> = ({ room }) => {
 			webSocketSignalingServer={webSocketSignalingServer}
 		>
 			{({ value, sendMessageToProvider }) => {
+				if (value === null) {
+					return <p>Connecting…</p>
+				}
+
 				const messages: ChatMessage[] = value ? JSON.parse(value) : []
 
 				const handleSend = (event: SubmitEvent) => {
@@ -186,9 +187,7 @@ const ClientEntrypoint: FunctionComponent = () => {
 					<button type="submit">Connect</button>
 				</form>
 			) : (
-				<Suspense fallback={<p>Connecting…</p>}>
-					<ClientView room={room} />
-				</Suspense>
+				<ClientView room={room} />
 			)}
 		</div>
 	)

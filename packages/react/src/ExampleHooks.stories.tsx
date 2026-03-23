@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { FunctionComponent, Suspense, useRef, useState } from 'react'
+import { FunctionComponent, useRef, useState } from 'react'
 import { useDevicePortalConsumer } from './consumer/useDevicePortalConsumer'
 import './Example.stories.css'
 import { useDevicePortalProvider } from './provider/useDevicePortalProvider'
@@ -75,6 +75,11 @@ const ConsumerComponent: FunctionComponent = () => {
 	const { value, sendMessageToProvider } = useDevicePortalConsumer(room, {
 		webSocketSignalingServer,
 	})
+
+	if (value === null) {
+		return <p>Connecting…</p>
+	}
+
 	return (
 		<div>
 			<p>
@@ -111,9 +116,7 @@ export const Consumer: Story = {
 		return (
 			<div className="wrapper">
 				<h1>Counter consumer</h1>
-				<Suspense fallback={<p>Connecting…</p>}>
-					<ConsumerComponent />
-				</Suspense>
+				<ConsumerComponent />
 			</div>
 		)
 	},

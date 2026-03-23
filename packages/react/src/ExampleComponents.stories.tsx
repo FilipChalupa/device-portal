@@ -1,11 +1,10 @@
 import type { PeerId } from '@device-portal/client'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import {
-	FunctionComponent,
-	Suspense,
-	useRef,
-	useState,
-	type ReactNode,
+    FunctionComponent,
+    useRef,
+    useState,
+    type ReactNode,
 } from 'react'
 import { DevicePortalConsumer } from './consumer/DevicePortalConsumer'
 import './Example.stories.css'
@@ -101,24 +100,30 @@ const ConsumerComponent: FunctionComponent = () => {
 			room={room}
 			webSocketSignalingServer={webSocketSignalingServer}
 		>
-			{({ value, sendMessageToProvider }) => (
-				<div>
-					<p>
-						Value provided by the provider in room "<b>{room}</b>" is:
-					</p>
-					<output>{value}</output>
+			{({ value, sendMessageToProvider }) => {
+				if (value === null) {
+					return <p>Connecting…</p>
+				}
+
+				return (
 					<div>
-						<button
-							type="button"
-							onClick={() => {
-								sendMessageToProvider('roll')
-							}}
-						>
-							Do barrel roll
-						</button>
+						<p>
+							Value provided by the provider in room "<b>{room}</b>" is:
+						</p>
+						<output>{value}</output>
+						<div>
+							<button
+								type="button"
+								onClick={() => {
+									sendMessageToProvider('roll')
+								}}
+							>
+								Do barrel roll
+							</button>
+						</div>
 					</div>
-				</div>
-			)}
+				)
+			}}
 		</DevicePortalConsumer>
 	)
 }
@@ -139,9 +144,7 @@ export const Consumer: Story = {
 		return (
 			<div className="wrapper">
 				<h1>Counter consumer</h1>
-				<Suspense fallback={<p>Connecting…</p>}>
-					<ConsumerComponent />
-				</Suspense>
+				<ConsumerComponent />
 			</div>
 		)
 	},
