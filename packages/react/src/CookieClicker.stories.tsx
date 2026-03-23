@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { FunctionComponent, useState } from 'react'
+import { FunctionComponent, Suspense, useState } from 'react'
 import { DevicePortalConsumer } from './consumer/DevicePortalConsumer'
 import './CookieClicker.stories.css'
 import { DevicePortalProvider } from './provider/DevicePortalProvider'
@@ -78,52 +78,50 @@ const ClientEntrypoint: FunctionComponent = () => {
 				</button>
 			</form>
 			{isStarted && (
-				<DevicePortalConsumer
-					room={room}
-					webSocketSignalingServer={webSocketSignalingServer}
-				>
-					{({ value: sharedCountString, sendMessageToProvider }) => {
-						if (sharedCountString === null) {
-							return <p>Connecting…</p>
-						}
+				<Suspense fallback={<p>Connecting…</p>}>
+					<DevicePortalConsumer
+						room={room}
+						webSocketSignalingServer={webSocketSignalingServer}
+					>
+						{({ value: sharedCountString, sendMessageToProvider }) => {
+							const sharedCount = parseInt(sharedCountString, 10) || 0
+							const percentage =
+								sharedCount > 0
+									? ((localCount / sharedCount) * 100).toFixed(2)
+									: 0
 
-						const sharedCount = parseInt(sharedCountString, 10) || 0
-						const percentage =
-							sharedCount > 0
-								? ((localCount / sharedCount) * 100).toFixed(2)
-								: 0
-
-						return (
-							<div>
-								<p>Shared clicks: {sharedCount}</p>
-								<p>My clicks: {localCount}</p>
-								<p>My contribution: {percentage}%</p>
-								<p>Power: {step}×</p>
-								<button
-									type="button"
-									onClick={() => {
-										setLocalCount((previous) => previous + step)
-										sendMessageToProvider(step.toString())
-									}}
-								>
-									Click me!
-								</button>{' '}
-								<button
-									type="button"
-									onClick={() => {
-										setLocalCount((previous) => previous - upgradePrice)
-										sendMessageToProvider((-upgradePrice).toString())
-										setStep((previous) => previous + 1)
-									}}
-									disabled={localCount < upgradePrice}
-								>
-									Upgrade
-								</button>
-							</div>
-						)
-					}}
+							return (
+								<div>
+									<p>Shared clicks: {sharedCount}</p>
+									<p>My clicks: {localCount}</p>
+									<p>My contribution: {percentage}%</p>
+									<p>Power: {step}×</p>
+									<button
+										type="button"
+										onClick={() => {
+											setLocalCount((previous) => previous + step)
+											sendMessageToProvider(step.toString())
+										}}
+									>
+										Click me!
+									</button>{' '}
+									<button
+										type="button"
+										onClick={() => {
+											setLocalCount((previous) => previous - upgradePrice)
+											sendMessageToProvider((-upgradePrice).toString())
+											setStep((previous) => previous + 1)
+										}}
+										disabled={localCount < upgradePrice}
+									>
+										Upgrade
+									</button>
+								</div>
+							)
+						}}
 					</DevicePortalConsumer>
-				)}
+				</Suspense>
+			)}
 		</>
 	)
 }

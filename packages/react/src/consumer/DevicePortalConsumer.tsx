@@ -7,7 +7,7 @@ export const DevicePortalConsumer: FunctionComponent<{
 	webSocketSignalingServer?: string | null
 	browserDirect?: BrowserDirectOption
 	children: (data: {
-		value: string | null
+		value: string
 		sendMessageToProvider: (message: string) => void
 	}) => ReactNode
 }> = ({ room, webSocketSignalingServer, browserDirect, children }) => {

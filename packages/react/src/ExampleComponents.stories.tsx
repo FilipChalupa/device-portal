@@ -2,6 +2,7 @@ import type { PeerId } from '@device-portal/client'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import {
     FunctionComponent,
+    Suspense,
     useRef,
     useState,
     type ReactNode,
@@ -100,30 +101,24 @@ const ConsumerComponent: FunctionComponent = () => {
 			room={room}
 			webSocketSignalingServer={webSocketSignalingServer}
 		>
-			{({ value, sendMessageToProvider }) => {
-				if (value === null) {
-					return <p>Connecting…</p>
-				}
-
-				return (
+			{({ value, sendMessageToProvider }) => (
+				<div>
+					<p>
+						Value provided by the provider in room "<b>{room}</b>" is:
+					</p>
+					<output>{value}</output>
 					<div>
-						<p>
-							Value provided by the provider in room "<b>{room}</b>" is:
-						</p>
-						<output>{value}</output>
-						<div>
-							<button
-								type="button"
-								onClick={() => {
-									sendMessageToProvider('roll')
-								}}
-							>
-								Do barrel roll
-							</button>
-						</div>
+						<button
+							type="button"
+							onClick={() => {
+								sendMessageToProvider('roll')
+							}}
+						>
+							Do barrel roll
+						</button>
 					</div>
-				)
-			}}
+				</div>
+			)}
 		</DevicePortalConsumer>
 	)
 }
@@ -144,7 +139,9 @@ export const Consumer: Story = {
 		return (
 			<div className="wrapper">
 				<h1>Counter consumer</h1>
-				<ConsumerComponent />
+				<Suspense fallback={<p>Connecting…</p>}>
+					<ConsumerComponent />
+				</Suspense>
 			</div>
 		)
 	},
