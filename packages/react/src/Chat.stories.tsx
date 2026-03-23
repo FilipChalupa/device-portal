@@ -144,7 +144,7 @@ const ClientView: FunctionComponent<{ room: string }> = ({ room }) => {
 							<input
 								type="text"
 								value={inputText}
-								onChange={(e) => setInputText(e.target.value)}
+								onChange={(event) => setInputText(event.target.value)}
 								placeholder="Message as consumer…"
 							/>
 							<button type="submit">Send</button>
