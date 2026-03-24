@@ -12,7 +12,6 @@ import { WebSocketSignaling } from './WebSocketSignaling'
  */
 export class Consumer {
 	private isDestroyed = false
-	private value: { value: string } | null = null
 	private peerId: PeerId
 	private directTransport: DirectTransport | null = null
 	private webSocketSignaling: WebSocketSignaling | null = null
@@ -26,7 +25,7 @@ export class Consumer {
 	private readonly onMessage:
 		| ((value: string, peerId: PeerId) => void)
 		| undefined
-	private readonly sendLastValueOnConnectAndReconnect: boolean
+	private readonly onConnected: (() => void) | undefined
 	private readonly webSocketSignalingServer: string | null
 	private readonly iceServers: Array<RTCIceServer>
 	private readonly browserDirect: BrowserDirectOption
@@ -35,7 +34,7 @@ export class Consumer {
 		private readonly room: string,
 		options: {
 			onMessage?: (value: string, peerId: PeerId) => void
-			sendLastValueOnConnectAndReconnect?: boolean
+			onConnected?: () => void
 			webSocketSignalingServer?: string | null
 			iceServers?: Array<RTCIceServer>
 			browserDirect?: BrowserDirectOption
@@ -43,8 +42,7 @@ export class Consumer {
 		} = {},
 	) {
 		this.onMessage = options.onMessage
-		this.sendLastValueOnConnectAndReconnect =
-			options.sendLastValueOnConnectAndReconnect ?? true
+		this.onConnected = options.onConnected
 		this.webSocketSignalingServer =
 			options.webSocketSignalingServer === null
 				? null
@@ -161,9 +159,7 @@ export class Consumer {
 			this.channel = null
 		}
 
-		if (this.value && this.sendLastValueOnConnectAndReconnect) {
-			this.directTransport?.sendMessage(this.value.value, peerId)
-		}
+		this.onConnected?.()
 	}
 
 	private handlePeerLeft(peerId: PeerId) {
@@ -336,9 +332,7 @@ export class Consumer {
 			this.channel = event.channel
 			this.channel.onopen = () => {
 				console.log('[Consumer] Data channel opened')
-				if (this.value && this.sendLastValueOnConnectAndReconnect) {
-					this.channel?.send(this.value.value)
-				}
+				this.onConnected?.()
 			}
 			this.channel.onmessage = (event) => {
 				console.log('[Consumer] Data channel message received')
@@ -359,7 +353,6 @@ export class Consumer {
 		if (this.channel?.readyState === 'open') {
 			this.channel.send(value)
 		}
-		this.value = { value }
 	}
 
 	public destroy() {

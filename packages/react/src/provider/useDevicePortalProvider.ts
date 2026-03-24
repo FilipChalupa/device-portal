@@ -43,6 +43,9 @@ export const useDevicePortalProvider = (
 	onMessageFromConsumerRef.current = options.onMessageFromConsumer
 	// Stable peer ID that survives React Strict Mode unmount/remount cycles
 	const peerIdRef = useRef<PeerId>(generatePeerId())
+	const lastSentValueRef = useRef<string | undefined>(undefined)
+	const sendLastValueOnConnectAndReconnect =
+		options.sendLastValueOnConnectAndReconnect ?? true
 
 	useEffect(() => {
 		const newProvider = new Provider(room, {
@@ -52,8 +55,14 @@ export const useDevicePortalProvider = (
 			onPeersChange: (peers) => {
 				setPeers(peers)
 			},
-			sendLastValueOnConnectAndReconnect:
-				options.sendLastValueOnConnectAndReconnect,
+			onPeerConnected: () => {
+				if (
+					sendLastValueOnConnectAndReconnect &&
+					lastSentValueRef.current !== undefined
+				) {
+					newProvider.send(lastSentValueRef.current)
+				}
+			},
 			webSocketSignalingServer: options.webSocketSignalingServer,
 			maxClients: options.maxClients,
 			browserDirect: options.browserDirect,
@@ -69,7 +78,7 @@ export const useDevicePortalProvider = (
 		}
 	}, [
 		room,
-		options.sendLastValueOnConnectAndReconnect,
+		sendLastValueOnConnectAndReconnect,
 		options.webSocketSignalingServer,
 		options.maxClients,
 		options.browserDirect,
@@ -79,6 +88,7 @@ export const useDevicePortalProvider = (
 		if (options.value === undefined) {
 			return
 		}
+		lastSentValueRef.current = options.value
 		provider?.send(options.value)
 	}, [options.value, provider])
 

@@ -34,6 +34,7 @@ type ConsumerEntry = {
 	consumer: Consumer
 	firstValuePromise: Promise<string>
 	latestValue: string | undefined
+	lastSentValue: string | undefined
 	setValue: ((value: string) => void) | null
 	destroyTimer: ReturnType<typeof setTimeout> | null
 	room: string
@@ -76,10 +77,14 @@ function getOrCreateEntry(
 		resolveFirst = resolve
 	})
 
+	const sendLastValueOnConnectAndReconnect =
+		options.sendLastValueOnConnectAndReconnect ?? false
+
 	const entry: ConsumerEntry = {
 		consumer: undefined!, // assigned below
 		firstValuePromise,
 		latestValue: undefined,
+		lastSentValue: undefined,
 		setValue: null,
 		destroyTimer: null,
 		room,
@@ -92,8 +97,14 @@ function getOrCreateEntry(
 			resolveFirst(value)
 			entry.setValue?.(value)
 		},
-		sendLastValueOnConnectAndReconnect:
-			options.sendLastValueOnConnectAndReconnect ?? false,
+		onConnected: () => {
+			if (
+				sendLastValueOnConnectAndReconnect &&
+				entry.lastSentValue !== undefined
+			) {
+				entry.consumer.send(entry.lastSentValue)
+			}
+		},
 		webSocketSignalingServer: options.webSocketSignalingServer,
 		browserDirect: options.browserDirect,
 		peerId,
@@ -171,6 +182,7 @@ export const useDevicePortalConsumer = (
 
 	const sendMessageToProvider = useCallback(
 		(message: string) => {
+			entry.lastSentValue = message
 			entry.consumer.send(message)
 		},
 		[entry],

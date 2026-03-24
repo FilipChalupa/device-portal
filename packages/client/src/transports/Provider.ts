@@ -20,7 +20,6 @@ type ClientConnection = {
  */
 export class Provider {
 	private isDestroyed = false
-	private value: { value: string } | null = null
 	private peerId: PeerId
 	private directTransport: DirectTransport | null = null
 	private webSocketSignaling: WebSocketSignaling | null = null
@@ -33,7 +32,9 @@ export class Provider {
 		| ((value: string, peerId: PeerId) => void)
 		| undefined
 	private readonly onPeersChange: ((peers: PeerId[]) => void) | undefined
-	private readonly sendLastValueOnConnectAndReconnect: boolean
+	private readonly onPeerConnected:
+		| ((peerId: PeerId) => void)
+		| undefined
 	private readonly webSocketSignalingServer: string | null
 	private readonly iceServers: Array<RTCIceServer>
 	private readonly browserDirect: BrowserDirectOption
@@ -44,7 +45,7 @@ export class Provider {
 		options: {
 			onMessage?: (value: string, peerId: PeerId) => void
 			onPeersChange?: (peers: PeerId[]) => void
-			sendLastValueOnConnectAndReconnect?: boolean
+			onPeerConnected?: (peerId: PeerId) => void
 			webSocketSignalingServer?: string | null
 			iceServers?: Array<RTCIceServer>
 			maxClients?: number
@@ -54,8 +55,7 @@ export class Provider {
 	) {
 		this.onMessage = options.onMessage
 		this.onPeersChange = options.onPeersChange
-		this.sendLastValueOnConnectAndReconnect =
-			options.sendLastValueOnConnectAndReconnect ?? true
+		this.onPeerConnected = options.onPeerConnected
 		this.webSocketSignalingServer =
 			options.webSocketSignalingServer === null
 				? null
@@ -189,10 +189,7 @@ export class Provider {
 			this.connections.delete(peerId)
 		}
 
-		if (this.value && this.sendLastValueOnConnectAndReconnect) {
-			this.directTransport?.sendMessage(this.value.value, peerId)
-		}
-
+		this.onPeerConnected?.(peerId)
 		this.onPeersChange?.(this.peers)
 	}
 
@@ -331,9 +328,7 @@ export class Provider {
 
 		channel.onopen = () => {
 			console.log(`[Provider] Data channel opened for ${toPeerId}`)
-			if (this.value && this.sendLastValueOnConnectAndReconnect) {
-				channel.send(this.value.value)
-			}
+			this.onPeerConnected?.(toPeerId)
 			if (clientConnection.value) {
 				channel.send(clientConnection.value.value)
 			}
@@ -399,8 +394,6 @@ export class Provider {
 	}
 
 	public send(value: string) {
-		this.value = { value }
-
 		// Send to direct peers
 		if (this.directTransport) {
 			this.directTransport.sendMessage(value)
