@@ -42,7 +42,7 @@ export class DirectTransport {
 	}
 
 	start() {
-		if (this.browserDirect === true && 'window' in globalThis) {
+		if (this.browserDirect === true) {
 			this.sendBroadcastChannel = new BroadcastChannel(this.sendChannelName)
 			this.listenBroadcastChannel = new BroadcastChannel(
 				this.listenChannelName,
