@@ -1,10 +1,10 @@
-import { describe, test, expect, beforeAll, afterAll, afterEach } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, test } from 'vitest'
+import type { PeerId } from '../constants'
 import {
 	WebSocketSignaling,
 	type WebSocketSignalingCallbacks,
 } from './WebSocketSignaling'
 import { createTestServer, type TestServer } from './test-ws-server'
-import type { PeerId } from '../constants'
 
 async function waitFor(
 	condition: () => boolean,
@@ -107,19 +107,12 @@ describe('WebSocketSignaling', () => {
 			const room = crypto.randomUUID()
 			const joinedPeers: PeerId[] = []
 
-			const signaling1 = createSignaling(
-				room,
-				crypto.randomUUID() as PeerId,
-				{
-					onPeerJoined: (id) => joinedPeers.push(id),
-				},
-			)
+			const signaling1 = createSignaling(room, crypto.randomUUID() as PeerId, {
+				onPeerJoined: (id) => joinedPeers.push(id),
+			})
 			await signaling1.connect()
 
-			const signaling2 = createSignaling(
-				room,
-				crypto.randomUUID() as PeerId,
-			)
+			const signaling2 = createSignaling(room, crypto.randomUUID() as PeerId)
 			await signaling2.connect()
 
 			await waitFor(() => joinedPeers.length > 0)
@@ -131,22 +124,14 @@ describe('WebSocketSignaling', () => {
 			const joined1: PeerId[] = []
 			const joined2: PeerId[] = []
 
-			const signaling1 = createSignaling(
-				room,
-				crypto.randomUUID() as PeerId,
-				{
-					onPeerJoined: (id) => joined1.push(id),
-				},
-			)
+			const signaling1 = createSignaling(room, crypto.randomUUID() as PeerId, {
+				onPeerJoined: (id) => joined1.push(id),
+			})
 			await signaling1.connect()
 
-			const signaling2 = createSignaling(
-				room,
-				crypto.randomUUID() as PeerId,
-				{
-					onPeerJoined: (id) => joined2.push(id),
-				},
-			)
+			const signaling2 = createSignaling(room, crypto.randomUUID() as PeerId, {
+				onPeerJoined: (id) => joined2.push(id),
+			})
 			await signaling2.connect()
 
 			await waitFor(() => joined1.length > 0 && joined2.length > 0)
@@ -160,21 +145,14 @@ describe('WebSocketSignaling', () => {
 			const room = crypto.randomUUID()
 			let receivedOffer: { data: unknown; from: PeerId } | null = null
 
-			const signaling1 = createSignaling(
-				room,
-				crypto.randomUUID() as PeerId,
-				{
-					onOffer: (offer, from) => {
-						receivedOffer = { data: offer, from }
-					},
+			const signaling1 = createSignaling(room, crypto.randomUUID() as PeerId, {
+				onOffer: (offer, from) => {
+					receivedOffer = { data: offer, from }
 				},
-			)
+			})
 			await signaling1.connect()
 
-			const signaling2 = createSignaling(
-				room,
-				crypto.randomUUID() as PeerId,
-			)
+			const signaling2 = createSignaling(room, crypto.randomUUID() as PeerId)
 			await signaling2.connect()
 
 			// Wait for peer discovery to settle
@@ -190,21 +168,14 @@ describe('WebSocketSignaling', () => {
 			const room = crypto.randomUUID()
 			let receivedAnswer: { data: unknown; from: PeerId } | null = null
 
-			const signaling1 = createSignaling(
-				room,
-				crypto.randomUUID() as PeerId,
-				{
-					onAnswer: (answer, from) => {
-						receivedAnswer = { data: answer, from }
-					},
+			const signaling1 = createSignaling(room, crypto.randomUUID() as PeerId, {
+				onAnswer: (answer, from) => {
+					receivedAnswer = { data: answer, from }
 				},
-			)
+			})
 			await signaling1.connect()
 
-			const signaling2 = createSignaling(
-				room,
-				crypto.randomUUID() as PeerId,
-			)
+			const signaling2 = createSignaling(room, crypto.randomUUID() as PeerId)
 			await signaling2.connect()
 
 			await new Promise((r) => setTimeout(r, 50))
@@ -225,21 +196,14 @@ describe('WebSocketSignaling', () => {
 			const room = crypto.randomUUID()
 			let receivedCandidate: { data: unknown; from: PeerId } | null = null
 
-			const signaling1 = createSignaling(
-				room,
-				crypto.randomUUID() as PeerId,
-				{
-					onIceCandidate: (candidate, from) => {
-						receivedCandidate = { data: candidate, from }
-					},
+			const signaling1 = createSignaling(room, crypto.randomUUID() as PeerId, {
+				onIceCandidate: (candidate, from) => {
+					receivedCandidate = { data: candidate, from }
 				},
-			)
+			})
 			await signaling1.connect()
 
-			const signaling2 = createSignaling(
-				room,
-				crypto.randomUUID() as PeerId,
-			)
+			const signaling2 = createSignaling(room, crypto.randomUUID() as PeerId)
 			await signaling2.connect()
 
 			await new Promise((r) => setTimeout(r, 50))
@@ -260,19 +224,12 @@ describe('WebSocketSignaling', () => {
 			const room = crypto.randomUUID()
 			const leftPeers: PeerId[] = []
 
-			const signaling1 = createSignaling(
-				room,
-				crypto.randomUUID() as PeerId,
-				{
-					onPeerLeft: (id) => leftPeers.push(id),
-				},
-			)
+			const signaling1 = createSignaling(room, crypto.randomUUID() as PeerId, {
+				onPeerLeft: (id) => leftPeers.push(id),
+			})
 			await signaling1.connect()
 
-			const signaling2 = createSignaling(
-				room,
-				crypto.randomUUID() as PeerId,
-			)
+			const signaling2 = createSignaling(room, crypto.randomUUID() as PeerId)
 			await signaling2.connect()
 
 			// Wait for peer-joined to propagate

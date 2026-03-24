@@ -1,6 +1,6 @@
-import { describe, test, expect, afterEach } from 'vitest'
-import { DirectTransport } from './DirectTransport'
+import { afterEach, describe, expect, test } from 'vitest'
 import type { PeerId } from '../constants'
+import { DirectTransport } from './DirectTransport'
 
 async function waitFor(
 	condition: () => boolean,
@@ -27,8 +27,7 @@ function createCallbacks() {
 		callbacks: {
 			onPeerJoined: (id: PeerId) => joined.push(id),
 			onPeerLeft: (id: PeerId) => left.push(id),
-			onMessage: (data: string, from: PeerId) =>
-				messages.push({ data, from }),
+			onMessage: (data: string, from: PeerId) => messages.push({ data, from }),
 		},
 	}
 }
@@ -64,8 +63,20 @@ describe('DirectTransport', () => {
 			const p = createCallbacks()
 			const c = createCallbacks()
 
-			const provider = create(room, 'provider', providerId, 'same-window-only', p.callbacks)
-			const consumer = create(room, 'consumer', consumerId, 'same-window-only', c.callbacks)
+			const provider = create(
+				room,
+				'provider',
+				providerId,
+				'same-window-only',
+				p.callbacks,
+			)
+			const consumer = create(
+				room,
+				'consumer',
+				consumerId,
+				'same-window-only',
+				c.callbacks,
+			)
 
 			provider.start()
 			consumer.start()
@@ -86,8 +97,20 @@ describe('DirectTransport', () => {
 			const p = createCallbacks()
 			const c = createCallbacks()
 
-			const provider = create(room, 'provider', providerId, 'same-window-only', p.callbacks)
-			const consumer = create(room, 'consumer', consumerId, 'same-window-only', c.callbacks)
+			const provider = create(
+				room,
+				'provider',
+				providerId,
+				'same-window-only',
+				p.callbacks,
+			)
+			const consumer = create(
+				room,
+				'consumer',
+				consumerId,
+				'same-window-only',
+				c.callbacks,
+			)
 
 			provider.start()
 			consumer.start()
@@ -111,8 +134,20 @@ describe('DirectTransport', () => {
 			const p = createCallbacks()
 			const c = createCallbacks()
 
-			const provider = create(room, 'provider', providerId, 'same-window-only', p.callbacks)
-			const consumer = create(room, 'consumer', consumerId, 'same-window-only', c.callbacks)
+			const provider = create(
+				room,
+				'provider',
+				providerId,
+				'same-window-only',
+				p.callbacks,
+			)
+			const consumer = create(
+				room,
+				'consumer',
+				consumerId,
+				'same-window-only',
+				c.callbacks,
+			)
 
 			provider.start()
 			consumer.start()
@@ -138,9 +173,27 @@ describe('DirectTransport', () => {
 			const c1 = createCallbacks()
 			const c2 = createCallbacks()
 
-			const provider = create(room, 'provider', providerId, 'same-window-only', p.callbacks)
-			const consumer1 = create(room, 'consumer', consumer1Id, 'same-window-only', c1.callbacks)
-			const consumer2 = create(room, 'consumer', consumer2Id, 'same-window-only', c2.callbacks)
+			const provider = create(
+				room,
+				'provider',
+				providerId,
+				'same-window-only',
+				p.callbacks,
+			)
+			const consumer1 = create(
+				room,
+				'consumer',
+				consumer1Id,
+				'same-window-only',
+				c1.callbacks,
+			)
+			const consumer2 = create(
+				room,
+				'consumer',
+				consumer2Id,
+				'same-window-only',
+				c2.callbacks,
+			)
 
 			provider.start()
 			consumer1.start()
@@ -168,17 +221,36 @@ describe('DirectTransport', () => {
 			const c1 = createCallbacks()
 			const c2 = createCallbacks()
 
-			const provider = create(room, 'provider', providerId, 'same-window-only', createCallbacks().callbacks)
-			const consumer1 = create(room, 'consumer', consumer1Id, 'same-window-only', c1.callbacks)
-			const consumer2 = create(room, 'consumer', consumer2Id, 'same-window-only', c2.callbacks)
+			const provider = create(
+				room,
+				'provider',
+				providerId,
+				'same-window-only',
+				createCallbacks().callbacks,
+			)
+			const consumer1 = create(
+				room,
+				'consumer',
+				consumer1Id,
+				'same-window-only',
+				c1.callbacks,
+			)
+			const consumer2 = create(
+				room,
+				'consumer',
+				consumer2Id,
+				'same-window-only',
+				c2.callbacks,
+			)
 
 			provider.start()
 			consumer1.start()
 			consumer2.start()
 
-			await waitFor(() =>
-				consumer1.directPeers.has(providerId) &&
-				consumer2.directPeers.has(providerId),
+			await waitFor(
+				() =>
+					consumer1.directPeers.has(providerId) &&
+					consumer2.directPeers.has(providerId),
 			)
 
 			provider.sendMessage('broadcast')
@@ -195,8 +267,20 @@ describe('DirectTransport', () => {
 
 			const c = createCallbacks()
 
-			const provider = create(room, 'provider', providerId, 'same-window-only', createCallbacks().callbacks)
-			const consumer = create(room, 'consumer', consumerId, 'same-window-only', c.callbacks)
+			const provider = create(
+				room,
+				'provider',
+				providerId,
+				'same-window-only',
+				createCallbacks().callbacks,
+			)
+			const consumer = create(
+				room,
+				'consumer',
+				consumerId,
+				'same-window-only',
+				c.callbacks,
+			)
 
 			provider.start()
 			consumer.start()
@@ -215,7 +299,13 @@ describe('DirectTransport', () => {
 			const providerId = crypto.randomUUID() as PeerId
 
 			const p = createCallbacks()
-			const provider = create(room, 'provider', providerId, 'same-window-only', p.callbacks)
+			const provider = create(
+				room,
+				'provider',
+				providerId,
+				'same-window-only',
+				p.callbacks,
+			)
 			provider.start()
 
 			// Manually send a discovery message with the provider's own peerId as `from`
@@ -235,8 +325,20 @@ describe('DirectTransport', () => {
 
 			const c = createCallbacks()
 
-			const provider = create(room, 'provider', providerId, 'same-window-only', createCallbacks().callbacks)
-			const consumer = create(room, 'consumer', consumerId, 'same-window-only', c.callbacks)
+			const provider = create(
+				room,
+				'provider',
+				providerId,
+				'same-window-only',
+				createCallbacks().callbacks,
+			)
+			const consumer = create(
+				room,
+				'consumer',
+				consumerId,
+				'same-window-only',
+				c.callbacks,
+			)
 
 			provider.start()
 			consumer.start()
@@ -320,7 +422,13 @@ describe('DirectTransport', () => {
 
 			const c = createCallbacks()
 
-			const provider = create(room, 'provider', providerId, true, createCallbacks().callbacks)
+			const provider = create(
+				room,
+				'provider',
+				providerId,
+				true,
+				createCallbacks().callbacks,
+			)
 			const consumer = create(room, 'consumer', consumerId, true, c.callbacks)
 
 			provider.start()
@@ -343,7 +451,13 @@ describe('DirectTransport', () => {
 
 			const c = createCallbacks()
 
-			const provider = create(room, 'provider', providerId, true, createCallbacks().callbacks)
+			const provider = create(
+				room,
+				'provider',
+				providerId,
+				true,
+				createCallbacks().callbacks,
+			)
 			const consumer = create(room, 'consumer', consumerId, true, c.callbacks)
 
 			provider.start()
@@ -366,8 +480,20 @@ describe('DirectTransport', () => {
 
 			const c = createCallbacks()
 
-			const provider = create(room, 'provider', providerId, 'same-window-only', createCallbacks().callbacks)
-			const consumer = create(room, 'consumer', consumerId, 'same-window-only', c.callbacks)
+			const provider = create(
+				room,
+				'provider',
+				providerId,
+				'same-window-only',
+				createCallbacks().callbacks,
+			)
+			const consumer = create(
+				room,
+				'consumer',
+				consumerId,
+				'same-window-only',
+				c.callbacks,
+			)
 
 			provider.start()
 			consumer.start()
@@ -390,10 +516,34 @@ describe('DirectTransport', () => {
 
 			const p = createCallbacks()
 
-			const provider = create(room, 'provider', providerId, 'same-window-only', p.callbacks)
-			const c1 = create(room, 'consumer', c1Id, 'same-window-only', createCallbacks().callbacks)
-			const c2 = create(room, 'consumer', c2Id, 'same-window-only', createCallbacks().callbacks)
-			const c3 = create(room, 'consumer', c3Id, 'same-window-only', createCallbacks().callbacks)
+			const provider = create(
+				room,
+				'provider',
+				providerId,
+				'same-window-only',
+				p.callbacks,
+			)
+			const c1 = create(
+				room,
+				'consumer',
+				c1Id,
+				'same-window-only',
+				createCallbacks().callbacks,
+			)
+			const c2 = create(
+				room,
+				'consumer',
+				c2Id,
+				'same-window-only',
+				createCallbacks().callbacks,
+			)
+			const c3 = create(
+				room,
+				'consumer',
+				c3Id,
+				'same-window-only',
+				createCallbacks().callbacks,
+			)
 
 			provider.start()
 			c1.start()
