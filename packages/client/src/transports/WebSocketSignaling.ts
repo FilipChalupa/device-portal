@@ -108,10 +108,7 @@ export class WebSocketSignaling {
 	private handleMessage(data: unknown) {
 		const result = SignalingMessageSchema.safeParse(data)
 		if (!result.success) {
-			console.error(
-				'[WebSocketSignaling] Invalid message:',
-				result.error,
-			)
+			console.error('[WebSocketSignaling] Invalid message:', result.error)
 			return
 		}
 

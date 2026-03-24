@@ -1,11 +1,11 @@
 import type { PeerId } from '@device-portal/client'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import {
-    FunctionComponent,
-    Suspense,
-    useRef,
-    useState,
-    type ReactNode,
+	FunctionComponent,
+	Suspense,
+	useRef,
+	useState,
+	type ReactNode,
 } from 'react'
 import { DevicePortalConsumer } from './consumer/DevicePortalConsumer'
 import './Example.stories.css'

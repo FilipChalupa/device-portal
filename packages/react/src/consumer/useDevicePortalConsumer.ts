@@ -77,8 +77,7 @@ function getOrCreateEntry(
 		resolveFirst = resolve
 	})
 
-	const sendLastMessageOnReconnect =
-		options.sendLastMessageOnReconnect ?? false
+	const sendLastMessageOnReconnect = options.sendLastMessageOnReconnect ?? false
 
 	const entry: ConsumerEntry = {
 		consumer: undefined!, // assigned below
@@ -98,10 +97,7 @@ function getOrCreateEntry(
 			entry.setValue?.(value)
 		},
 		onConnected: () => {
-			if (
-				sendLastMessageOnReconnect &&
-				entry.lastSentValue !== undefined
-			) {
+			if (sendLastMessageOnReconnect && entry.lastSentValue !== undefined) {
 				entry.consumer.send(entry.lastSentValue)
 			}
 		},

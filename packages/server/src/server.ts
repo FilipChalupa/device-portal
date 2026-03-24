@@ -25,9 +25,7 @@ export function createSignalingServer() {
 					const peerId = crypto.randomUUID()
 					webSocketToPeerId.set(webSocket.raw!, peerId)
 					console.log(`WebSocket connection opened: ${peerId}`)
-					webSocket.send(
-						JSON.stringify({ type: 'identity', data: { peerId } }),
-					)
+					webSocket.send(JSON.stringify({ type: 'identity', data: { peerId } }))
 				},
 				onMessage(event, webSocket) {
 					const peerId = webSocketToPeerId.get(webSocket.raw!)!
@@ -69,8 +67,7 @@ export function createSignalingServer() {
 											}),
 										)
 										// Notify the new peer about the existing peer
-										const existingPeerId =
-											webSocketToPeerId.get(client)
+										const existingPeerId = webSocketToPeerId.get(client)
 										webSocket.send(
 											JSON.stringify({
 												id: crypto.randomUUID(),
@@ -97,12 +94,8 @@ export function createSignalingServer() {
 										client.readyState === 1 /* WebSocket.OPEN */
 									) {
 										// If message has a target 'to', only send to that client
-										const clientPeerId =
-											webSocketToPeerId.get(client)
-										if (
-											message.to &&
-											clientPeerId !== message.to
-										) {
+										const clientPeerId = webSocketToPeerId.get(client)
+										if (message.to && clientPeerId !== message.to) {
 											continue
 										}
 
