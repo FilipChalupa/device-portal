@@ -15,7 +15,7 @@
 	"scripts": {
 		"dev": "rollup -c -w",
 		"build": "rollup -c",
-		"test": "npm run build"
+		"test": "vitest run"
 	},
 	"repository": {
 		"type": "git",
@@ -41,7 +41,10 @@
 		"rollup": "^4.2.0",
 		"rollup-plugin-delete": "^2.0.0",
 		"rollup-plugin-typescript2": "^0.36.0",
-		"typescript": "^5.9.3"
+		"@types/ws": "^8.5.3",
+		"typescript": "^5.9.3",
+		"vitest": "^3.1.1",
+		"ws": "^8.18.0"
 	},
 	"files": [
 		"/dist/"

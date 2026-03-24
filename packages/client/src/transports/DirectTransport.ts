@@ -44,9 +44,7 @@ export class DirectTransport {
 	start() {
 		if (this.browserDirect === true) {
 			this.sendBroadcastChannel = new BroadcastChannel(this.sendChannelName)
-			this.listenBroadcastChannel = new BroadcastChannel(
-				this.listenChannelName,
-			)
+			this.listenBroadcastChannel = new BroadcastChannel(this.listenChannelName)
 			this.listenBroadcastChannel.onmessage = (event) => {
 				this.handleMessage(event.data)
 			}
@@ -101,9 +99,7 @@ export class DirectTransport {
 				this.directPeers.add(fromPeerId)
 
 				if (isNew) {
-					console.log(
-						`[DirectTransport] Discovered direct peer: ${fromPeerId}`,
-					)
+					console.log(`[DirectTransport] Discovered direct peer: ${fromPeerId}`)
 					this.callbacks.onPeerJoined(fromPeerId)
 				}
 
