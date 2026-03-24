@@ -15,7 +15,7 @@ export type DevicePortalConsumerOptions = {
 	/** Browser direct signaling options. */
 	browserDirect?: BrowserDirectOption
 	/** Whether to automatically send the last 'send()' value back to the provider on reconnect. Default: false. */
-	sendLastValueOnConnectAndReconnect?: boolean
+	sendLastMessageOnReconnect?: boolean
 }
 
 // ---------------------------------------------------------------------------
@@ -44,7 +44,7 @@ type ConsumerEntry = {
 const entries = new Map<string, ConsumerEntry>()
 
 function optionsKey(options: DevicePortalConsumerOptions): string {
-	return `${options.webSocketSignalingServer ?? ''}\0${options.browserDirect ?? ''}\0${options.sendLastValueOnConnectAndReconnect ?? ''}`
+	return `${options.webSocketSignalingServer ?? ''}\0${options.browserDirect ?? ''}\0${options.sendLastMessageOnReconnect ?? ''}`
 }
 
 function getOrCreateEntry(
@@ -77,8 +77,8 @@ function getOrCreateEntry(
 		resolveFirst = resolve
 	})
 
-	const sendLastValueOnConnectAndReconnect =
-		options.sendLastValueOnConnectAndReconnect ?? false
+	const sendLastMessageOnReconnect =
+		options.sendLastMessageOnReconnect ?? false
 
 	const entry: ConsumerEntry = {
 		consumer: undefined!, // assigned below
@@ -99,7 +99,7 @@ function getOrCreateEntry(
 		},
 		onConnected: () => {
 			if (
-				sendLastValueOnConnectAndReconnect &&
+				sendLastMessageOnReconnect &&
 				entry.lastSentValue !== undefined
 			) {
 				entry.consumer.send(entry.lastSentValue)
@@ -177,7 +177,7 @@ export const useDevicePortalConsumer = (
 		room,
 		options.webSocketSignalingServer,
 		options.browserDirect,
-		options.sendLastValueOnConnectAndReconnect,
+		options.sendLastMessageOnReconnect,
 	])
 
 	const sendMessageToProvider = useCallback(

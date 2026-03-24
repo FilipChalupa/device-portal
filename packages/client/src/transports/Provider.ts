@@ -32,9 +32,7 @@ export class Provider {
 		| ((value: string, peerId: PeerId) => void)
 		| undefined
 	private readonly onPeersChange: ((peers: PeerId[]) => void) | undefined
-	private readonly onPeerConnected:
-		| ((peerId: PeerId) => void)
-		| undefined
+	private readonly onPeerConnected: ((peerId: PeerId) => void) | undefined
 	private readonly webSocketSignalingServer: string | null
 	private readonly iceServers: Array<RTCIceServer>
 	private readonly browserDirect: BrowserDirectOption
@@ -102,8 +100,7 @@ export class Provider {
 					this.peerId,
 					this.browserDirect,
 					{
-						onPeerJoined: (peerId) =>
-							this.handleDirectPeerJoined(peerId),
+						onPeerJoined: (peerId) => this.handleDirectPeerJoined(peerId),
 						onPeerLeft: (peerId) => this.handlePeerLeft(peerId),
 						onMessage: (data, from) => {
 							this.onMessage?.(data, from)
@@ -361,9 +358,7 @@ export class Provider {
 			await client.connection.setRemoteDescription(answer)
 			while (client.candidatesQueue.length > 0) {
 				const candidate = client.candidatesQueue.shift()!
-				await client.connection.addIceCandidate(
-					new RTCIceCandidate(candidate),
-				)
+				await client.connection.addIceCandidate(new RTCIceCandidate(candidate))
 			}
 		}
 	}
@@ -375,9 +370,7 @@ export class Provider {
 		const client = this.connections.get(fromPeerId)
 		if (client) {
 			if (client.connection.remoteDescription) {
-				await client.connection.addIceCandidate(
-					new RTCIceCandidate(candidate),
-				)
+				await client.connection.addIceCandidate(new RTCIceCandidate(candidate))
 			} else {
 				client.candidatesQueue.push(candidate)
 			}
@@ -433,5 +426,4 @@ export class Provider {
 		this.connections.clear()
 		this.peerListeners.clear()
 	}
-
 }

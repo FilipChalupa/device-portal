@@ -68,8 +68,7 @@ export class Consumer {
 					this.peerId,
 					this.browserDirect,
 					{
-						onPeerJoined: (peerId) =>
-							this.handleDirectPeerJoined(peerId),
+						onPeerJoined: (peerId) => this.handleDirectPeerJoined(peerId),
 						onPeerLeft: (peerId) => this.handlePeerLeft(peerId),
 						onMessage: (data, from) => {
 							this.onMessage?.(data, from)
@@ -83,8 +82,7 @@ export class Consumer {
 			}
 
 			const hasDirectPeers =
-				this.directTransport &&
-				this.directTransport.directPeers.size > 0
+				this.directTransport && this.directTransport.directPeers.size > 0
 
 			if (this.webSocketSignalingServer && !hasDirectPeers) {
 				await this.connectWebSocket()
@@ -119,8 +117,7 @@ export class Consumer {
 				onAnswer: () => {
 					// Consumer does not handle answers
 				},
-				onIceCandidate: (candidate) =>
-					this.handleIceCandidate(candidate),
+				onIceCandidate: (candidate) => this.handleIceCandidate(candidate),
 			},
 		)
 
@@ -184,9 +181,7 @@ export class Consumer {
 				this.connection.iceConnectionState === 'disconnected' ||
 				this.connection.iceConnectionState === 'closed'
 			) {
-				console.log(
-					'[Consumer] Attempting to re-join room for reconnection...',
-				)
+				console.log('[Consumer] Attempting to re-join room for reconnection...')
 				await this.ensureSignaling()
 				this.webSocketSignaling?.announceRoom()
 				this.startReconnectionTimer()
@@ -253,11 +248,7 @@ export class Consumer {
 			const answer = await this.connection.createAnswer()
 			console.log(`[Consumer] Setting local description (${answer.type})`)
 			await this.connection.setLocalDescription(answer)
-			this.webSocketSignaling?.sendSignaling(
-				answer.type!,
-				answer,
-				fromPeerId,
-			)
+			this.webSocketSignaling?.sendSignaling(answer.type!, answer, fromPeerId)
 		} finally {
 			this.isHandlingOffer = false
 		}
@@ -270,9 +261,7 @@ export class Consumer {
 		if (this.connection.remoteDescription) {
 			try {
 				console.log('[Consumer] Adding received ICE candidate')
-				await this.connection.addIceCandidate(
-					new RTCIceCandidate(candidate),
-				)
+				await this.connection.addIceCandidate(new RTCIceCandidate(candidate))
 			} catch (error) {
 				console.error('[Consumer] Error adding ice candidate:', error)
 			}
@@ -291,14 +280,9 @@ export class Consumer {
 		while (this.candidatesQueue.length > 0) {
 			const candidate = this.candidatesQueue.shift()!
 			try {
-				await this.connection.addIceCandidate(
-					new RTCIceCandidate(candidate),
-				)
+				await this.connection.addIceCandidate(new RTCIceCandidate(candidate))
 			} catch (error) {
-				console.error(
-					'[Consumer] Error adding queued ice candidate:',
-					error,
-				)
+				console.error('[Consumer] Error adding queued ice candidate:', error)
 			}
 		}
 	}
@@ -365,5 +349,4 @@ export class Consumer {
 		this.channel?.close()
 		this.channel = null
 	}
-
 }
