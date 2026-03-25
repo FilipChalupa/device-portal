@@ -4,7 +4,7 @@ import {
 	type BrowserDirectOption,
 	type PeerId,
 } from '@device-portal/client'
-import { use, useCallback, useEffect, useId, useRef, useState } from 'react'
+import { use, useCallback, useEffect, useRef, useState } from 'react'
 
 /**
  * Configuration options for the Device Portal Consumer.
@@ -23,8 +23,8 @@ export type DevicePortalConsumerOptions = {
 //
 // Why module-level? The cache must survive React Suspense throws (which
 // discard in-progress render state) and React Strict Mode's synchronous
-// unmount/remount cycle.  The entry is keyed by `useId()` which is stable
-// across both scenarios.
+// unmount/remount cycle.  The entry is keyed by room + options, which is
+// stable across both scenarios.
 //
 // Cleanup uses a grace-period timeout so that Strict Mode's immediate
 // remount can reclaim the entry before it's destroyed.
@@ -141,10 +141,13 @@ export const useDevicePortalConsumer = (
 	value: string
 	sendMessageToProvider: (message: string) => void
 } => {
-	const instanceId = useId()
+	// Key by room + options rather than useId(), because useId() is not
+	// stable across Suspense re-throws when sibling state updates cause
+	// the component tree to re-mount.
+	const cacheKey = `${room}\0${optionsKey(options)}`
 	const peerIdRef = useRef<PeerId>(generatePeerId())
 
-	const entry = getOrCreateEntry(instanceId, room, peerIdRef.current, options)
+	const entry = getOrCreateEntry(cacheKey, room, peerIdRef.current, options)
 
 	// Suspends until the first value arrives (React 19 use() API).
 	const firstValue = use(entry.firstValuePromise)
@@ -156,7 +159,7 @@ export const useDevicePortalConsumer = (
 	entry.setValue = setValue
 
 	useEffect(() => {
-		const e = getOrCreateEntry(instanceId, room, peerIdRef.current, options)
+		const e = getOrCreateEntry(cacheKey, room, peerIdRef.current, options)
 		e.setValue = setValue
 
 		// Sync in case a value arrived between render and effect commit.
@@ -166,10 +169,10 @@ export const useDevicePortalConsumer = (
 
 		return () => {
 			e.setValue = null
-			scheduleDestroy(instanceId)
+			scheduleDestroy(cacheKey)
 		}
 	}, [
-		instanceId,
+		cacheKey,
 		room,
 		options.webSocketSignalingServer,
 		options.browserDirect,

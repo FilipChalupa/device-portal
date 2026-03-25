@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, test } from 'vitest'
 import { DevicePortalConsumer } from '../consumer/DevicePortalConsumer'
 import { useDevicePortalProvider } from '../provider/useDevicePortalProvider'
@@ -34,28 +34,30 @@ describe('DevicePortalConsumer', () => {
 			return null
 		}
 
-		render(
-			<>
-				<Provider />
-				<SuspenseWrapper>
-					<DevicePortalConsumer
-						room={room}
-						webSocketSignalingServer={null}
-						browserDirect="same-window-only"
-					>
-						{({ value, sendMessageToProvider }) => (
-							<>
-								<span data-testid="consumer-value">{value}</span>
-								<button
-									data-testid="send"
-									onClick={() => sendMessageToProvider('from-component')}
-								/>
-							</>
-						)}
-					</DevicePortalConsumer>
-				</SuspenseWrapper>
-			</>,
-		)
+		await act(async () => {
+			render(
+				<>
+					<Provider />
+					<SuspenseWrapper>
+						<DevicePortalConsumer
+							room={room}
+							webSocketSignalingServer={null}
+							browserDirect="same-window-only"
+						>
+							{({ value, sendMessageToProvider }) => (
+								<>
+									<span data-testid="consumer-value">{value}</span>
+									<button
+										data-testid="send"
+										onClick={() => sendMessageToProvider('from-component')}
+									/>
+								</>
+							)}
+						</DevicePortalConsumer>
+					</SuspenseWrapper>
+				</>,
+			)
+		})
 
 		await waitFor(() => {
 			expect(screen.getByTestId('consumer-value')).toHaveTextContent(

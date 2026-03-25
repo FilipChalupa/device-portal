@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, test } from 'vitest'
 import { useDevicePortalConsumer } from '../consumer/useDevicePortalConsumer'
 import { useDevicePortalProvider } from '../provider/useDevicePortalProvider'
@@ -40,14 +40,16 @@ describe('useDevicePortalConsumer', () => {
 			return <span data-testid="consumer-value">{value}</span>
 		}
 
-		render(
-			<>
-				<Provider />
-				<SuspenseWrapper>
-					<Consumer />
-				</SuspenseWrapper>
-			</>,
-		)
+		await act(async () => {
+			render(
+				<>
+					<Provider />
+					<SuspenseWrapper>
+						<Consumer />
+					</SuspenseWrapper>
+				</>,
+			)
+		})
 
 		await waitFor(() => {
 			expect(screen.getByTestId('consumer-value')).toHaveTextContent(
@@ -69,27 +71,33 @@ describe('useDevicePortalConsumer', () => {
 			return <span data-testid="consumer-value">{value}</span>
 		}
 
-		const { rerender } = render(
-			<>
-				<Provider value="a" />
-				<SuspenseWrapper>
-					<Consumer />
-				</SuspenseWrapper>
-			</>,
-		)
+		let rerender: ReturnType<typeof render>['rerender']
+		await act(async () => {
+			const result = render(
+				<>
+					<Provider value="a" />
+					<SuspenseWrapper>
+						<Consumer />
+					</SuspenseWrapper>
+				</>,
+			)
+			rerender = result.rerender
+		})
 
 		await waitFor(() => {
 			expect(screen.getByTestId('consumer-value')).toHaveTextContent('a')
 		})
 
-		rerender(
-			<>
-				<Provider value="b" />
-				<SuspenseWrapper>
-					<Consumer />
-				</SuspenseWrapper>
-			</>,
-		)
+		await act(async () => {
+			rerender(
+				<>
+					<Provider value="b" />
+					<SuspenseWrapper>
+						<Consumer />
+					</SuspenseWrapper>
+				</>,
+			)
+		})
 
 		await waitFor(() => {
 			expect(screen.getByTestId('consumer-value')).toHaveTextContent('b')
@@ -125,20 +133,24 @@ describe('useDevicePortalConsumer', () => {
 			)
 		}
 
-		render(
-			<>
-				<Provider />
-				<SuspenseWrapper>
-					<Consumer />
-				</SuspenseWrapper>
-			</>,
-		)
+		await act(async () => {
+			render(
+				<>
+					<Provider />
+					<SuspenseWrapper>
+						<Consumer />
+					</SuspenseWrapper>
+				</>,
+			)
+		})
 
 		await waitFor(() => {
 			expect(screen.getByTestId('consumer-value')).toHaveTextContent('start')
 		})
 
-		screen.getByTestId('send').click()
+		await act(async () => {
+			screen.getByTestId('send').click()
+		})
 
 		await waitFor(() => {
 			expect(messages).toContain('test-msg')

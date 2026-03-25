@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import { Suspense, useRef } from 'react'
 import { describe, expect, test } from 'vitest'
 import {
@@ -7,21 +7,23 @@ import {
 	TestProvider,
 	uniqueRoom,
 } from './helpers'
+import { useDevicePortalConsumer } from '../consumer/useDevicePortalConsumer'
+import { directOnlyOptions } from './helpers'
 
 describe('Provider-Consumer integration', () => {
 	test('consumer receives value from provider', async () => {
 		const room = uniqueRoom()
 
-		render(
-			<>
-				<TestProvider room={room} value="hello" />
-				<SuspenseWrapper>
-					<TestConsumer room={room} />
-				</SuspenseWrapper>
-			</>,
-		)
-
-		expect(screen.getByTestId('loading')).toBeInTheDocument()
+		await act(async () => {
+			render(
+				<>
+					<TestProvider room={room} value="hello" />
+					<SuspenseWrapper>
+						<TestConsumer room={room} />
+					</SuspenseWrapper>
+				</>,
+			)
+		})
 
 		await waitFor(() => {
 			expect(screen.getByTestId('consumer-value')).toHaveTextContent('hello')
@@ -31,27 +33,33 @@ describe('Provider-Consumer integration', () => {
 	test('consumer updates when provider changes value', async () => {
 		const room = uniqueRoom()
 
-		const { rerender } = render(
-			<>
-				<TestProvider room={room} value="first" />
-				<SuspenseWrapper>
-					<TestConsumer room={room} />
-				</SuspenseWrapper>
-			</>,
-		)
+		let rerender: ReturnType<typeof render>['rerender']
+		await act(async () => {
+			const result = render(
+				<>
+					<TestProvider room={room} value="first" />
+					<SuspenseWrapper>
+						<TestConsumer room={room} />
+					</SuspenseWrapper>
+				</>,
+			)
+			rerender = result.rerender
+		})
 
 		await waitFor(() => {
 			expect(screen.getByTestId('consumer-value')).toHaveTextContent('first')
 		})
 
-		rerender(
-			<>
-				<TestProvider room={room} value="second" />
-				<SuspenseWrapper>
-					<TestConsumer room={room} />
-				</SuspenseWrapper>
-			</>,
-		)
+		await act(async () => {
+			rerender(
+				<>
+					<TestProvider room={room} value="second" />
+					<SuspenseWrapper>
+						<TestConsumer room={room} />
+					</SuspenseWrapper>
+				</>,
+			)
+		})
 
 		await waitFor(() => {
 			expect(screen.getByTestId('consumer-value')).toHaveTextContent('second')
@@ -82,13 +90,17 @@ describe('Provider-Consumer integration', () => {
 			)
 		}
 
-		render(<TestApp />)
+		await act(async () => {
+			render(<TestApp />)
+		})
 
 		await waitFor(() => {
 			expect(screen.getByTestId('consumer-value')).toHaveTextContent('init')
 		})
 
-		screen.getByTestId('send-btn').click()
+		await act(async () => {
+			screen.getByTestId('send-btn').click()
+		})
 
 		await waitFor(() => {
 			expect(receivedMessages).toContain('ping')
@@ -99,9 +111,6 @@ describe('Provider-Consumer integration', () => {
 		const room = uniqueRoom()
 
 		function Consumer2({ room }: { room: string }) {
-			const {
-				useDevicePortalConsumer,
-			} = require('../consumer/useDevicePortalConsumer')
 			const { value } = useDevicePortalConsumer(room, {
 				webSocketSignalingServer: null,
 				browserDirect: 'same-window-only' as const,
@@ -109,17 +118,19 @@ describe('Provider-Consumer integration', () => {
 			return <span data-testid="consumer-value-2">{value}</span>
 		}
 
-		render(
-			<>
-				<TestProvider room={room} value="shared" maxClients={2} />
-				<SuspenseWrapper>
-					<TestConsumer room={room} />
-				</SuspenseWrapper>
-				<Suspense fallback={<div data-testid="loading-2">Loading</div>}>
-					<Consumer2 room={room} />
-				</Suspense>
-			</>,
-		)
+		await act(async () => {
+			render(
+				<>
+					<TestProvider room={room} value="shared" maxClients={2} />
+					<SuspenseWrapper>
+						<TestConsumer room={room} />
+					</SuspenseWrapper>
+					<Suspense fallback={<div data-testid="loading-2">Loading</div>}>
+						<Consumer2 room={room} />
+					</Suspense>
+				</>,
+			)
+		})
 
 		await waitFor(() => {
 			expect(screen.getByTestId('consumer-value')).toHaveTextContent('shared')

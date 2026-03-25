@@ -1,6 +1,7 @@
-import { render, renderHook, screen, waitFor } from '@testing-library/react'
+import { act, render, renderHook, screen, waitFor } from '@testing-library/react'
 import React from 'react'
 import { describe, expect, test } from 'vitest'
+import { useDevicePortalConsumer } from '../consumer/useDevicePortalConsumer'
 import { useDevicePortalProvider } from '../provider/useDevicePortalProvider'
 import {
 	directOnlyOptions,
@@ -37,14 +38,16 @@ describe('useDevicePortalProvider', () => {
 			return <span data-testid="peer-count">{peers.length}</span>
 		}
 
-		render(
-			<>
-				<TestApp />
-				<SuspenseWrapper>
-					<TestConsumer room={room} />
-				</SuspenseWrapper>
-			</>,
-		)
+		await act(async () => {
+			render(
+				<>
+					<TestApp />
+					<SuspenseWrapper>
+						<TestConsumer room={room} />
+					</SuspenseWrapper>
+				</>,
+			)
+		})
 
 		await waitFor(() => {
 			expect(screen.getByTestId('peer-count')).toHaveTextContent('1')
@@ -65,9 +68,6 @@ describe('useDevicePortalProvider', () => {
 		}
 
 		function Consumer() {
-			const {
-				useDevicePortalConsumer,
-			} = require('../consumer/useDevicePortalConsumer')
 			const { value, sendMessageToProvider } = useDevicePortalConsumer(
 				room,
 				directOnlyOptions,
@@ -78,14 +78,16 @@ describe('useDevicePortalProvider', () => {
 			return <span data-testid="val">{value}</span>
 		}
 
-		render(
-			<>
-				<Provider />
-				<SuspenseWrapper>
-					<Consumer />
-				</SuspenseWrapper>
-			</>,
-		)
+		await act(async () => {
+			render(
+				<>
+					<Provider />
+					<SuspenseWrapper>
+						<Consumer />
+					</SuspenseWrapper>
+				</>,
+			)
+		})
 
 		await waitFor(() => {
 			expect(messages).toContain('hello-from-consumer')
