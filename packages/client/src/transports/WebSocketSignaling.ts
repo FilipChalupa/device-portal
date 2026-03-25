@@ -28,10 +28,6 @@ export class WebSocketSignaling {
 		return this.socket?.readyState === WebSocket.OPEN
 	}
 
-	updatePeerId(peerId: PeerId) {
-		this.peerId = peerId
-	}
-
 	async connect(): Promise<void> {
 		return new Promise((resolve, reject) => {
 			if (this.isDestroyed) {
@@ -131,6 +127,7 @@ export class WebSocketSignaling {
 
 		switch (message.type) {
 			case 'identity':
+				this.peerId = message.data.peerId
 				this.callbacks.onIdentity(message.data.peerId)
 				break
 			case 'peer-joined':

@@ -137,11 +137,7 @@ export class Provider {
 			this.peerId,
 			{
 				onIdentity: (peerId) => {
-					if (!this.peerId || this.peerId.startsWith('temp-')) {
-						this.peerId = peerId
-						console.log(`[Provider] My peer ID is: ${peerId}`)
-						this.webSocketSignaling?.announceRoom()
-					}
+					this.peerId = peerId
 				},
 				onPeerJoined: (peerId) => this.handleWebRTCPeerJoined(peerId),
 				onPeerLeft: (peerId) => this.handlePeerLeft(peerId),

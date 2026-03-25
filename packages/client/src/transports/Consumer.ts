@@ -103,11 +103,7 @@ export class Consumer {
 			this.peerId,
 			{
 				onIdentity: (peerId) => {
-					if (!this.peerId || this.peerId.startsWith('temp-')) {
-						this.peerId = peerId
-						console.log(`[Consumer] My peer ID is: ${peerId}`)
-						this.webSocketSignaling?.announceRoom()
-					}
+					this.peerId = peerId
 				},
 				onPeerJoined: () => {
 					// Consumer waits for offers, no action on peer-joined
