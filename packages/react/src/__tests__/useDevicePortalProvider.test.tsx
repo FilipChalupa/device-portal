@@ -1,4 +1,10 @@
-import { act, render, renderHook, screen, waitFor } from '@testing-library/react'
+import {
+	act,
+	render,
+	renderHook,
+	screen,
+	waitFor,
+} from '@testing-library/react'
 import React from 'react'
 import { describe, expect, test } from 'vitest'
 import { useDevicePortalConsumer } from '../consumer/useDevicePortalConsumer'
