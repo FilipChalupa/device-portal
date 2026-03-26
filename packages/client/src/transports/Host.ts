@@ -162,10 +162,7 @@ export class Host {
 			try {
 				await this.connectWebSocket()
 			} catch (error) {
-				console.error(
-					'[Host] Failed to connect to signaling server:',
-					error,
-				)
+				console.error('[Host] Failed to connect to signaling server:', error)
 			}
 		}
 	}
@@ -195,9 +192,7 @@ export class Host {
 		}
 
 		if (this.pendingPeers.has(peerId)) {
-			console.log(
-				`[Host] Already connecting to ${peerId} (pending), skipping.`,
-			)
+			console.log(`[Host] Already connecting to ${peerId} (pending), skipping.`)
 			return
 		}
 		if (this.connections.has(peerId)) {

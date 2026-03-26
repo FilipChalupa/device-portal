@@ -130,10 +130,7 @@ export class Client {
 			try {
 				await this.connectWebSocket()
 			} catch (error) {
-				console.error(
-					'[Client] Failed to connect to signaling server:',
-					error,
-				)
+				console.error('[Client] Failed to connect to signaling server:', error)
 			}
 		}
 	}
@@ -262,9 +259,7 @@ export class Client {
 				console.error('[Client] Error adding ice candidate:', error)
 			}
 		} else {
-			console.log(
-				'[Client] Queuing ICE candidate (remote description not set)',
-			)
+			console.log('[Client] Queuing ICE candidate (remote description not set)')
 			this.candidatesQueue.push(candidate)
 		}
 	}
