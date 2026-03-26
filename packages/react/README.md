@@ -99,7 +99,7 @@ const AppA = () => {
 
 	useDevicePortalProvider('my-test-room', {
 		value: value.toString(),
-		onMessageFromConsumer: (message) => {
+		onMessageFromConsumer: (message, peerId) => {
 			setMessageFromB(message)
 		},
 	})
