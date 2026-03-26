@@ -13,10 +13,7 @@ export default defineConfig({
 				__dirname,
 				'../server/src/server.ts',
 			),
-			'@device-portal/client': path.resolve(
-				__dirname,
-				'src/index.ts',
-			),
+			'@device-portal/client': path.resolve(__dirname, 'src/index.ts'),
 		},
 	},
 })
