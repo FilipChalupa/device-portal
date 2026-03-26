@@ -31,6 +31,7 @@ RUN npm ci --omit=dev -w @device-portal/server
 
 # Copy built outputs for everything the server needs at runtime
 COPY --from=builder /app/packages/server/dist ./packages/server/dist
+COPY --from=builder /app/packages/client/dist ./packages/client/dist
 COPY --from=builder /app/packages/react/storybook-static ./packages/react/storybook-static
 
 # Expose the default port
