@@ -27,18 +27,18 @@ export class DirectTransport {
 
 	constructor(
 		private readonly room: string,
-		private readonly role: 'provider' | 'consumer',
+		private readonly role: 'host' | 'client',
 		private readonly peerId: PeerId,
 		private readonly browserDirect: BrowserDirectOption,
 		private readonly callbacks: DirectTransportCallbacks,
 	) {}
 
 	private get sendChannelName() {
-		return `device-portal-room-${this.room}-${this.role === 'provider' ? 'i2r' : 'r2i'}`
+		return `device-portal-room-${this.room}-${this.role === 'host' ? 'i2r' : 'r2i'}`
 	}
 
 	private get listenChannelName() {
-		return `device-portal-room-${this.room}-${this.role === 'provider' ? 'r2i' : 'i2r'}`
+		return `device-portal-room-${this.room}-${this.role === 'host' ? 'r2i' : 'i2r'}`
 	}
 
 	start() {

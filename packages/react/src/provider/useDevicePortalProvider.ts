@@ -1,5 +1,5 @@
 import {
-	Provider,
+	Host,
 	generatePeerId,
 	type BrowserDirectOption,
 	type PeerId,
@@ -37,7 +37,7 @@ export const useDevicePortalProvider = (
 	room: string,
 	options: DevicePortalProviderOptions = {},
 ) => {
-	const [provider, setProvider] = useState<Provider | null>(null)
+	const [provider, setProvider] = useState<Host | null>(null)
 	const [peers, setPeers] = useState<PeerId[]>([])
 	const onMessageFromConsumerRef = useRef(options.onMessageFromConsumer)
 	onMessageFromConsumerRef.current = options.onMessageFromConsumer
@@ -48,7 +48,7 @@ export const useDevicePortalProvider = (
 		options.sendLastValueOnConnectAndReconnect ?? true
 
 	useEffect(() => {
-		const newProvider = new Provider(room, {
+		const newProvider = new Host(room, {
 			onMessage: (value, peerId) => {
 				onMessageFromConsumerRef.current?.(value, peerId)
 			},

@@ -6,11 +6,11 @@ import { DirectTransport, type BrowserDirectOption } from './DirectTransport'
 import { WebSocketSignaling } from './WebSocketSignaling'
 
 /**
- * The Consumer acts as the "client" in a room.
- * It coordinates with the provider via direct browser signaling and/or WebSocket + WebRTC.
- * It waits for the Provider to establish a connection.
+ * The Client acts as the "client" in a room.
+ * It coordinates with the host via direct browser signaling and/or WebSocket + WebRTC.
+ * It waits for the Host to establish a connection.
  */
-export class Consumer {
+export class Client {
 	private isDestroyed = false
 	private peerId: PeerId
 	private directTransport: DirectTransport | null = null
@@ -64,7 +64,7 @@ export class Consumer {
 			if (this.browserDirect !== false) {
 				this.directTransport = new DirectTransport(
 					this.room,
-					'consumer',
+					'client',
 					this.peerId,
 					this.browserDirect,
 					{
@@ -106,12 +106,12 @@ export class Consumer {
 					this.peerId = peerId
 				},
 				onPeerJoined: () => {
-					// Consumer waits for offers, no action on peer-joined
+					// Client waits for offers, no action on peer-joined
 				},
 				onPeerLeft: (peerId) => this.handlePeerLeft(peerId),
 				onOffer: (offer, from) => this.handleOffer(offer, from),
 				onAnswer: () => {
-					// Consumer does not handle answers
+					// Client does not handle answers
 				},
 				onIceCandidate: (candidate) => this.handleIceCandidate(candidate),
 			},
@@ -131,7 +131,7 @@ export class Consumer {
 				await this.connectWebSocket()
 			} catch (error) {
 				console.error(
-					'[Consumer] Failed to connect to signaling server:',
+					'[Client] Failed to connect to signaling server:',
 					error,
 				)
 			}
@@ -140,11 +140,11 @@ export class Consumer {
 
 	private handleDirectPeerJoined(peerId: PeerId) {
 		console.log(
-			`[Consumer] Direct peer ${peerId} joined, ensuring no WebRTC exists.`,
+			`[Client] Direct peer ${peerId} joined, ensuring no WebRTC exists.`,
 		)
 		if (this.connection) {
 			console.log(
-				`[Consumer] Closing redundant WebRTC connection to direct peer ${peerId}`,
+				`[Client] Closing redundant WebRTC connection to direct peer ${peerId}`,
 			)
 			this.connection.close()
 			this.connection = null
@@ -156,7 +156,7 @@ export class Consumer {
 	}
 
 	private handlePeerLeft(peerId: PeerId) {
-		console.log(`[Consumer] Peer ${peerId} left`)
+		console.log(`[Client] Peer ${peerId} left`)
 		this.startReconnectionTimer()
 	}
 
@@ -165,7 +165,7 @@ export class Consumer {
 			return
 		}
 		const delayMs = getExponentialBackoffDelay(this.reconnectTimerAttempts++)
-		console.log(`[Consumer] Starting reconnection timer in ${delayMs}ms...`)
+		console.log(`[Client] Starting reconnection timer in ${delayMs}ms...`)
 		this.reconnectTimeout = setTimeout(async () => {
 			this.reconnectTimeout = null
 			if (this.isDestroyed) {
@@ -177,7 +177,7 @@ export class Consumer {
 				this.connection.iceConnectionState === 'disconnected' ||
 				this.connection.iceConnectionState === 'closed'
 			) {
-				console.log('[Consumer] Attempting to re-join room for reconnection...')
+				console.log('[Client] Attempting to re-join room for reconnection...')
 				await this.ensureSignaling()
 				this.webSocketSignaling?.announceRoom()
 				this.startReconnectionTimer()
@@ -199,21 +199,21 @@ export class Consumer {
 	) {
 		if (this.isHandlingOffer) {
 			console.log(
-				`[Consumer] Already handling an offer from ${fromPeerId}, skipping.`,
+				`[Client] Already handling an offer from ${fromPeerId}, skipping.`,
 			)
 			return
 		}
 
 		if (this.directTransport?.directPeers.has(fromPeerId)) {
 			console.log(
-				`[Consumer] Peer ${fromPeerId} is a direct peer, ignoring WebRTC offer.`,
+				`[Client] Peer ${fromPeerId} is a direct peer, ignoring WebRTC offer.`,
 			)
 			return
 		}
 
 		this.isHandlingOffer = true
 		try {
-			console.log(`[Consumer] Handling offer from ${fromPeerId}`)
+			console.log(`[Client] Handling offer from ${fromPeerId}`)
 			this.stopReconnectionTimer()
 			this.initializeConnectionAndChannel()
 			if (!this.connection) {
@@ -222,7 +222,7 @@ export class Consumer {
 
 			this.connection.oniceconnectionstatechange = () => {
 				console.log(
-					`[Consumer] ICE connection state: ${this.connection?.iceConnectionState}`,
+					`[Client] ICE connection state: ${this.connection?.iceConnectionState}`,
 				)
 				if (
 					this.connection?.iceConnectionState === 'failed' ||
@@ -240,9 +240,9 @@ export class Consumer {
 
 			await this.connection.setRemoteDescription(offer)
 			await this.processCandidatesQueue()
-			console.log('[Consumer] Creating answer')
+			console.log('[Client] Creating answer')
 			const answer = await this.connection.createAnswer()
-			console.log(`[Consumer] Setting local description (${answer.type})`)
+			console.log(`[Client] Setting local description (${answer.type})`)
 			await this.connection.setLocalDescription(answer)
 			this.webSocketSignaling?.sendSignaling(answer.type!, answer, fromPeerId)
 		} finally {
@@ -256,14 +256,14 @@ export class Consumer {
 		}
 		if (this.connection.remoteDescription) {
 			try {
-				console.log('[Consumer] Adding received ICE candidate')
+				console.log('[Client] Adding received ICE candidate')
 				await this.connection.addIceCandidate(new RTCIceCandidate(candidate))
 			} catch (error) {
-				console.error('[Consumer] Error adding ice candidate:', error)
+				console.error('[Client] Error adding ice candidate:', error)
 			}
 		} else {
 			console.log(
-				'[Consumer] Queuing ICE candidate (remote description not set)',
+				'[Client] Queuing ICE candidate (remote description not set)',
 			)
 			this.candidatesQueue.push(candidate)
 		}
@@ -278,7 +278,7 @@ export class Consumer {
 			try {
 				await this.connection.addIceCandidate(new RTCIceCandidate(candidate))
 			} catch (error) {
-				console.error('[Consumer] Error adding queued ice candidate:', error)
+				console.error('[Client] Error adding queued ice candidate:', error)
 			}
 		}
 	}
@@ -291,7 +291,7 @@ export class Consumer {
 		this.connection = new RTCPeerConnection({ iceServers: this.iceServers })
 		this.connection.onicecandidate = (event) => {
 			if (event.candidate) {
-				console.log('[Consumer] Generated new ICE candidate')
+				console.log('[Client] Generated new ICE candidate')
 				this.webSocketSignaling?.sendSignaling(
 					'ice-candidate',
 					event.candidate.toJSON(),
@@ -308,14 +308,14 @@ export class Consumer {
 		}
 
 		this.connection.ondatachannel = (event) => {
-			console.log('[Consumer] Data channel received')
+			console.log('[Client] Data channel received')
 			this.channel = event.channel
 			this.channel.onopen = () => {
-				console.log('[Consumer] Data channel opened')
+				console.log('[Client] Data channel opened')
 				this.onConnected?.()
 			}
 			this.channel.onmessage = (event) => {
-				console.log('[Consumer] Data channel message received')
+				console.log('[Client] Data channel message received')
 				if (this.peerId) {
 					this.onMessage?.(event.data, this.peerId)
 				}

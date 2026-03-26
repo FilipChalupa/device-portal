@@ -12,13 +12,13 @@ type ClientConnection = {
 }
 
 /**
- * The Provider acts as the "producer" or "server" in a room.
+ * The Host acts as the "producer" or "server" in a room.
  * It coordinates with peers via direct browser signaling and/or WebSocket + WebRTC.
  *
  * It automatically initiates connections with joining peers and manages
  * multiple concurrent client connections.
  */
-export class Provider {
+export class Host {
 	private isDestroyed = false
 	private peerId: PeerId
 	private directTransport: DirectTransport | null = null
@@ -96,7 +96,7 @@ export class Provider {
 			if (this.browserDirect !== false) {
 				this.directTransport = new DirectTransport(
 					this.room,
-					'provider',
+					'host',
 					this.peerId,
 					this.browserDirect,
 					{
@@ -142,7 +142,7 @@ export class Provider {
 				onPeerJoined: (peerId) => this.handleWebRTCPeerJoined(peerId),
 				onPeerLeft: (peerId) => this.handlePeerLeft(peerId),
 				onOffer: () => {
-					// Provider does not handle offers
+					// Host does not handle offers
 				},
 				onAnswer: (answer, from) => this.handleAnswer(answer, from),
 				onIceCandidate: (candidate, from) =>
@@ -163,7 +163,7 @@ export class Provider {
 				await this.connectWebSocket()
 			} catch (error) {
 				console.error(
-					'[Provider] Failed to connect to signaling server:',
+					'[Host] Failed to connect to signaling server:',
 					error,
 				)
 			}
@@ -171,11 +171,11 @@ export class Provider {
 	}
 
 	private handleDirectPeerJoined(peerId: PeerId) {
-		console.log(`[Provider] Direct peer ${peerId} joined, skipping WebRTC.`)
+		console.log(`[Host] Direct peer ${peerId} joined, skipping WebRTC.`)
 		const existingClient = this.connections.get(peerId)
 		if (existingClient) {
 			console.log(
-				`[Provider] Closing redundant WebRTC connection to direct peer ${peerId}`,
+				`[Host] Closing redundant WebRTC connection to direct peer ${peerId}`,
 			)
 			existingClient.channel.close()
 			existingClient.connection.close()
@@ -187,7 +187,7 @@ export class Provider {
 	}
 
 	private async handleWebRTCPeerJoined(peerId: PeerId) {
-		console.log(`[Provider] Peer ${peerId} joined`)
+		console.log(`[Host] Peer ${peerId} joined`)
 
 		if (this.directTransport?.directPeers.has(peerId)) {
 			this.handleDirectPeerJoined(peerId)
@@ -196,7 +196,7 @@ export class Provider {
 
 		if (this.pendingPeers.has(peerId)) {
 			console.log(
-				`[Provider] Already connecting to ${peerId} (pending), skipping.`,
+				`[Host] Already connecting to ${peerId} (pending), skipping.`,
 			)
 			return
 		}
@@ -207,14 +207,14 @@ export class Provider {
 				client.connection.connectionState === 'connecting'
 			) {
 				console.log(
-					`[Provider] Connection to ${peerId} already exists or is connecting, skipping.`,
+					`[Host] Connection to ${peerId} already exists or is connecting, skipping.`,
 				)
 				return
 			}
 		}
 		if (this.connections.size >= this.maxClients) {
 			console.log(
-				`[Provider] Max clients reached, adding ${peerId} to waiting list`,
+				`[Host] Max clients reached, adding ${peerId} to waiting list`,
 			)
 			this.waitingPeers.add(peerId)
 			return
@@ -229,7 +229,7 @@ export class Provider {
 	}
 
 	private handlePeerLeft(peerId: PeerId) {
-		console.log(`[Provider] Peer ${peerId} left`)
+		console.log(`[Host] Peer ${peerId} left`)
 		this.waitingPeers.delete(peerId)
 		const client = this.connections.get(peerId)
 		if (client) {
@@ -261,7 +261,7 @@ export class Provider {
 				return
 			}
 			console.log(
-				`[Provider] Slot available, connecting waiting peer: ${nextPeerId}`,
+				`[Host] Slot available, connecting waiting peer: ${nextPeerId}`,
 			)
 			this.waitingPeers.delete(nextPeerId)
 			this.pendingPeers.add(nextPeerId)
@@ -275,11 +275,11 @@ export class Provider {
 	}
 
 	private async createAndSendOffer(toPeerId: PeerId) {
-		console.log(`[Provider] Creating offer for ${toPeerId}...`)
+		console.log(`[Host] Creating offer for ${toPeerId}...`)
 
 		const existingClient = this.connections.get(toPeerId)
 		if (existingClient) {
-			console.log(`[Provider] Closing existing connection for ${toPeerId}`)
+			console.log(`[Host] Closing existing connection for ${toPeerId}`)
 			existingClient.connection.close()
 			existingClient.channel.close()
 		}
@@ -306,7 +306,7 @@ export class Provider {
 
 		connection.oniceconnectionstatechange = () => {
 			console.log(
-				`[Provider] ICE state for ${toPeerId}: ${connection.iceConnectionState}`,
+				`[Host] ICE state for ${toPeerId}: ${connection.iceConnectionState}`,
 			)
 			if (
 				connection.iceConnectionState === 'disconnected' ||
@@ -320,7 +320,7 @@ export class Provider {
 		}
 
 		channel.onopen = () => {
-			console.log(`[Provider] Data channel opened for ${toPeerId}`)
+			console.log(`[Host] Data channel opened for ${toPeerId}`)
 			this.onPeerConnected?.(toPeerId)
 			if (clientConnection.value) {
 				channel.send(clientConnection.value.value)
@@ -328,7 +328,7 @@ export class Provider {
 		}
 
 		channel.onmessage = (event) => {
-			console.log(`[Provider] Message from ${toPeerId}: ${event.data}`)
+			console.log(`[Host] Message from ${toPeerId}: ${event.data}`)
 			this.onMessage?.(event.data, toPeerId)
 			this.notifyPeerListeners(toPeerId, event.data)
 		}
@@ -346,11 +346,11 @@ export class Provider {
 		if (client) {
 			if (client.connection.signalingState === 'stable') {
 				console.log(
-					`[Provider] Connection to ${fromPeerId} is already stable, skipping answer.`,
+					`[Host] Connection to ${fromPeerId} is already stable, skipping answer.`,
 				)
 				return
 			}
-			console.log(`[Provider] Handling answer from ${fromPeerId}`)
+			console.log(`[Host] Handling answer from ${fromPeerId}`)
 			await client.connection.setRemoteDescription(answer)
 			while (client.candidatesQueue.length > 0) {
 				const candidate = client.candidatesQueue.shift()!

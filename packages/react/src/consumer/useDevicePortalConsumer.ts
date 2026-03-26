@@ -1,5 +1,5 @@
 import {
-	Consumer,
+	Client,
 	generatePeerId,
 	type BrowserDirectOption,
 	type PeerId,
@@ -31,7 +31,7 @@ export type DevicePortalConsumerOptions = {
 // ---------------------------------------------------------------------------
 
 type ConsumerEntry = {
-	consumer: Consumer
+	consumer: Client
 	firstValuePromise: Promise<string>
 	latestValue: string | undefined
 	lastSentValue: string | undefined
@@ -90,7 +90,7 @@ function getOrCreateEntry(
 		optionsSnapshot: newOptionsKey,
 	}
 
-	entry.consumer = new Consumer(room, {
+	entry.consumer = new Client(room, {
 		onMessage: (value) => {
 			entry.latestValue = value
 			resolveFirst(value)

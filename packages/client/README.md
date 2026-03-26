@@ -1,6 +1,6 @@
 # @device-portal/client
 
-Base WebRTC logic for Device Portal. This package provides the core `Provider` and `Consumer` classes that can be used independently of React.
+Base WebRTC logic for Device Portal. This package provides the core `Host` and `Client` classes that can be used independently of React.
 
 ## Install
 
@@ -10,16 +10,16 @@ npm install @device-portal/client
 
 ## Usage
 
-Device Portal uses a signaling server to coordinate WebRTC connections. One peer acts as a **Provider** (the producer of data) and one or more peers act as **Consumers**.
+Device Portal uses a signaling server to coordinate WebRTC connections. One peer acts as a **Host** (the producer of data) and one or more peers act as **Clients**.
 
-### Provider
+### Host
 
-The `Provider` creates a room and waits for consumers to join. It automatically initiates a WebRTC connection with each joining consumer.
+The `Host` creates a room and waits for clients to join. It automatically initiates a WebRTC connection with each joining client.
 
 ```typescript
-import { Provider } from '@device-portal/client'
+import { Host } from '@device-portal/client'
 
-const provider = new Provider('my-secret-room', {
+const host = new Host('my-secret-room', {
 	onMessage: (data, peerId) => {
 		console.log(`Received from ${peerId}:`, data)
 	},
@@ -29,49 +29,49 @@ const provider = new Provider('my-secret-room', {
 	maxClients: 5, // Optional: limit number of connections
 })
 
-// Send data to all connected consumers
-provider.send('Hello everyone!')
+// Send data to all connected clients
+host.send('Hello everyone!')
 
 // Send data to a specific peer
-// provider.sendToPeer(somePeerId, 'Hello you!');
+// host.sendToPeer(somePeerId, 'Hello you!');
 
 // Cleanup
-// provider.destroy();
+// host.destroy();
 ```
 
-### Consumer
+### Client
 
-The `Consumer` joins an existing room and waits for an offer from the provider.
+The `Client` joins an existing room and waits for an offer from the host.
 
 ```typescript
-import { Consumer } from '@device-portal/client'
+import { Client } from '@device-portal/client'
 
-const consumer = new Consumer('my-secret-room', {
+const client = new Client('my-secret-room', {
 	onMessage: (data) => {
-		console.log('Received from provider:', data)
+		console.log('Received from host:', data)
 	},
 })
 
-// Send data back to the provider
-consumer.send('I received your message!')
+// Send data back to the host
+client.send('I received your message!')
 
 // Cleanup
-// consumer.destroy();
+// client.destroy();
 ```
 
 ## Features
 
-- Core WebRTC abstraction (`Provider`, `Consumer`)
+- Core WebRTC abstraction (`Host`, `Client`)
 - Signaling server client implementation
 - **Browser Direct**: High-performance internal communication using `BroadcastChannel` and `EventTarget` when peers are in the same browser, bypassing WebRTC entirely for local communication.
 - **Offline/Serverless support**: Can work entirely without a signaling server for same-browser scenarios.
 - Peer ID branding and utilities
 - Automatic reconnection logic
-- Support for multiple consumers per producer
+- Support for multiple clients per host
 
 ## Browser Direct
 
-When both the `Provider` and `Consumer` are running in the same browser (different tabs or same tab), `@device-portal/client` can utilize direct browser APIs (`BroadcastChannel` and `EventTarget`) for communication instead of WebRTC. This is faster, more reliable, and works offline.
+When both the `Host` and `Client` are running in the same browser (different tabs or same tab), `@device-portal/client` can utilize direct browser APIs (`BroadcastChannel` and `EventTarget`) for communication instead of WebRTC. This is faster, more reliable, and works offline.
 
 By default, `browserDirect` is `true`.
 
@@ -82,7 +82,7 @@ By default, `browserDirect` is `true`.
 - `false`: Disable direct browser communication (always use WebRTC).
 
 ```typescript
-const provider = new Provider('my-room', {
+const host = new Host('my-room', {
 	browserDirect: 'same-window-only',
 })
 ```
@@ -92,12 +92,12 @@ const provider = new Provider('my-room', {
 To use a custom signaling server or disable it:
 
 ```typescript
-const provider = new Provider('my-room', {
+const host = new Host('my-room', {
 	webSocketSignalingServer: 'wss://your-server.com',
 })
 
 // Disable signaling server (Browser Direct only)
-const consumer = new Consumer('my-room', {
+const client = new Client('my-room', {
 	webSocketSignalingServer: null,
 })
 ```

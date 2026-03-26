@@ -1,4 +1,4 @@
-import { Provider, type PeerId } from '@device-portal/client'
+import { Host, type PeerId } from '@device-portal/client'
 import { useEffect, useRef } from 'react'
 
 export type PeerOptions = {
@@ -7,7 +7,7 @@ export type PeerOptions = {
 }
 
 export const useDevicePortalPeer = (
-	provider: Provider,
+	provider: Host,
 	peerId: PeerId,
 	options: PeerOptions = {},
 ) => {
