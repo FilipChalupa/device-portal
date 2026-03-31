@@ -12,8 +12,8 @@ import { useEffect, useRef, useState } from 'react'
  * Configuration options for the Device Portal Provider.
  */
 export type DevicePortalProviderOptions = {
-	/** The value to share with all connected consumers. */
-	value?: string
+	/** The value to share with connected consumers. A function receives the peerId and can return a per-peer value. */
+	value?: string | ((peerId: PeerId) => string)
 	/** URL of the signaling server, or null to disable. */
 	webSocketSignalingServer?: string | null
 	/** Callback when a consumer sends a message back to the provider. */
@@ -43,9 +43,11 @@ export const useDevicePortalProvider = (
 	onMessageFromConsumerRef.current = options.onMessageFromConsumer
 	// Stable peer ID that survives React Strict Mode unmount/remount cycles
 	const peerIdRef = useRef<PeerId>(generatePeerId())
-	const lastSentValueRef = useRef<string | undefined>(undefined)
 	const sendLastValueOnConnectAndReconnect =
 		options.sendLastValueOnConnectAndReconnect ?? true
+
+	const valueRef = useRef(options.value)
+	valueRef.current = options.value
 
 	useEffect(() => {
 		const newProvider = new Host(room, {
@@ -55,13 +57,11 @@ export const useDevicePortalProvider = (
 			onPeersChange: (peers) => {
 				setPeers(peers)
 			},
-			onPeerConnected: () => {
-				if (
-					sendLastValueOnConnectAndReconnect &&
-					lastSentValueRef.current !== undefined
-				) {
-					newProvider.send(lastSentValueRef.current)
-				}
+			onPeerConnected: (peerId) => {
+				if (!sendLastValueOnConnectAndReconnect) return
+				const v = valueRef.current
+				if (v === undefined) return
+				newProvider.sendToPeer(peerId, typeof v === 'function' ? v(peerId) : v)
 			},
 			webSocketSignalingServer: options.webSocketSignalingServer,
 			maxClients: options.maxClients,
@@ -85,11 +85,15 @@ export const useDevicePortalProvider = (
 	])
 
 	useEffect(() => {
-		if (options.value === undefined) {
-			return
+		if (options.value === undefined || !provider) return
+		if (typeof options.value === 'function') {
+			const fn = options.value
+			for (const peerId of provider.peers) {
+				provider.sendToPeer(peerId, fn(peerId))
+			}
+		} else {
+			provider.send(options.value)
 		}
-		lastSentValueRef.current = options.value
-		provider?.send(options.value)
 	}, [options.value, provider])
 
 	return { peers, provider }
