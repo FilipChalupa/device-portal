@@ -114,10 +114,13 @@ function scheduleDestroy(key: string) {
 	const entry = entries.get(key)
 	if (!entry || entry.destroyTimer !== null) return
 
+	// setTimeout(0) so React Strict Mode's synchronous unmount/remount
+	// reclaims the entry before it's destroyed, while real unmounts
+	// (navigation, conditional render) clean up on the next microtask.
 	entry.destroyTimer = setTimeout(() => {
 		entry.consumer.destroy()
 		entries.delete(key)
-	}, 5_000)
+	}, 0)
 }
 
 /**
