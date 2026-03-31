@@ -81,6 +81,17 @@ const ConsumerComponent = () => {
 }
 ```
 
+### Per-peer Values
+
+Instead of broadcasting the same value to all consumers, you can pass a function that returns a different value for each peer:
+
+```jsx
+useDevicePortalProvider('my-test-room', {
+	value: (peerId) => JSON.stringify({ peerId, timestamp: Date.now() }),
+	webSocketSignalingServer: 'wss://device-portal.filipchalupa.cz',
+})
+```
+
 ### Two-way Communication
 
 You can also send messages from the `Consumer` back to the `Provider`.
