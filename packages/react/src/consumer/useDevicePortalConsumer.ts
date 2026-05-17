@@ -30,12 +30,16 @@ export type DevicePortalConsumerOptions = {
 // remount can reclaim the entry before it's destroyed.
 // ---------------------------------------------------------------------------
 
+type ConnectionStatus = 'connected' | 'reconnecting'
+
 type ConsumerEntry = {
 	consumer: Client
 	firstValuePromise: Promise<string>
 	latestValue: string | undefined
 	lastSentValue: string | undefined
+	connectionStatus: ConnectionStatus
 	setValue: ((value: string) => void) | null
+	setConnectionStatus: ((status: ConnectionStatus) => void) | null
 	destroyTimer: ReturnType<typeof setTimeout> | null
 	room: string
 	optionsSnapshot: string
@@ -84,7 +88,9 @@ function getOrCreateEntry(
 		firstValuePromise,
 		latestValue: undefined,
 		lastSentValue: undefined,
+		connectionStatus: 'reconnecting',
 		setValue: null,
+		setConnectionStatus: null,
 		destroyTimer: null,
 		room,
 		optionsSnapshot: newOptionsKey,
@@ -97,9 +103,15 @@ function getOrCreateEntry(
 			entry.setValue?.(value)
 		},
 		onConnected: () => {
+			entry.connectionStatus = 'connected'
+			entry.setConnectionStatus?.('connected')
 			if (sendLastMessageOnReconnect && entry.lastSentValue !== undefined) {
 				entry.consumer.send(entry.lastSentValue)
 			}
+		},
+		onDisconnected: () => {
+			entry.connectionStatus = 'reconnecting'
+			entry.setConnectionStatus?.('reconnecting')
 		},
 		webSocketSignalingServer: options.webSocketSignalingServer,
 		browserDirect: options.browserDirect,
@@ -142,6 +154,7 @@ export const useDevicePortalConsumer = (
 	options: DevicePortalConsumerOptions = {},
 ): {
 	value: string
+	connectionStatus: ConnectionStatus
 	sendMessageToProvider: (message: string) => void
 } => {
 	// Key by room + options rather than useId(), because useId() is not
@@ -157,21 +170,28 @@ export const useDevicePortalConsumer = (
 
 	// After the first value, track subsequent updates via useState.
 	const [value, setValue] = useState(() => entry.latestValue ?? firstValue)
+	const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(
+		() => entry.connectionStatus,
+	)
 
-	// Wire up the entry's setValue so the Consumer can push updates.
+	// Wire up the entry's setters so the Consumer can push updates.
 	entry.setValue = setValue
+	entry.setConnectionStatus = setConnectionStatus
 
 	useEffect(() => {
 		const e = getOrCreateEntry(cacheKey, room, peerIdRef.current, options)
 		e.setValue = setValue
+		e.setConnectionStatus = setConnectionStatus
 
-		// Sync in case a value arrived between render and effect commit.
+		// Sync in case state changed between render and effect commit.
 		if (e.latestValue !== undefined) {
 			setValue(e.latestValue)
 		}
+		setConnectionStatus(e.connectionStatus)
 
 		return () => {
 			e.setValue = null
+			e.setConnectionStatus = null
 			scheduleDestroy(cacheKey)
 		}
 	}, [
@@ -190,5 +210,5 @@ export const useDevicePortalConsumer = (
 		[entry],
 	)
 
-	return { value, sendMessageToProvider }
+	return { value, connectionStatus, sendMessageToProvider }
 }

@@ -22,10 +22,13 @@ export class Client {
 	private isHandlingOffer = false
 	private reconnectTimerAttempts = 0
 
+	private isConnected = false
+
 	private readonly onMessage:
 		| ((value: string, peerId: PeerId) => void)
 		| undefined
 	private readonly onConnected: (() => void) | undefined
+	private readonly onDisconnected: (() => void) | undefined
 	private readonly webSocketSignalingServer: string | null
 	private readonly iceServers: Array<RTCIceServer>
 	private readonly browserDirect: BrowserDirectOption
@@ -35,6 +38,7 @@ export class Client {
 		options: {
 			onMessage?: (value: string, peerId: PeerId) => void
 			onConnected?: () => void
+			onDisconnected?: () => void
 			webSocketSignalingServer?: string | null
 			iceServers?: Array<RTCIceServer>
 			browserDirect?: BrowserDirectOption
@@ -43,6 +47,7 @@ export class Client {
 	) {
 		this.onMessage = options.onMessage
 		this.onConnected = options.onConnected
+		this.onDisconnected = options.onDisconnected
 		this.webSocketSignalingServer =
 			options.webSocketSignalingServer === null
 				? null
@@ -135,6 +140,16 @@ export class Client {
 		}
 	}
 
+	private setConnectionState(connected: boolean) {
+		if (this.isConnected === connected) return
+		this.isConnected = connected
+		if (connected) {
+			this.onConnected?.()
+		} else {
+			this.onDisconnected?.()
+		}
+	}
+
 	private handleDirectPeerJoined(peerId: PeerId) {
 		console.log(
 			`[Client] Direct peer ${peerId} joined, ensuring no WebRTC exists.`,
@@ -149,11 +164,12 @@ export class Client {
 			this.channel = null
 		}
 
-		this.onConnected?.()
+		this.setConnectionState(true)
 	}
 
 	private handlePeerLeft(peerId: PeerId) {
 		console.log(`[Client] Peer ${peerId} left`)
+		this.setConnectionState(false)
 		this.startReconnectionTimer()
 	}
 
@@ -226,6 +242,7 @@ export class Client {
 					this.connection?.iceConnectionState === 'disconnected' ||
 					this.connection?.iceConnectionState === 'closed'
 				) {
+					this.setConnectionState(false)
 					this.startReconnectionTimer()
 				} else if (
 					this.connection?.iceConnectionState === 'connected' ||
@@ -307,7 +324,7 @@ export class Client {
 			this.channel = event.channel
 			this.channel.onopen = () => {
 				console.log('[Client] Data channel opened')
-				this.onConnected?.()
+				this.setConnectionState(true)
 			}
 			this.channel.onmessage = (event) => {
 				console.log('[Client] Data channel message received')
