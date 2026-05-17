@@ -179,9 +179,7 @@ const ConsumerComponent = () => {
 	return (
 		<>
 			<p>Value from provider: {value}</p>
-			{connectionStatus === 'reconnecting' && (
-				<p>Reconnecting to provider…</p>
-			)}
+			{connectionStatus === 'reconnecting' && <p>Reconnecting to provider…</p>}
 		</>
 	)
 }
