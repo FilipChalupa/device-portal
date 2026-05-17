@@ -30,6 +30,15 @@ export type DevicePortalConsumerOptions = {
 // remount can reclaim the entry before it's destroyed.
 // ---------------------------------------------------------------------------
 
+/**
+ * Connection state reported by {@link useDevicePortalConsumer}.
+ *
+ * The hook suspends until the first value arrives, so `'connecting'` is never
+ * observed — by the time the component renders, the consumer was at least once
+ * connected. After that, the status flips to `'reconnecting'` whenever the
+ * peer link drops (peer left, ICE failure) and back to `'connected'` once the
+ * link is re-established.
+ */
 type ConnectionStatus = 'connected' | 'reconnecting'
 
 type ConsumerEntry = {
@@ -148,6 +157,14 @@ function scheduleDestroy(key: string) {
  *
  * @param room - The unique room ID.
  * @param options - Consumer configuration options.
+ * @returns An object with:
+ *   - `value`: the latest value pushed by the provider. After Suspense
+ *     resolves, this never goes "stale" to `undefined` — if the peer link
+ *     drops, the last received value is retained.
+ *   - `connectionStatus`: `'connected'` or `'reconnecting'`. Use this to
+ *     render a banner / indicator when the peer link is temporarily down.
+ *     The hook keeps trying to reconnect in the background.
+ *   - `sendMessageToProvider`: send a message back to the provider.
  */
 export const useDevicePortalConsumer = (
 	room: string,

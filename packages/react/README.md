@@ -168,6 +168,32 @@ const ConsumerComponent = () => {
 
 The WebRTC connection is designed to be resilient. If the connection to the signaling server is temporarily lost, any established peer-to-peer connections will remain active. The client will attempt to reconnect to the signaling server in the background to handle any future connection negotiations.
 
+### Connection Status
+
+`useDevicePortalConsumer` exposes a `connectionStatus` field so the UI can react when the peer link drops:
+
+```jsx
+const ConsumerComponent = () => {
+	const { value, connectionStatus } = useDevicePortalConsumer('my-test-room')
+
+	return (
+		<>
+			<p>Value from provider: {value}</p>
+			{connectionStatus === 'reconnecting' && (
+				<p>Reconnecting to provider…</p>
+			)}
+		</>
+	)
+}
+```
+
+The status is one of:
+
+- `'connected'` — the peer link is up.
+- `'reconnecting'` — the peer link dropped (peer left, ICE failed); the consumer is retrying in the background. The last received `value` is kept.
+
+`'connecting'` is intentionally not exposed: the hook suspends until the first value arrives, so by the time your component renders the consumer was already connected at least once.
+
 ### Browser Direct Communication
 
 When peers are in the same browser (different tabs or same tab), the library automatically uses direct browser APIs for communication instead of WebRTC. This results in a near-instant connection and works offline.

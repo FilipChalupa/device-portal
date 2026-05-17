@@ -37,7 +37,20 @@ export class Client {
 		private readonly room: string,
 		options: {
 			onMessage?: (value: string, peerId: PeerId) => void
+			/**
+			 * Fired when the link to the host becomes ready (direct peer
+			 * joined or WebRTC data channel opened). Also fired on every
+			 * subsequent successful reconnect. Deduplicated: while the link
+			 * stays up, only the first transition fires.
+			 */
 			onConnected?: () => void
+			/**
+			 * Fired when the link to the host is lost (peer left or ICE
+			 * connection failed/disconnected/closed). The Client automatically
+			 * starts reconnecting in the background; `onConnected` fires again
+			 * once the link is restored. Deduplicated: only the transition
+			 * from connected → disconnected fires this callback.
+			 */
 			onDisconnected?: () => void
 			webSocketSignalingServer?: string | null
 			iceServers?: Array<RTCIceServer>

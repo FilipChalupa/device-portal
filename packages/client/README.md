@@ -50,6 +50,12 @@ const client = new Client('my-secret-room', {
 	onMessage: (data) => {
 		console.log('Received from host:', data)
 	},
+	onConnected: () => {
+		console.log('Link to host is up')
+	},
+	onDisconnected: () => {
+		console.log('Link to host lost — reconnecting in background')
+	},
 })
 
 // Send data back to the host
