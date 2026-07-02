@@ -183,7 +183,38 @@ export class Client {
 	private handlePeerLeft(peerId: PeerId) {
 		console.log(`[Client] Peer ${peerId} left`)
 		this.setConnectionState(false)
+		// Drop the now-dead peer connection so the next offer builds a fresh one.
+		this.resetConnection()
 		this.startReconnectionTimer()
+	}
+
+	/**
+	 * Tears down the current peer connection and data channel and clears any
+	 * queued ICE candidates, detaching their event handlers first so a late
+	 * state change from the old connection can no longer drive reconnection.
+	 *
+	 * Without this, a lost connection would linger in `this.connection`, and
+	 * `initializeConnectionAndChannel` would reuse the dead connection when the
+	 * next offer arrived — so the link never recovered until the page reloaded.
+	 */
+	private resetConnection() {
+		const connection = this.connection
+		const channel = this.channel
+		this.connection = null
+		this.channel = null
+		this.candidatesQueue = []
+		if (channel) {
+			channel.onopen = null
+			channel.onmessage = null
+			channel.close()
+		}
+		if (connection) {
+			connection.onicecandidate = null
+			connection.oniceconnectionstatechange = null
+			connection.onconnectionstatechange = null
+			connection.ondatachannel = null
+			connection.close()
+		}
 	}
 
 	private startReconnectionTimer() {
@@ -204,6 +235,9 @@ export class Client {
 				this.connection.iceConnectionState === 'closed'
 			) {
 				console.log('[Client] Attempting to re-join room for reconnection...')
+				// Discard the dead connection so the fresh offer from the host
+				// builds a brand-new peer connection instead of reusing this one.
+				this.resetConnection()
 				await this.ensureSignaling()
 				this.webSocketSignaling?.announceRoom()
 				this.startReconnectionTimer()
