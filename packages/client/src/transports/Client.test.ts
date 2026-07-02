@@ -41,6 +41,7 @@ class MockDataChannel {
 
 class MockRTCPeerConnection {
 	static instances: MockRTCPeerConnection[] = []
+	static failNextSetRemoteDescription = false
 
 	iceConnectionState = 'new'
 	connectionState = 'new'
@@ -71,6 +72,10 @@ class MockRTCPeerConnection {
 		this.localDescription = description
 	}
 	async setRemoteDescription(description: unknown) {
+		if (MockRTCPeerConnection.failNextSetRemoteDescription) {
+			MockRTCPeerConnection.failNextSetRemoteDescription = false
+			throw new Error('Simulated setRemoteDescription failure')
+		}
 		if (this.closed) {
 			throw new Error('Cannot set remote description on a closed connection')
 		}
@@ -143,6 +148,7 @@ describe('Client reconnection', () => {
 
 	beforeEach(() => {
 		MockRTCPeerConnection.instances = []
+		MockRTCPeerConnection.failNextSetRemoteDescription = false
 		MockWebSocket.instances = []
 		installGlobal('RTCPeerConnection', MockRTCPeerConnection)
 		installGlobal('WebSocket', MockWebSocket)
@@ -260,5 +266,148 @@ describe('Client reconnection', () => {
 			data: { type: 'offer', sdp: 'host-offer-3' },
 		})
 		await waitFor(() => MockRTCPeerConnection.instances.length === 2)
+	})
+
+	test('keeps re-announcing when a negotiation stalls before the channel opens', async () => {
+		const onConnected = vi.fn()
+		const client = new Client('stall-room', {
+			browserDirect: false,
+			webSocketSignalingServer: 'ws://mock',
+			iceServers: [],
+			onConnected,
+		})
+		clients.push(client)
+
+		await waitFor(() => MockWebSocket.instances.length === 1)
+		const socket = MockWebSocket.instances[0]
+		socket.open()
+		await waitFor(() => socket.sentOfType('join-room').length >= 1)
+
+		// The host offers, the client answers — but ICE never progresses (e.g.
+		// the answer or the candidates got lost on the way).
+		socket.receive({
+			id: 'stalled-offer',
+			type: 'offer',
+			from: 'host-peer',
+			data: { type: 'offer', sdp: 'stalled-offer' },
+		})
+		await waitFor(() => socket.sentOfType('answer').length >= 1)
+		const joinsAfterOffer = socket.sentOfType('join-room').length
+
+		// The reconnection loop must give up on the stalled negotiation and
+		// re-announce instead of idling forever.
+		await waitFor(
+			() => socket.sentOfType('join-room').length > joinsAfterOffer,
+			8000,
+		)
+		expect(MockRTCPeerConnection.instances[0].closed).toBe(true)
+
+		// The fresh offer then connects normally.
+		socket.receive({
+			id: 'retry-offer',
+			type: 'offer',
+			from: 'host-peer',
+			data: { type: 'offer', sdp: 'retry-offer' },
+		})
+		await waitFor(() => MockRTCPeerConnection.instances.length === 2)
+		MockRTCPeerConnection.instances[1].emitDataChannel().open()
+		await waitFor(() => onConnected.mock.calls.length === 1)
+	})
+
+	test('recovers when handling an offer throws', async () => {
+		const onConnected = vi.fn()
+		const client = new Client('offer-error-room', {
+			browserDirect: false,
+			webSocketSignalingServer: 'ws://mock',
+			iceServers: [],
+			onConnected,
+		})
+		clients.push(client)
+
+		await waitFor(() => MockWebSocket.instances.length === 1)
+		const socket = MockWebSocket.instances[0]
+		socket.open()
+		await waitFor(() => socket.sentOfType('join-room').length >= 1)
+		const joinsBeforeOffer = socket.sentOfType('join-room').length
+
+		MockRTCPeerConnection.failNextSetRemoteDescription = true
+		socket.receive({
+			id: 'broken-offer',
+			type: 'offer',
+			from: 'host-peer',
+			data: { type: 'offer', sdp: 'broken-offer' },
+		})
+
+		// The failed negotiation must fall back to the reconnection loop.
+		await waitFor(
+			() => socket.sentOfType('join-room').length > joinsBeforeOffer,
+			8000,
+		)
+
+		socket.receive({
+			id: 'working-offer',
+			type: 'offer',
+			from: 'host-peer',
+			data: { type: 'offer', sdp: 'working-offer' },
+		})
+		await waitFor(() => socket.sentOfType('answer').length >= 1)
+		await waitFor(() => MockRTCPeerConnection.instances.length === 2)
+		MockRTCPeerConnection.instances[1].emitDataChannel().open()
+		await waitFor(() => onConnected.mock.calls.length === 1)
+	})
+
+	test('reports connected again after a transient ICE drop recovers on its own', async () => {
+		const { connection, onConnected, onDisconnected } = await connectedClient()
+
+		connection.emitIceState('disconnected')
+		expect(onDisconnected).toHaveBeenCalledTimes(1)
+
+		// The ICE layer recovers while the data channel stayed open all along.
+		connection.emitIceState('connected')
+		expect(onConnected).toHaveBeenCalledTimes(2)
+		expect(connection.closed).toBe(false)
+	})
+
+	test('ignores a departure of a peer other than the offering host', async () => {
+		const { socket, connection, onDisconnected } = await connectedClient()
+
+		// E.g. a stale identity dropped when the host's signaling socket
+		// reconnected — the live link must stay untouched.
+		socket.receive({
+			id: 'left-stale',
+			type: 'peer-left',
+			data: { peerId: 'stale-host-identity' },
+		})
+
+		expect(connection.closed).toBe(false)
+		expect(onDisconnected).not.toHaveBeenCalled()
+	})
+
+	test('keeps a single signaling socket while reconnecting', async () => {
+		const { socket, connection, onConnected } = await connectedClient()
+
+		// The link and the signaling socket drop at the same time.
+		connection.emitIceState('failed')
+		socket.close()
+
+		// WebSocketSignaling reconnects on its own (one new socket); the
+		// reconnection loop must not spawn additional instances on top.
+		await waitFor(() => MockWebSocket.instances.length === 2, 3000)
+		await new Promise((resolve) => setTimeout(resolve, 2500))
+		expect(MockWebSocket.instances.length).toBe(2)
+
+		// The replacement socket picks the flow back up.
+		const replacementSocket = MockWebSocket.instances[1]
+		replacementSocket.open()
+		await waitFor(() => replacementSocket.sentOfType('join-room').length >= 1)
+		replacementSocket.receive({
+			id: 'offer-after-socket-drop',
+			type: 'offer',
+			from: 'host-peer',
+			data: { type: 'offer', sdp: 'offer-after-socket-drop' },
+		})
+		await waitFor(() => MockRTCPeerConnection.instances.length === 2)
+		MockRTCPeerConnection.instances[1].emitDataChannel().open()
+		await waitFor(() => onConnected.mock.calls.length === 2)
 	})
 })

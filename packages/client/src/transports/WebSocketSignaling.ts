@@ -98,6 +98,12 @@ export class WebSocketSignaling {
 				`[WebSocketSignaling] Sending: ${type}${to ? ` to ${to}` : ''}`,
 			)
 			this.socket.send(JSON.stringify(message))
+		} else {
+			// The message is lost — e.g. an answer whose loss stalls the WebRTC
+			// negotiation. Recovery relies on the caller's reconnection loop.
+			console.warn(
+				`[WebSocketSignaling] Dropping ${type}${to ? ` to ${to}` : ''} — socket is not open.`,
+			)
 		}
 	}
 
