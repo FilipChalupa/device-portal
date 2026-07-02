@@ -21,6 +21,18 @@ export class Client {
 	private reconnectTimeout: ReturnType<typeof setTimeout> | null = null
 	private isHandlingOffer = false
 	private reconnectTimerAttempts = 0
+	/**
+	 * Signaling identity of the host whose offer we last handled. Departures of
+	 * any other peer (e.g. a stale identity dropped when the host's signaling
+	 * socket reconnects) say nothing about our link and must not tear it down.
+	 */
+	private hostPeerId: PeerId | null = null
+	/**
+	 * The connection a reconnection-timer tick already saw while it was still
+	 * negotiating. If the next tick finds the same connection still without an
+	 * open channel, the negotiation is considered stalled.
+	 */
+	private connectionAwaitedByReconnectTimer: RTCPeerConnection | null = null
 
 	private isConnected = false
 
@@ -115,6 +127,11 @@ export class Client {
 	private async connectWebSocket() {
 		if (!this.webSocketSignalingServer || this.isDestroyed) return
 
+		// Replace, never accumulate: a previous instance keeps reconnecting on
+		// its own, and two live sockets would hold two different peer identities
+		// — the host would then address offers to one identity while our answers
+		// leave with the other, and the negotiation would never complete.
+		this.webSocketSignaling?.destroy()
 		this.webSocketSignaling = new WebSocketSignaling(
 			this.room,
 			this.webSocketSignalingServer,
@@ -126,7 +143,15 @@ export class Client {
 				onPeerJoined: () => {
 					// Client waits for offers, no action on peer-joined
 				},
-				onPeerLeft: (peerId) => this.handlePeerLeft(peerId),
+				onPeerLeft: (peerId) => {
+					// The signaling server reports every departure in the room,
+					// including stale identities dropped when a peer's socket
+					// reconnects. Only the departure of the offering host says
+					// anything about our link.
+					if (peerId === this.hostPeerId) {
+						this.handlePeerLeft(peerId)
+					}
+				},
 				onOffer: (offer, from) => this.handleOffer(offer, from),
 				onAnswer: () => {
 					// Client does not handle answers
@@ -140,8 +165,11 @@ export class Client {
 	}
 
 	private async ensureSignaling() {
+		// WebSocketSignaling reconnects on its own after a dropped socket;
+		// creating a replacement while it waits out its backoff would leak a
+		// second socket with a different peer identity.
 		if (
-			!this.webSocketSignaling?.isConnected &&
+			!this.webSocketSignaling &&
 			this.webSocketSignalingServer &&
 			!this.isDestroyed
 		) {
@@ -154,6 +182,11 @@ export class Client {
 	}
 
 	private setConnectionState(connected: boolean) {
+		if (connected) {
+			// An open data channel (or direct link) is the source of truth for
+			// being connected — once it is up, the reconnection loop is done.
+			this.stopReconnectionTimer()
+		}
 		if (this.isConnected === connected) return
 		this.isConnected = connected
 		if (connected) {
@@ -203,6 +236,7 @@ export class Client {
 		this.connection = null
 		this.channel = null
 		this.candidatesQueue = []
+		this.connectionAwaitedByReconnectTimer = null
 		if (channel) {
 			channel.onopen = null
 			channel.onmessage = null
@@ -225,24 +259,48 @@ export class Client {
 		console.log(`[Client] Starting reconnection timer in ${delayMs}ms...`)
 		this.reconnectTimeout = setTimeout(async () => {
 			this.reconnectTimeout = null
-			if (this.isDestroyed) {
+			if (this.isDestroyed || this.isConnected) {
 				return
 			}
-			if (
-				!this.connection ||
-				this.connection.iceConnectionState === 'failed' ||
-				this.connection.iceConnectionState === 'disconnected' ||
-				this.connection.iceConnectionState === 'closed'
-			) {
-				console.log('[Client] Attempting to re-join room for reconnection...')
-				// Discard the dead connection so the fresh offer from the host
-				// builds a brand-new peer connection instead of reusing this one.
-				this.resetConnection()
-				await this.ensureSignaling()
-				this.webSocketSignaling?.announceRoom()
+			if (this.hasFreshNegotiationInFlight()) {
+				// First tick that sees this negotiation — give it until the next
+				// tick to open the data channel before declaring it stalled.
+				this.connectionAwaitedByReconnectTimer = this.connection
 				this.startReconnectionTimer()
+				return
 			}
+			console.log('[Client] Attempting to re-join room for reconnection...')
+			// Discard the dead or stalled connection so the fresh offer from the
+			// host builds a brand-new peer connection instead of reusing this one.
+			this.resetConnection()
+			await this.ensureSignaling()
+			this.webSocketSignaling?.announceRoom()
+			this.startReconnectionTimer()
 		}, delayMs)
+	}
+
+	/**
+	 * A negotiation is fresh while an offer is being processed or while a not
+	 * yet dead connection exists that no earlier timer tick has seen. A stalled
+	 * negotiation (lost answer, lost ICE candidates) never reaches a dead ICE
+	 * state — it sits in `new`/`checking` forever — so freshness, not ICE
+	 * state, decides when the timer gives up on it and re-announces instead.
+	 */
+	private hasFreshNegotiationInFlight(): boolean {
+		if (this.isHandlingOffer) {
+			return true
+		}
+		if (!this.connection) {
+			return false
+		}
+		if (
+			this.connection.iceConnectionState === 'failed' ||
+			this.connection.iceConnectionState === 'disconnected' ||
+			this.connection.iceConnectionState === 'closed'
+		) {
+			return false
+		}
+		return this.connectionAwaitedByReconnectTimer !== this.connection
 	}
 
 	private stopReconnectionTimer() {
@@ -251,6 +309,7 @@ export class Client {
 			this.reconnectTimeout = null
 		}
 		this.reconnectTimerAttempts = 0
+		this.connectionAwaitedByReconnectTimer = null
 	}
 
 	private async handleOffer(
@@ -274,7 +333,7 @@ export class Client {
 		this.isHandlingOffer = true
 		try {
 			console.log(`[Client] Handling offer from ${fromPeerId}`)
-			this.stopReconnectionTimer()
+			this.hostPeerId = fromPeerId
 			this.initializeConnectionAndChannel()
 			if (!this.connection) {
 				throw new Error('Connection is not initialized')
@@ -295,7 +354,13 @@ export class Client {
 					this.connection?.iceConnectionState === 'connected' ||
 					this.connection?.iceConnectionState === 'completed'
 				) {
-					this.stopReconnectionTimer()
+					// A transient ICE drop can recover on its own while the data
+					// channel stayed open the whole time — report connected again.
+					// A fresh negotiation stays "reconnecting" until the channel
+					// opens (see `ondatachannel`), which also stops the timer.
+					if (this.channel?.readyState === 'open') {
+						this.setConnectionState(true)
+					}
 				}
 			}
 
@@ -306,6 +371,13 @@ export class Client {
 			console.log(`[Client] Setting local description (${answer.type})`)
 			await this.connection.setLocalDescription(answer)
 			this.webSocketSignaling?.sendSignaling(answer.type!, answer, fromPeerId)
+		} catch (error) {
+			console.error('[Client] Failed to handle offer:', error)
+			// A failed negotiation must not leave the client idle — drop the
+			// broken connection and let the reconnection loop request a fresh
+			// offer from the host.
+			this.resetConnection()
+			this.startReconnectionTimer()
 		} finally {
 			this.isHandlingOffer = false
 		}

@@ -8,8 +8,11 @@ type ClientConnection = {
 	connection: RTCPeerConnection
 	channel: RTCDataChannel
 	candidatesQueue: RTCIceCandidateInit[]
+	negotiationWatchdog: ReturnType<typeof setTimeout> | null
 	value?: { value: string }
 }
+
+const defaultNegotiationTimeoutMilliseconds = 15_000
 
 /**
  * The Host acts as the "producer" or "server" in a room.
@@ -37,6 +40,7 @@ export class Host {
 	private readonly iceServers: Array<RTCIceServer>
 	private readonly browserDirect: BrowserDirectOption
 	private readonly maxClients: number
+	private readonly negotiationTimeoutMilliseconds: number
 
 	constructor(
 		private readonly room: string,
@@ -49,6 +53,12 @@ export class Host {
 			maxClients?: number
 			browserDirect?: BrowserDirectOption
 			peerId?: PeerId
+			/**
+			 * How long an offered connection may sit without an open data channel
+			 * before it is discarded. Prevents a stalled negotiation (lost answer,
+			 * unreachable peer) from occupying a client slot forever.
+			 */
+			negotiationTimeoutMilliseconds?: number
 		} = {},
 	) {
 		this.onMessage = options.onMessage
@@ -62,6 +72,9 @@ export class Host {
 		this.iceServers = options.iceServers ?? settings.default.iceServers
 		this.browserDirect = options.browserDirect ?? true
 		this.maxClients = options.maxClients ?? 1
+		this.negotiationTimeoutMilliseconds =
+			options.negotiationTimeoutMilliseconds ??
+			defaultNegotiationTimeoutMilliseconds
 		this.peerId = options.peerId ?? generatePeerId()
 
 		queueMicrotask(() => {
@@ -131,6 +144,9 @@ export class Host {
 	private async connectWebSocket() {
 		if (!this.webSocketSignalingServer || this.isDestroyed) return
 
+		// Replace, never accumulate: a previous instance keeps reconnecting on
+		// its own, and two live sockets would hold two different peer identities.
+		this.webSocketSignaling?.destroy()
 		this.webSocketSignaling = new WebSocketSignaling(
 			this.room,
 			this.webSocketSignalingServer,
@@ -154,8 +170,11 @@ export class Host {
 	}
 
 	private async ensureSignaling() {
+		// WebSocketSignaling reconnects on its own after a dropped socket;
+		// creating a replacement while it waits out its backoff would leak a
+		// second socket with a different peer identity.
 		if (
-			!this.webSocketSignaling?.isConnected &&
+			!this.webSocketSignaling &&
 			this.webSocketSignalingServer &&
 			!this.isDestroyed
 		) {
@@ -167,6 +186,19 @@ export class Host {
 		}
 	}
 
+	/**
+	 * Closes a client connection and cancels its negotiation watchdog so the
+	 * timer cannot fire for an already discarded connection.
+	 */
+	private closeClientConnection(clientConnection: ClientConnection) {
+		if (clientConnection.negotiationWatchdog !== null) {
+			clearTimeout(clientConnection.negotiationWatchdog)
+			clientConnection.negotiationWatchdog = null
+		}
+		clientConnection.channel.close()
+		clientConnection.connection.close()
+	}
+
 	private handleDirectPeerJoined(peerId: PeerId) {
 		console.log(`[Host] Direct peer ${peerId} joined, skipping WebRTC.`)
 		const existingClient = this.connections.get(peerId)
@@ -174,8 +206,7 @@ export class Host {
 			console.log(
 				`[Host] Closing redundant WebRTC connection to direct peer ${peerId}`,
 			)
-			existingClient.channel.close()
-			existingClient.connection.close()
+			this.closeClientConnection(existingClient)
 			this.connections.delete(peerId)
 		}
 
@@ -195,17 +226,28 @@ export class Host {
 			console.log(`[Host] Already connecting to ${peerId} (pending), skipping.`)
 			return
 		}
-		if (this.connections.has(peerId)) {
-			const client = this.connections.get(peerId)!
-			if (
-				client.connection.connectionState === 'connected' ||
-				client.connection.connectionState === 'connecting'
-			) {
+		const existingClient = this.connections.get(peerId)
+		if (existingClient) {
+			const iceConnectionState = existingClient.connection.iceConnectionState
+			const isDead =
+				iceConnectionState === 'failed' ||
+				iceConnectionState === 'disconnected' ||
+				iceConnectionState === 'closed'
+			if (!isDead) {
+				// Either healthy, or still negotiating — the negotiation watchdog
+				// discards a stalled one, and the client keeps re-announcing.
 				console.log(
-					`[Host] Connection to ${peerId} already exists or is connecting, skipping.`,
+					`[Host] Connection to ${peerId} is alive or negotiating, skipping.`,
 				)
 				return
 			}
+			// The peer re-announced while our record of it is dead — replace it
+			// with a fresh offer instead of leaving it to block the client slot.
+			console.log(
+				`[Host] Discarding dead connection to ${peerId} before re-offering.`,
+			)
+			this.closeClientConnection(existingClient)
+			this.connections.delete(peerId)
 		}
 		if (this.connections.size >= this.maxClients) {
 			console.log(
@@ -228,8 +270,7 @@ export class Host {
 		this.waitingPeers.delete(peerId)
 		const client = this.connections.get(peerId)
 		if (client) {
-			client.channel.close()
-			client.connection.close()
+			this.closeClientConnection(client)
 			this.connections.delete(peerId)
 			this.onPeersChange?.(this.peers)
 			this.processWaitingPeers()
@@ -275,8 +316,7 @@ export class Host {
 		const existingClient = this.connections.get(toPeerId)
 		if (existingClient) {
 			console.log(`[Host] Closing existing connection for ${toPeerId}`)
-			existingClient.connection.close()
-			existingClient.channel.close()
+			this.closeClientConnection(existingClient)
 		}
 
 		const connection = new RTCPeerConnection({ iceServers: this.iceServers })
@@ -285,6 +325,7 @@ export class Host {
 			connection,
 			channel,
 			candidatesQueue: [],
+			negotiationWatchdog: null,
 		}
 
 		this.connections.set(toPeerId, clientConnection)
@@ -308,14 +349,24 @@ export class Host {
 				connection.iceConnectionState === 'failed' ||
 				connection.iceConnectionState === 'closed'
 			) {
-				this.connections.delete(toPeerId)
-				this.onPeersChange?.(this.peers)
-				this.processWaitingPeers()
+				// Only discard the map entry if it still belongs to this
+				// connection — a late event from a replaced connection must not
+				// remove its successor.
+				if (this.connections.get(toPeerId) === clientConnection) {
+					this.closeClientConnection(clientConnection)
+					this.connections.delete(toPeerId)
+					this.onPeersChange?.(this.peers)
+					this.processWaitingPeers()
+				}
 			}
 		}
 
 		channel.onopen = () => {
 			console.log(`[Host] Data channel opened for ${toPeerId}`)
+			if (clientConnection.negotiationWatchdog !== null) {
+				clearTimeout(clientConnection.negotiationWatchdog)
+				clientConnection.negotiationWatchdog = null
+			}
 			this.onPeerConnected?.(toPeerId)
 			if (clientConnection.value) {
 				channel.send(clientConnection.value.value)
@@ -331,6 +382,25 @@ export class Host {
 		const offer = await connection.createOffer()
 		await connection.setLocalDescription(offer)
 		this.webSocketSignaling?.sendSignaling('offer', offer, toPeerId)
+
+		// A negotiation that never opens the data channel (lost answer,
+		// unreachable peer) would otherwise occupy a client slot forever — with
+		// the default `maxClients: 1` that blocks the whole room. Discard it
+		// after a deadline; the client keeps re-announcing and gets a new offer.
+		clientConnection.negotiationWatchdog = setTimeout(() => {
+			clientConnection.negotiationWatchdog = null
+			if (this.connections.get(toPeerId) !== clientConnection) {
+				return
+			}
+			if (clientConnection.channel.readyState === 'open') {
+				return
+			}
+			console.log(`[Host] Negotiation with ${toPeerId} timed out, discarding.`)
+			this.closeClientConnection(clientConnection)
+			this.connections.delete(toPeerId)
+			this.onPeersChange?.(this.peers)
+			this.processWaitingPeers()
+		}, this.negotiationTimeoutMilliseconds)
 	}
 
 	private async handleAnswer(
@@ -411,8 +481,7 @@ export class Host {
 		this.directTransport?.destroy()
 		this.webSocketSignaling?.destroy()
 		for (const client of this.connections.values()) {
-			client.channel.close()
-			client.connection.close()
+			this.closeClientConnection(client)
 		}
 		this.connections.clear()
 		this.peerListeners.clear()
