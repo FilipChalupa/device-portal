@@ -6,13 +6,12 @@ export default defineConfig([
 		format: ['esm'],
 		target: 'node22',
 		outDir: 'dist',
-		clean: true,
 		banner: {
 			js: '#!/usr/bin/env node',
 		},
 	},
 	{
-		entry: ['src/server.ts'],
+		entry: ['src/server.ts', 'src/core.ts'],
 		format: ['esm'],
 		target: 'node22',
 		outDir: 'dist',

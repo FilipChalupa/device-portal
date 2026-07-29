@@ -3,17 +3,28 @@
 	"version": "0.0.0",
 	"description": "WebSocket-based signaling server for WebRTC.",
 	"type": "module",
-	"main": "dist/main.js",
+	"main": "dist/server.js",
+	"types": "dist/server.d.ts",
 	"exports": {
-		".": "./dist/main.js",
-		"./server": "./dist/server.js"
+		".": {
+			"types": "./dist/server.d.ts",
+			"default": "./dist/server.js"
+		},
+		"./server": {
+			"types": "./dist/server.d.ts",
+			"default": "./dist/server.js"
+		},
+		"./core": {
+			"types": "./dist/core.d.ts",
+			"default": "./dist/core.js"
+		}
 	},
 	"license": "ISC",
 	"bin": {
 		"device-portal-server": "dist/main.js"
 	},
 	"scripts": {
-		"build": "tsup && chmod +x dist/main.js",
+		"build": "rm -rf dist && tsup && chmod +x dist/main.js",
 		"start": "node dist/main.js",
 		"dev": "concurrently 'tsup --watch' 'node --watch-path ./dist dist/main.js'",
 		"test": "tsc --noEmit"
@@ -45,7 +56,6 @@
 	},
 	"devDependencies": {
 		"@types/node": "^20.0.0",
-		"@types/ws": "^8.5.3",
 		"concurrently": "^9.2.1",
 		"tsup": "^8.0.0",
 		"typescript": "^5.9.3"
