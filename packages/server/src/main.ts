@@ -1,4 +1,3 @@
-import { defaultPort } from '@device-portal/client'
 import { serveStatic } from '@hono/node-server/serve-static'
 import { existsSync } from 'fs'
 import { dirname, relative, resolve } from 'path'
@@ -6,6 +5,8 @@ import { fileURLToPath } from 'url'
 import { createSignalingServer } from './server'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
+
+const defaultPort = 8080
 
 const { app, start } = createSignalingServer()
 
