@@ -3,7 +3,7 @@ import { serve } from '@hono/node-server'
 import { createNodeWebSocket } from '@hono/node-ws'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import { WSContext } from 'hono/ws'
+import { UpgradeWebSocket, WSContext } from 'hono/ws'
 import { createSignalingCore, SignalingLogger } from './core'
 
 export * from './core'
@@ -23,6 +23,14 @@ export interface SignalingServerOptions {
 	cors?: boolean
 	/** Defaults to `console`. */
 	logger?: SignalingLogger
+	/**
+	 * WebSocket upgrade helper for non-Node runtimes, e.g. `upgradeWebSocket`
+	 * returned by `createBunWebSocket()` from `hono/bun`. When provided, the
+	 * embedding application owns the HTTP server and upgrade handling (serve
+	 * `app.fetch` yourself) and `start()` is unavailable. Defaults to the Node
+	 * adapter from `@hono/node-ws`.
+	 */
+	upgradeWebSocket?: UpgradeWebSocket
 }
 
 const toPeerSocket = (webSocket: WSContext) => ({
@@ -38,7 +46,15 @@ export function createSignalingServer(options: SignalingServerOptions = {}) {
 
 	app.get('/health', (context) => context.text('OK'))
 
-	const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app })
+	let upgradeWebSocket = options.upgradeWebSocket
+	let injectWebSocket:
+		| ReturnType<typeof createNodeWebSocket>['injectWebSocket']
+		| undefined
+	if (upgradeWebSocket === undefined) {
+		const nodeWebSocket = createNodeWebSocket({ app })
+		upgradeWebSocket = nodeWebSocket.upgradeWebSocket
+		injectWebSocket = nodeWebSocket.injectWebSocket
+	}
 
 	const core = createSignalingCore({ logger })
 
@@ -79,6 +95,12 @@ export function createSignalingServer(options: SignalingServerOptions = {}) {
 		port: number,
 		hostname = '0.0.0.0',
 	): Promise<{ server: ReturnType<typeof serve>; port: number }> {
+		if (injectWebSocket === undefined) {
+			throw new Error(
+				'start() is unavailable with a custom upgradeWebSocket. Serve app.fetch with your own HTTP server instead.',
+			)
+		}
+		const inject = injectWebSocket
 		return new Promise((resolve) => {
 			const httpServer = serve(
 				{
@@ -93,7 +115,7 @@ export function createSignalingServer(options: SignalingServerOptions = {}) {
 					resolve({ server: httpServer, port: info.port })
 				},
 			)
-			injectWebSocket(httpServer)
+			inject(httpServer)
 		})
 	}
 

@@ -38,6 +38,22 @@ Clients append `/v0/` to their configured signaling server URL themselves, so a
 server created with `basePath: '/device-portal'` is reachable at
 `wss://example.com/device-portal`.
 
+### Non-Node runtimes
+
+WebSocket upgrade handling defaults to the Node adapter from `@hono/node-ws`.
+On other runtimes pass your own `upgradeWebSocket`; the host application then
+owns the HTTP server (`start()` is unavailable). On Bun:
+
+```ts
+import { createBunWebSocket } from 'hono/bun'
+import { createSignalingServer } from '@device-portal/server'
+
+const { upgradeWebSocket, websocket } = createBunWebSocket()
+const { app } = createSignalingServer({ upgradeWebSocket })
+
+Bun.serve({ fetch: app.fetch, websocket, port: 8080 })
+```
+
 The signaling logic itself is transport-agnostic and available without Hono via
 `@device-portal/server/core`:
 
