@@ -84,7 +84,10 @@ export function createSignalingCore(
 					// Notify other peers in the room that a new peer has joined
 					// AND notify the new peer about existing peers in the room
 					for (const existingPeerId of roomPeers) {
-						if (existingPeerId === peerId) {
+						if (
+							existingPeerId === peerId ||
+							!peers.get(existingPeerId)?.isOpen()
+						) {
 							continue
 						}
 						sendTo(existingPeerId, {
