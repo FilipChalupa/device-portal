@@ -11,7 +11,7 @@ export default defineConfig([
 		},
 	},
 	{
-		entry: ['src/server.ts', 'src/core.ts'],
+		entry: ['src/server.ts', 'src/node.ts', 'src/core.ts'],
 		format: ['esm'],
 		target: 'node22',
 		outDir: 'dist',

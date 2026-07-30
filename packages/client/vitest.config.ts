@@ -9,9 +9,9 @@ export default defineConfig({
 	},
 	resolve: {
 		alias: {
-			'@device-portal/server': path.resolve(
+			'@device-portal/server/node': path.resolve(
 				__dirname,
-				'../server/src/server.ts',
+				'../server/src/node.ts',
 			),
 			'@device-portal/client': path.resolve(__dirname, 'src/index.ts'),
 		},

@@ -16,42 +16,41 @@ The server will run on `ws://localhost:8080` by default.
 
 ## Embedding in another application
 
-The package root exports the server as a library. Importing it has no side
-effects — the process-level CLI lives only in the `device-portal-server` binary.
+The package root exports the server as a runtime-agnostic library. Importing it
+has no side effects — the process-level CLI lives only in the
+`device-portal-server` binary. The host application supplies the WebSocket
+upgrade helper of its runtime, owns the HTTP server and serves `app.fetch`.
+On Bun:
 
 ```ts
 import { createSignalingServer } from '@device-portal/server'
+import { createBunWebSocket } from 'hono/bun'
 
-const { app, start } = createSignalingServer({
+const { upgradeWebSocket, websocket } = createBunWebSocket()
+const { app } = createSignalingServer({
+	upgradeWebSocket,
 	basePath: '/device-portal', // optional path prefix for /health and /v0/
 	cors: false, // disable when the host application manages CORS itself
 	logger: console, // or any { log, error } implementation, e.g. noopLogger
 })
 
-// Either let it listen on its own:
-await start(8080)
-
-// …or embed the Hono instance into a host server via `app.fetch`.
+Bun.serve({ fetch: app.fetch, websocket, port: 8080 })
 ```
 
 Clients append `/v0/` to their configured signaling server URL themselves, so a
 server created with `basePath: '/device-portal'` is reachable at
 `wss://example.com/device-portal`.
 
-### Non-Node runtimes
+### Standalone Node server
 
-WebSocket upgrade handling defaults to the Node adapter from `@hono/node-ws`.
-On other runtimes pass your own `upgradeWebSocket`; the host application then
-owns the HTTP server (`start()` is unavailable). On Bun:
+`@device-portal/server/node` wires the Node adapter from `@hono/node-ws` and
+can listen on its own:
 
 ```ts
-import { createBunWebSocket } from 'hono/bun'
-import { createSignalingServer } from '@device-portal/server'
+import { createNodeSignalingServer } from '@device-portal/server/node'
 
-const { upgradeWebSocket, websocket } = createBunWebSocket()
-const { app } = createSignalingServer({ upgradeWebSocket })
-
-Bun.serve({ fetch: app.fetch, websocket, port: 8080 })
+const { app, start } = createNodeSignalingServer()
+await start(8080)
 ```
 
 The signaling logic itself is transport-agnostic and available without Hono via

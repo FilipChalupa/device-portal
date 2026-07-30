@@ -10,6 +10,10 @@
 			"types": "./dist/server.d.ts",
 			"default": "./dist/server.js"
 		},
+		"./node": {
+			"types": "./dist/node.d.ts",
+			"default": "./dist/node.js"
+		},
 		"./core": {
 			"types": "./dist/core.d.ts",
 			"default": "./dist/core.js"

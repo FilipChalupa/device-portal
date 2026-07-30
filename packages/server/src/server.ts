@@ -1,6 +1,4 @@
 import { PeerId } from '@device-portal/client'
-import { serve } from '@hono/node-server'
-import { createNodeWebSocket } from '@hono/node-ws'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { UpgradeWebSocket, WSContext } from 'hono/ws'
@@ -9,6 +7,13 @@ import { createSignalingCore, SignalingLogger } from './core'
 export * from './core'
 
 export interface SignalingServerOptions {
+	/**
+	 * WebSocket upgrade helper of the hosting runtime — e.g. `upgradeWebSocket`
+	 * returned by `createBunWebSocket()` from `hono/bun`. The host application
+	 * owns the HTTP server and serves `app.fetch`. For a standalone Node server
+	 * use `createNodeSignalingServer` from `@device-portal/server/node` instead.
+	 */
+	upgradeWebSocket: UpgradeWebSocket
 	/**
 	 * Path prefix for all routes (`/health` and `/v0/`), e.g. `/device-portal`.
 	 * Defaults to no prefix. Clients append `/v0/` to their configured server
@@ -23,14 +28,6 @@ export interface SignalingServerOptions {
 	cors?: boolean
 	/** Defaults to `console`. */
 	logger?: SignalingLogger
-	/**
-	 * WebSocket upgrade helper for non-Node runtimes, e.g. `upgradeWebSocket`
-	 * returned by `createBunWebSocket()` from `hono/bun`. When provided, the
-	 * embedding application owns the HTTP server and upgrade handling (serve
-	 * `app.fetch` yourself) and `start()` is unavailable. Defaults to the Node
-	 * adapter from `@hono/node-ws`.
-	 */
-	upgradeWebSocket?: UpgradeWebSocket
 }
 
 const toPeerSocket = (webSocket: WSContext) => ({
@@ -40,21 +37,12 @@ const toPeerSocket = (webSocket: WSContext) => ({
 	isOpen: () => webSocket.readyState === 1 /* WebSocket.OPEN */,
 })
 
-export function createSignalingServer(options: SignalingServerOptions = {}) {
+export function createSignalingServer(options: SignalingServerOptions) {
+	const { upgradeWebSocket } = options
 	const logger = options.logger ?? console
 	const app = new Hono().basePath(options.basePath ?? '/')
 
 	app.get('/health', (context) => context.text('OK'))
-
-	let upgradeWebSocket = options.upgradeWebSocket
-	let injectWebSocket:
-		| ReturnType<typeof createNodeWebSocket>['injectWebSocket']
-		| undefined
-	if (upgradeWebSocket === undefined) {
-		const nodeWebSocket = createNodeWebSocket({ app })
-		upgradeWebSocket = nodeWebSocket.upgradeWebSocket
-		injectWebSocket = nodeWebSocket.injectWebSocket
-	}
 
 	const core = createSignalingCore({ logger })
 
@@ -91,33 +79,5 @@ export function createSignalingServer(options: SignalingServerOptions = {}) {
 		}),
 	)
 
-	function start(
-		port: number,
-		hostname = '0.0.0.0',
-	): Promise<{ server: ReturnType<typeof serve>; port: number }> {
-		if (injectWebSocket === undefined) {
-			throw new Error(
-				'start() is unavailable with a custom upgradeWebSocket. Serve app.fetch with your own HTTP server instead.',
-			)
-		}
-		const inject = injectWebSocket
-		return new Promise((resolve) => {
-			const httpServer = serve(
-				{
-					fetch: app.fetch,
-					port,
-					hostname,
-				},
-				(info) => {
-					logger.log(
-						`Server is listening on http://${info.address}:${info.port}`,
-					)
-					resolve({ server: httpServer, port: info.port })
-				},
-			)
-			inject(httpServer)
-		})
-	}
-
-	return { app, start }
+	return { app }
 }

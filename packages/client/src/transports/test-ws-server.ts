@@ -1,4 +1,4 @@
-import { createSignalingServer } from '@device-portal/server'
+import { createNodeSignalingServer } from '@device-portal/server/node'
 
 export interface TestServer {
 	url: string
@@ -6,7 +6,10 @@ export interface TestServer {
 }
 
 export async function createTestServer(): Promise<TestServer> {
-	const { server, port } = await createSignalingServer().start(0, '127.0.0.1')
+	const { server, port } = await createNodeSignalingServer().start(
+		0,
+		'127.0.0.1',
+	)
 
 	return {
 		url: `ws://127.0.0.1:${port}`,

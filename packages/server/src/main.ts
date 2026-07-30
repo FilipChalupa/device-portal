@@ -3,11 +3,11 @@ import { defaultPort } from './constants'
 import { existsSync } from 'fs'
 import { dirname, relative, resolve } from 'path'
 import { fileURLToPath } from 'url'
-import { createSignalingServer } from './server'
+import { createNodeSignalingServer } from './node'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
-const { app, start } = createSignalingServer()
+const { app, start } = createNodeSignalingServer()
 
 const storybookPath = resolve(__dirname, '../../react/storybook-static')
 if (existsSync(storybookPath)) {
