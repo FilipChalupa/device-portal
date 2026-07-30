@@ -1,4 +1,4 @@
-import { createSignalingServer } from '@device-portal/server/server'
+import { createSignalingServer } from '@device-portal/server'
 
 export interface TestServer {
 	url: string

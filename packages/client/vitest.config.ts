@@ -9,7 +9,7 @@ export default defineConfig({
 	},
 	resolve: {
 		alias: {
-			'@device-portal/server/server': path.resolve(
+			'@device-portal/server': path.resolve(
 				__dirname,
 				'../server/src/server.ts',
 			),
