@@ -1,7 +1,9 @@
 import type { StorybookConfig } from '@storybook/react-vite'
 import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { defaultPort } from '../../server/src/constants.ts'
+
+// Mirrors defaultPort of @device-portal/server, which runs alongside Storybook.
+const defaultServerPort = '8080'
 
 const config: StorybookConfig = {
 	stories: ['../src/**/*.mdx', '../src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
@@ -21,7 +23,7 @@ const config: StorybookConfig = {
 		return mergeConfig(config, {
 			define: {
 				'import.meta.env.VITE_PORT': JSON.stringify(
-					process.env.PORT || defaultPort.toString(),
+					process.env.PORT || defaultServerPort,
 				),
 			},
 			resolve: {
