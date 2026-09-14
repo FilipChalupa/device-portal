@@ -14,6 +14,21 @@ npx @device-portal/server
 
 The server will run on `ws://localhost:8080` by default.
 
+## Endpoints
+
+| Path                    | Description                                                                       |
+| ----------------------- | --------------------------------------------------------------------------------- |
+| `GET /health`           | Returns `OK`.                                                                     |
+| `WS /v0/`               | Signaling socket used by `Host` and `Client`.                                     |
+| `WS /v0/groups/:group`  | Pushes `{ type: 'group-rooms', group, rooms }` on connect and after every change. |
+| `GET /v0/groups/:group` | Returns `{ group, rooms }` once.                                                  |
+
+A room is listed in a group while at least one signaling connection is open in
+it and a peer (the host) joined it with `group`. Each entry is
+`{ room, clients, maxClients?, meta? }` — `clients` counts open signaling
+connections other than the host's, `maxClients` and `meta` are whatever the
+host declared. `meta` above `maxMetaBytes` (default 1024) is dropped.
+
 ## Embedding in another application
 
 The package root exports the server as a runtime-agnostic library. Importing it
@@ -32,6 +47,7 @@ const { app } = createSignalingServer({
 	basePath: '/device-portal', // optional path prefix for /health and /v0/
 	cors: false, // disable when the host application manages CORS itself
 	logger: console, // or any { log, error } implementation, e.g. noopLogger
+	maxMetaBytes: 1024, // optional cap on the room meta published to groups
 })
 
 Bun.serve({ fetch: app.fetch, websocket, port: 8080 })
