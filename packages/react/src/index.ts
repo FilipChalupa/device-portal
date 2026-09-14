@@ -3,4 +3,10 @@ export * from './provider/useDevicePortalProvider'
 export * from './provider/useDevicePortalPeer'
 export * from './consumer/DevicePortalConsumer'
 export * from './consumer/useDevicePortalConsumer'
-export { type PeerId, type Host } from '@device-portal/client'
+export * from './useGroupRooms'
+export {
+	type GroupRoom,
+	type PeerId,
+	type Host,
+	type WebRtcOption,
+} from '@device-portal/client'
