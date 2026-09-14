@@ -47,6 +47,32 @@ export function createSignalingCore(
 		socket.send(JSON.stringify(payload))
 	}
 
+	const leaveRoom = (peerId: PeerId) => {
+		const room = peerRooms.get(peerId)
+		if (room === undefined) {
+			return
+		}
+		peerRooms.delete(peerId)
+		const roomPeers = rooms.get(room)
+		if (!roomPeers) {
+			return
+		}
+		roomPeers.delete(peerId)
+
+		// Notify other peers in the room that a peer has left
+		for (const remainingPeerId of roomPeers) {
+			sendTo(remainingPeerId, {
+				id: crypto.randomUUID(),
+				type: 'peer-left',
+				data: { peerId },
+			})
+		}
+
+		if (roomPeers.size === 0) {
+			rooms.delete(room)
+		}
+	}
+
 	return {
 		handleOpen(socket) {
 			const peerId = generatePeerId()
@@ -56,7 +82,13 @@ export function createSignalingCore(
 			return peerId
 		},
 		handleMessage(peerId, rawData) {
-			const data = JSON.parse(rawData)
+			let data: unknown
+			try {
+				data = JSON.parse(rawData)
+			} catch (error) {
+				logger.error(`Malformed JSON received from ${peerId}:`, error)
+				return
+			}
 			const result = SignalingMessageSchema.safeParse(data)
 
 			if (!result.success) {
@@ -72,6 +104,12 @@ export function createSignalingCore(
 			switch (message.type) {
 				case 'join-room': {
 					const room = message.room
+					// Re-joining the same room is intentional: clients re-announce
+					// themselves on the open socket to restart stalled negotiations,
+					// so peer-joined is sent again. Switching rooms leaves the old one.
+					if (peerRooms.get(peerId) !== room) {
+						leaveRoom(peerId)
+					}
 					peerRooms.set(peerId, room)
 					let roomPeers = rooms.get(room)
 					if (!roomPeers) {
@@ -134,26 +172,7 @@ export function createSignalingCore(
 			}
 		},
 		handleClose(peerId) {
-			const room = peerRooms.get(peerId)
-			const roomPeers = room === undefined ? undefined : rooms.get(room)
-
-			if (room !== undefined && roomPeers) {
-				roomPeers.delete(peerId)
-
-				// Notify other peers in the room that a peer has left
-				for (const remainingPeerId of roomPeers) {
-					sendTo(remainingPeerId, {
-						id: crypto.randomUUID(),
-						type: 'peer-left',
-						data: { peerId },
-					})
-				}
-
-				if (roomPeers.size === 0) {
-					rooms.delete(room)
-				}
-			}
-			peerRooms.delete(peerId)
+			leaveRoom(peerId)
 			peers.delete(peerId)
 			logger.log(`WebSocket connection closed: ${peerId}`)
 		},
