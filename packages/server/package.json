@@ -24,7 +24,7 @@
 		"device-portal-server": "dist/main.js"
 	},
 	"scripts": {
-		"build": "rm -rf dist && tsup && chmod +x dist/main.js",
+		"build": "tsup",
 		"start": "node dist/main.js",
 		"dev": "concurrently 'tsup --watch' 'node --watch-path ./dist dist/main.js'",
 		"test": "tsc --noEmit"
