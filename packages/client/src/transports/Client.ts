@@ -2,6 +2,11 @@ import { PeerId, generatePeerId } from '../constants'
 import { delay } from '../delay'
 import { settings } from '../settings'
 import { getExponentialBackoffDelay } from '../utilities/backoff'
+import {
+	defaultBrowserDirect,
+	resolveRTCPeerConnection,
+	type WebRtcOption,
+} from '../utilities/environment'
 import { DirectTransport, type BrowserDirectOption } from './DirectTransport'
 import { WebSocketSignaling } from './WebSocketSignaling'
 
@@ -44,6 +49,7 @@ export class Client {
 	private readonly webSocketSignalingServer: string | null
 	private readonly iceServers: Array<RTCIceServer>
 	private readonly browserDirect: BrowserDirectOption
+	private readonly webrtc: WebRtcOption | undefined
 
 	constructor(
 		private readonly room: string,
@@ -66,8 +72,11 @@ export class Client {
 			onDisconnected?: () => void
 			webSocketSignalingServer?: string | null
 			iceServers?: Array<RTCIceServer>
+			/** Defaults to `true` in browsers and `false` elsewhere. */
 			browserDirect?: BrowserDirectOption
 			peerId?: PeerId
+			/** WebRTC implementation for runtimes without a global one (Node). */
+			webrtc?: WebRtcOption
 		} = {},
 	) {
 		this.onMessage = options.onMessage
@@ -79,7 +88,8 @@ export class Client {
 				: (options.webSocketSignalingServer ??
 					settings.default.webSocketSignalingServer)
 		this.iceServers = options.iceServers ?? settings.default.iceServers
-		this.browserDirect = options.browserDirect ?? true
+		this.browserDirect = options.browserDirect ?? defaultBrowserDirect()
+		this.webrtc = options.webrtc
 		this.peerId = options.peerId ?? generatePeerId()
 
 		queueMicrotask(() => {
@@ -390,7 +400,7 @@ export class Client {
 		if (this.connection.remoteDescription) {
 			try {
 				console.log('[Client] Adding received ICE candidate')
-				await this.connection.addIceCandidate(new RTCIceCandidate(candidate))
+				await this.connection.addIceCandidate(candidate)
 			} catch (error) {
 				console.error('[Client] Error adding ice candidate:', error)
 			}
@@ -407,7 +417,7 @@ export class Client {
 		while (this.candidatesQueue.length > 0) {
 			const candidate = this.candidatesQueue.shift()!
 			try {
-				await this.connection.addIceCandidate(new RTCIceCandidate(candidate))
+				await this.connection.addIceCandidate(candidate)
 			} catch (error) {
 				console.error('[Client] Error adding queued ice candidate:', error)
 			}
@@ -419,6 +429,8 @@ export class Client {
 			return
 		}
 		this.candidatesQueue = []
+		// Resolved lazily: direct-only setups never need WebRTC at all.
+		const RTCPeerConnection = resolveRTCPeerConnection(this.webrtc)
 		this.connection = new RTCPeerConnection({ iceServers: this.iceServers })
 		this.connection.onicecandidate = (event) => {
 			if (event.candidate) {

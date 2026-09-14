@@ -1,4 +1,9 @@
-import { PeerId, SignalingMessage, SignalingMessageSchema } from '../constants'
+import {
+	PeerId,
+	RoomListing,
+	SignalingMessage,
+	SignalingMessageSchema,
+} from '../constants'
 import { delay } from '../delay'
 import { getExponentialBackoffDelay } from '../utilities/backoff'
 
@@ -22,6 +27,8 @@ export class WebSocketSignaling {
 		private readonly serverUrl: string,
 		private peerId: PeerId,
 		private readonly callbacks: WebSocketSignalingCallbacks,
+		/** Lists the room in a group for `subscribeToGroup` consumers. */
+		private readonly listing?: RoomListing,
 	) {}
 
 	get isConnected() {
@@ -79,7 +86,9 @@ export class WebSocketSignaling {
 
 	announceRoom() {
 		if (this.socket?.readyState === WebSocket.OPEN) {
-			this.socket.send(JSON.stringify({ type: 'join-room', room: this.room }))
+			this.socket.send(
+				JSON.stringify({ type: 'join-room', room: this.room, ...this.listing }),
+			)
 		}
 	}
 
