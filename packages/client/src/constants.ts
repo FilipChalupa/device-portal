@@ -17,8 +17,6 @@ export function generatePeerId(): PeerId {
 	return Math.random().toString(36).substring(2, 15) as PeerId
 }
 
-export const defaultPort = 8080
-
 export const BaseMessageSchema = z.object({
 	id: z.string().optional(),
 })
