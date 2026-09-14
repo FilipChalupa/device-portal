@@ -63,6 +63,16 @@ const core = createSignalingCore({ logger })
 // Wire handleOpen/handleMessage/handleClose/handleError into any WebSocket stack.
 ```
 
+### Migrating from earlier versions
+
+- Importing the package root no longer starts a server. Run the
+  `device-portal-server` binary (`npx @device-portal/server`) instead.
+- The `@device-portal/server/server` subpath was removed. Replace
+  `createSignalingServer().start(port)` with `createNodeSignalingServer().start(port)`
+  from `@device-portal/server/node`.
+- `createSignalingServer` from the package root now requires the
+  `upgradeWebSocket` option and returns only `{ app }`.
+
 ## Development
 
 ```sh
