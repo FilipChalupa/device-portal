@@ -119,7 +119,8 @@ const host = new Host('arena-42', {
 ```
 
 Outside browsers `browserDirect` defaults to `false`, so every peer goes
-through the signaling server and WebRTC.
+through the signaling server and WebRTC. A runnable version lives in
+[`examples/node-host`](../../examples/node-host/README.md) of the repository.
 
 ## Features
 

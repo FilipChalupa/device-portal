@@ -6,3 +6,4 @@
 /packages/client/dist/
 /packages/server/node_modules/
 /packages/server/dist/
+/examples/*/node_modules/

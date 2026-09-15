@@ -217,6 +217,9 @@ const PublicGames: FunctionComponent = () => {
 /**
  * Host games and browse the lobby on one page. Open the story in more tabs
  * or devices — every tab sees the same list and can join any game.
+ *
+ * Hosts do not have to be browsers: `npm run example:node-host` starts a
+ * Node process that hosts a game in this very lobby.
  */
 export const Playground: Story = {
 	render: () => (
