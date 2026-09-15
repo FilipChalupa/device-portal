@@ -11,29 +11,41 @@ export interface SignalingLogger {
 	error: (...args: unknown[]) => void
 }
 
+/** Logger that discards everything — handy for tests and embedded use. */
 export const noopLogger: SignalingLogger = {
 	log: () => {},
 	error: () => {},
 }
 
+/** The subset of a WebSocket the core needs; adapt any runtime's socket to it. */
 export interface SignalingPeerSocket {
 	send: (data: string) => void
 	isOpen: () => boolean
 }
 
 export interface SignalingCoreOptions {
+	/** Defaults to `console`. */
 	logger?: SignalingLogger
 	/**
-	 * Upper bound of the serialized `meta` a room may publish to its group.
-	 * Larger values are dropped with an error log. Defaults to 1024 bytes.
+	 * Upper bound of the UTF-8 serialized `meta` a room may publish to its
+	 * group. Larger values are dropped with an error log. Defaults to 1024.
 	 */
 	maxMetaBytes?: number
 }
 
+/**
+ * Transport-agnostic signaling state machine. Wire the `handle*` methods into
+ * the WebSocket events of any runtime; `createSignalingServer` does so for
+ * Hono.
+ */
 export interface SignalingCore {
+	/** Registers a new socket, sends it its identity and returns the peer id. */
 	handleOpen: (socket: SignalingPeerSocket) => PeerId
+	/** Processes one raw text frame from the peer. Invalid input is logged. */
 	handleMessage: (peerId: PeerId, rawData: string) => void
+	/** Removes the peer from its room and notifies the remaining peers. */
 	handleClose: (peerId: PeerId) => void
+	/** Logs a socket error; the socket's own close event does the cleanup. */
 	handleError: (peerId: PeerId, error: unknown) => void
 	/** Rooms currently listed in the group. */
 	getGroupRooms: (group: string) => GroupRoom[]
@@ -52,6 +64,10 @@ type Room = {
 
 const defaultMaxMetaBytes = 1024
 
+/**
+ * Creates the in-memory signaling core: rooms, peer-to-peer message
+ * forwarding and public room listings per group.
+ */
 export function createSignalingCore(
 	options: SignalingCoreOptions = {},
 ): SignalingCore {
@@ -111,6 +127,21 @@ export function createSignalingCore(
 				subscriber.send(payload)
 			}
 		}
+	}
+
+	/** Returns `meta` unchanged, or `undefined` (with a log) when it is too big. */
+	const acceptMeta = (peerId: PeerId, meta: unknown) => {
+		if (meta === undefined) {
+			return undefined
+		}
+		const bytes = new TextEncoder().encode(JSON.stringify(meta)).byteLength
+		if (bytes > maxMetaBytes) {
+			logger.error(
+				`Room meta from ${peerId} has ${bytes} bytes, limit is ${maxMetaBytes} — dropping it`,
+			)
+			return undefined
+		}
+		return meta
 	}
 
 	const setListing = (
@@ -213,27 +244,18 @@ export function createSignalingCore(
 						room = { peers: new Set() }
 						rooms.set(roomName, room)
 					}
+					const isNewInRoom = !room.peers.has(peerId)
 					room.peers.add(peerId)
 					logger.log(`Peer ${peerId} joined room: ${roomName}`)
 
 					if (message.group !== undefined) {
-						let meta = message.meta
-						if (
-							meta !== undefined &&
-							JSON.stringify(meta).length > maxMetaBytes
-						) {
-							logger.error(
-								`Room meta from ${peerId} exceeds ${maxMetaBytes} bytes, dropping it`,
-							)
-							meta = undefined
-						}
 						setListing(roomName, room, {
 							group: message.group,
 							hostPeerId: peerId,
 							maxClients: message.maxClients,
-							meta,
+							meta: acceptMeta(peerId, message.meta),
 						})
-					} else {
+					} else if (isNewInRoom) {
 						publishGroup(room.listing?.group)
 					}
 
@@ -257,6 +279,25 @@ export function createSignalingCore(
 							data: { peerId: existingPeerId },
 						})
 					}
+					break
+				}
+				case 'update-listing': {
+					const roomName = peerRooms.get(peerId)
+					const room = roomName === undefined ? undefined : rooms.get(roomName)
+					if (
+						roomName === undefined ||
+						!room?.listing ||
+						room.listing.hostPeerId !== peerId
+					) {
+						logger.error(
+							`Peer ${peerId} tried to update a listing it does not own`,
+						)
+						return
+					}
+					setListing(roomName, room, {
+						...room.listing,
+						meta: acceptMeta(peerId, message.meta),
+					})
 					break
 				}
 				case 'offer':

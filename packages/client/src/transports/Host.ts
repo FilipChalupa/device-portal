@@ -47,7 +47,7 @@ export class Host {
 	private readonly maxClients: number
 	private readonly negotiationTimeoutMilliseconds: number
 	private readonly group: string | undefined
-	private readonly meta: unknown
+	private meta: unknown
 	private readonly webrtc: WebRtcOption | undefined
 
 	constructor(
@@ -65,10 +65,14 @@ export class Host {
 			/**
 			 * Lists the room publicly under this group on the signaling server so
 			 * `subscribeToGroup` / `fetchGroupRooms` can discover it, together with
-			 * `maxClients` and `meta`.
+			 * `maxClients` and `meta`. Must not be empty.
 			 */
 			group?: string
-			/** Arbitrary JSON published with the group listing, e.g. a game name. */
+			/**
+			 * Arbitrary JSON published with the group listing, e.g. a game name.
+			 * The server drops it above its `maxMetaBytes` (1 kB by default).
+			 * Change it later with `setMeta`.
+			 */
 			meta?: unknown
 			/** WebRTC implementation for runtimes without a global one (Node). */
 			webrtc?: WebRtcOption
@@ -94,6 +98,9 @@ export class Host {
 		this.negotiationTimeoutMilliseconds =
 			options.negotiationTimeoutMilliseconds ??
 			defaultNegotiationTimeoutMilliseconds
+		if (options.group === '') {
+			throw new Error('[Host] group must not be an empty string')
+		}
 		this.group = options.group
 		this.meta = options.meta
 		this.webrtc = options.webrtc
@@ -186,16 +193,30 @@ export class Host {
 				onIceCandidate: (candidate, from) =>
 					this.handleIceCandidate(candidate, from),
 			},
-			this.group === undefined
-				? undefined
-				: {
-						group: this.group,
-						maxClients: this.maxClients,
-						...(this.meta === undefined ? {} : { meta: this.meta }),
-					},
+			this.listing,
 		)
 
 		await this.webSocketSignaling.connect()
+	}
+
+	private get listing() {
+		if (this.group === undefined) {
+			return undefined
+		}
+		return {
+			group: this.group,
+			maxClients: this.maxClients,
+			...(this.meta === undefined ? {} : { meta: this.meta }),
+		}
+	}
+
+	/**
+	 * Updates the `meta` shown in the group listing without reconnecting.
+	 * Has no visible effect when the host was created without `group`.
+	 */
+	public setMeta(meta: unknown) {
+		this.meta = meta
+		this.webSocketSignaling?.setListing(this.listing)
 	}
 
 	private async ensureSignaling() {

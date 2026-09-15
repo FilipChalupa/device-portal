@@ -137,6 +137,31 @@ describe('signaling core', () => {
 			expect(closed.socket.ofType('group-rooms')).toHaveLength(1)
 		})
 
+		test('only the listing owner can update meta, without re-joining', () => {
+			const { core, connect, subscribe } = setup()
+			const subscriber = subscribe('g')
+			const host = connect()
+			const client = connect()
+			host.join('room', { group: 'g', meta: { status: 'open' } })
+			client.join('room')
+			const joinedBefore = client.socket.ofType('peer-joined').length
+
+			core.handleMessage(
+				client.peerId,
+				JSON.stringify({ type: 'update-listing', meta: { status: 'hacked' } }),
+			)
+			expect(subscriber.socket.lastRooms?.[0].meta).toEqual({ status: 'open' })
+
+			core.handleMessage(
+				host.peerId,
+				JSON.stringify({ type: 'update-listing', meta: { status: 'full' } }),
+			)
+			expect(subscriber.socket.lastRooms).toEqual([
+				{ room: 'room', clients: 1, meta: { status: 'full' } },
+			])
+			expect(client.socket.ofType('peer-joined')).toHaveLength(joinedBefore)
+		})
+
 		test('meta above the limit is dropped', () => {
 			const { core, connect } = setup()
 			const host = connect()

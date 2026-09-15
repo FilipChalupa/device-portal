@@ -27,7 +27,8 @@ A room is listed in a group while at least one signaling connection is open in
 it and a peer (the host) joined it with `group`. Each entry is
 `{ room, clients, maxClients?, meta? }` — `clients` counts open signaling
 connections other than the host's, `maxClients` and `meta` are whatever the
-host declared. `meta` above `maxMetaBytes` (default 1024) is dropped.
+host declared. `meta` above `maxMetaBytes` (default 1024, UTF-8) is dropped.
+The host can replace `meta` at any time with an `update-listing` message.
 
 ## Embedding in another application
 

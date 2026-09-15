@@ -26,7 +26,8 @@ type Story = StoryObj<typeof meta>
 
 type Leaderboard = Array<{ peerId: PeerId; score: number }>
 
-const readMeta = (room: GroupRoom) =>
+/** The name a host published in `meta`, falling back to the room id. */
+const displayName = (room: GroupRoom) =>
 	typeof room.meta === 'object' && room.meta !== null && 'name' in room.meta
 		? String(room.meta.name)
 		: room.room
@@ -192,7 +193,7 @@ const PublicGames: FunctionComponent = () => {
 						key={listedRoom.room}
 						className={`lobby-card${isFull ? ' lobby-card--full' : ''}`}
 					>
-						<span className="lobby-card__name">{readMeta(listedRoom)}</span>
+						<span className="lobby-card__name">{displayName(listedRoom)}</span>
 						<span>
 							{listedRoom.clients}
 							{listedRoom.maxClients !== undefined &&

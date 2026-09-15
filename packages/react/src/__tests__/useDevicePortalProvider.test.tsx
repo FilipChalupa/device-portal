@@ -6,7 +6,7 @@ import {
 	waitFor,
 } from '@testing-library/react'
 import React from 'react'
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import { useDevicePortalConsumer } from '../consumer/useDevicePortalConsumer'
 import { useDevicePortalProvider } from '../provider/useDevicePortalProvider'
 import {
@@ -114,6 +114,28 @@ describe('useDevicePortalProvider', () => {
 		// We can't check result.current after unmount, but we can verify
 		// the provider was created and the hook completed without error
 		expect(provider).not.toBeNull()
+	})
+
+	test('keeps the provider and pushes meta when only meta changes', () => {
+		const room = uniqueRoom()
+		const { result, rerender } = renderHook(
+			({ meta }) =>
+				useDevicePortalProvider(room, {
+					group: 'lobby',
+					meta,
+					...directOnlyOptions,
+				}),
+			{ initialProps: { meta: { name: 'A' } } },
+		)
+		const provider = result.current.provider!
+		const setMeta = vi.spyOn(provider, 'setMeta')
+
+		rerender({ meta: { name: 'A' } })
+		expect(setMeta).not.toHaveBeenCalled()
+
+		rerender({ meta: { name: 'B' } })
+		expect(result.current.provider).toBe(provider)
+		expect(setMeta).toHaveBeenCalledWith({ name: 'B' })
 	})
 
 	test('creates new provider when room changes', () => {

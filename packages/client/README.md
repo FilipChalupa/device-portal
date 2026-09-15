@@ -92,6 +92,9 @@ const unsubscribe = subscribeToGroup('my-game', {
 
 // One-off list over HTTP
 const rooms = await fetchGroupRooms('my-game')
+
+// Change what the listing shows without reconnecting
+host.setMeta({ name: 'Arena', map: 'desert', status: 'in progress' })
 ```
 
 Rooms without a `group` are never listed. A room disappears from its group

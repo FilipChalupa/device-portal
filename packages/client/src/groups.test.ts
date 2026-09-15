@@ -112,6 +112,30 @@ describe('groups', () => {
 		await waitFor(() => subscription.latest?.length === 0)
 	})
 
+	test('the host can update meta live without re-joining', async () => {
+		const group = crypto.randomUUID()
+		const room = crypto.randomUUID()
+		const subscription = subscribe(group)
+		const signaling = new WebSocketSignaling(
+			room,
+			server.url,
+			crypto.randomUUID() as PeerId,
+			noopCallbacks,
+			{ group, meta: { status: 'open' } },
+		)
+		cleanups.push(() => signaling.destroy())
+		await signaling.connect()
+		await waitFor(() => subscription.latest?.length === 1)
+
+		signaling.setListing({ group, meta: { status: 'running' } })
+
+		await waitFor(
+			() =>
+				JSON.stringify(subscription.latest?.[0]?.meta) ===
+				JSON.stringify({ status: 'running' }),
+		)
+	})
+
 	test('rooms joined without a group are not listed', async () => {
 		const group = crypto.randomUUID()
 		const subscription = subscribe(group)

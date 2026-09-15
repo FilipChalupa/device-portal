@@ -307,5 +307,10 @@ describe('Host reconnection', () => {
 		})
 		await waitFor(() => socket.offersTo('client-a').length === 1)
 		expect(InjectedRTCPeerConnection.created).toBe(1)
+
+		host.setMeta({ name: 'Arena', status: 'running' })
+		expect(socket.sentOfType('update-listing')).toEqual([
+			{ type: 'update-listing', meta: { name: 'Arena', status: 'running' } },
+		])
 	})
 })

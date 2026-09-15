@@ -34,10 +34,23 @@ export const RoomListingSchema = z.object({
 	meta: z.unknown().optional(),
 })
 
+/**
+ * Sent by a peer to enter a room. The listing fields are only honoured
+ * together with `group`; `maxClients` and `meta` without it are ignored.
+ */
 export const JoinRoomMessageSchema = BaseMessageSchema.extend({
 	type: z.literal('join-room'),
 	room: z.string(),
 }).extend(RoomListingSchema.partial().shape)
+
+/**
+ * Sent by the peer that listed the room to change its `meta` without
+ * re-joining. Ignored for peers that did not list the room.
+ */
+export const UpdateListingMessageSchema = BaseMessageSchema.extend({
+	type: z.literal('update-listing'),
+	meta: z.unknown().optional(),
+})
 
 export const GroupRoomSchema = z.object({
 	room: z.string(),
@@ -105,6 +118,7 @@ export const DirectMessageSchema = BaseMessageSchema.extend({
 
 export const SignalingMessageSchema = z.discriminatedUnion('type', [
 	JoinRoomMessageSchema,
+	UpdateListingMessageSchema,
 	RtcMessageSchema,
 	IdentityMessageSchema,
 	PeerJoinedMessageSchema,
@@ -117,6 +131,7 @@ export type RoomListing = z.infer<typeof RoomListingSchema>
 export type GroupRoom = z.infer<typeof GroupRoomSchema>
 export type GroupRoomsMessage = z.infer<typeof GroupRoomsMessageSchema>
 export type JoinRoomMessage = z.infer<typeof JoinRoomMessageSchema>
+export type UpdateListingMessage = z.infer<typeof UpdateListingMessageSchema>
 export type RtcMessage = z.infer<typeof RtcMessageSchema>
 export type IdentityMessage = z.infer<typeof IdentityMessageSchema>
 export type PeerJoinedMessage = z.infer<typeof PeerJoinedMessageSchema>

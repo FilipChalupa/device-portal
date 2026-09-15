@@ -39,6 +39,11 @@ const toPeerSocket = (webSocket: WSContext) => ({
 	isOpen: () => webSocket.readyState === 1 /* WebSocket.OPEN */,
 })
 
+/**
+ * Builds the Hono app with the signaling routes (`/health`, `/v0/`,
+ * `/v0/groups/:group`) on top of the runtime's WebSocket upgrade helper. The
+ * caller serves `app.fetch`; nothing listens on its own.
+ */
 export function createSignalingServer(options: SignalingServerOptions) {
 	const { upgradeWebSocket } = options
 	const logger = options.logger ?? console

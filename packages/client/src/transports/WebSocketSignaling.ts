@@ -28,8 +28,21 @@ export class WebSocketSignaling {
 		private peerId: PeerId,
 		private readonly callbacks: WebSocketSignalingCallbacks,
 		/** Lists the room in a group for `subscribeToGroup` consumers. */
-		private readonly listing?: RoomListing,
+		private listing?: RoomListing,
 	) {}
+
+	/**
+	 * Replaces the listing. The `meta` change reaches the server right away
+	 * when the socket is open; otherwise the next `join-room` carries it.
+	 */
+	setListing(listing: RoomListing | undefined) {
+		this.listing = listing
+		if (listing && this.socket?.readyState === WebSocket.OPEN) {
+			this.socket.send(
+				JSON.stringify({ type: 'update-listing', meta: listing.meta }),
+			)
+		}
+	}
 
 	get isConnected() {
 		return this.socket?.readyState === WebSocket.OPEN
