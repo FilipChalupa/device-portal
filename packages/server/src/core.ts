@@ -31,6 +31,13 @@ export interface SignalingCoreOptions {
 	 * group. Larger values are dropped with an error log. Defaults to 1024.
 	 */
 	maxMetaBytes?: number
+	/**
+	 * Minimum time between two room-list broadcasts of one group. The first
+	 * change goes out immediately, further changes within the window are
+	 * coalesced into a single broadcast at its end. `0` broadcasts every
+	 * change. Defaults to 250.
+	 */
+	groupPublishThrottleMilliseconds?: number
 }
 
 /**
@@ -63,6 +70,7 @@ type Room = {
 }
 
 const defaultMaxMetaBytes = 1024
+const defaultGroupPublishThrottleMilliseconds = 250
 
 /**
  * Creates the in-memory signaling core: rooms, peer-to-peer message
@@ -73,12 +81,20 @@ export function createSignalingCore(
 ): SignalingCore {
 	const logger = options.logger ?? console
 	const maxMetaBytes = options.maxMetaBytes ?? defaultMaxMetaBytes
+	const groupPublishThrottleMilliseconds =
+		options.groupPublishThrottleMilliseconds ??
+		defaultGroupPublishThrottleMilliseconds
 
 	const peers = new Map<PeerId, SignalingPeerSocket>()
 	const rooms = new Map<string, Room>()
 	const peerRooms = new Map<PeerId, string>()
 	const groupRooms = new Map<string, Set<string>>()
 	const groupSubscribers = new Map<string, Set<SignalingPeerSocket>>()
+	/** Groups inside a throttle window; `dirty` means a broadcast is owed. */
+	const groupThrottles = new Map<
+		string,
+		{ timer: ReturnType<typeof setTimeout>; dirty: boolean }
+	>()
 
 	const sendTo = (peerId: PeerId, payload: unknown) => {
 		const socket = peers.get(peerId)
@@ -113,10 +129,7 @@ export function createSignalingCore(
 			rooms: getGroupRooms(group),
 		})
 
-	const publishGroup = (group: string | undefined) => {
-		if (group === undefined) {
-			return
-		}
+	const broadcastGroup = (group: string) => {
 		const subscribers = groupSubscribers.get(group)
 		if (!subscribers || subscribers.size === 0) {
 			return
@@ -127,6 +140,42 @@ export function createSignalingCore(
 				subscriber.send(payload)
 			}
 		}
+	}
+
+	/**
+	 * Broadcasts the group's room list, leading-edge throttled: a burst of
+	 * changes (a party joining, a host leaving with its clients) costs the
+	 * subscribers one broadcast now and one at the end of the window instead
+	 * of one per change.
+	 */
+	const publishGroup = (group: string | undefined) => {
+		if (group === undefined) {
+			return
+		}
+		if (groupPublishThrottleMilliseconds <= 0) {
+			broadcastGroup(group)
+			return
+		}
+		const throttle = groupThrottles.get(group)
+		if (throttle) {
+			throttle.dirty = true
+			return
+		}
+		broadcastGroup(group)
+		const startWindow = () => {
+			groupThrottles.set(group, {
+				dirty: false,
+				timer: setTimeout(() => {
+					const ended = groupThrottles.get(group)
+					groupThrottles.delete(group)
+					if (ended?.dirty) {
+						broadcastGroup(group)
+						startWindow()
+					}
+				}, groupPublishThrottleMilliseconds),
+			})
+		}
+		startWindow()
 	}
 
 	/** Returns `meta` unchanged, or `undefined` (with a log) when it is too big. */

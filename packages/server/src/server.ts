@@ -30,6 +30,8 @@ export interface SignalingServerOptions {
 	logger?: SignalingLogger
 	/** See `SignalingCoreOptions.maxMetaBytes`. */
 	maxMetaBytes?: number
+	/** See `SignalingCoreOptions.groupPublishThrottleMilliseconds`. */
+	groupPublishThrottleMilliseconds?: number
 }
 
 const toPeerSocket = (webSocket: WSContext) => ({
@@ -54,6 +56,7 @@ export function createSignalingServer(options: SignalingServerOptions) {
 	const core = createSignalingCore({
 		logger,
 		maxMetaBytes: options.maxMetaBytes,
+		groupPublishThrottleMilliseconds: options.groupPublishThrottleMilliseconds,
 	})
 
 	if (options.cors ?? true) {

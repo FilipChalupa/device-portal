@@ -1,6 +1,11 @@
 import type { GroupRoom } from '@device-portal/client'
-import { describe, expect, test } from 'vitest'
-import { createSignalingCore, noopLogger, SignalingPeerSocket } from './core'
+import { afterEach, describe, expect, test, vi } from 'vitest'
+import {
+	createSignalingCore,
+	noopLogger,
+	SignalingCoreOptions,
+	SignalingPeerSocket,
+} from './core'
 
 class FakeSocket implements SignalingPeerSocket {
 	readonly messages: Array<Record<string, unknown>> = []
@@ -20,8 +25,13 @@ class FakeSocket implements SignalingPeerSocket {
 	}
 }
 
-function setup() {
-	const core = createSignalingCore({ logger: noopLogger })
+function setup(options: SignalingCoreOptions = {}) {
+	// Broadcast every change unless a test is about the throttle itself.
+	const core = createSignalingCore({
+		logger: noopLogger,
+		groupPublishThrottleMilliseconds: 0,
+		...options,
+	})
 	const connect = () => {
 		const socket = new FakeSocket()
 		const peerId = core.handleOpen(socket)
@@ -43,6 +53,10 @@ function setup() {
 	}
 	return { core, connect, subscribe }
 }
+
+afterEach(() => {
+	vi.useRealTimers()
+})
 
 describe('signaling core', () => {
 	test('malformed JSON is ignored and the peer keeps working', () => {
@@ -160,6 +174,42 @@ describe('signaling core', () => {
 				{ room: 'room', clients: 1, meta: { status: 'full' } },
 			])
 			expect(client.socket.ofType('peer-joined')).toHaveLength(joinedBefore)
+		})
+
+		test('a burst of changes is coalesced into a leading and a trailing broadcast', () => {
+			vi.useFakeTimers()
+			const { connect, subscribe } = setup({
+				groupPublishThrottleMilliseconds: 250,
+			})
+			const subscriber = subscribe('g')
+			const host = connect()
+			host.join('room', { group: 'g' })
+			// Leading edge: the first change goes out immediately.
+			expect(subscriber.socket.ofType('group-rooms')).toHaveLength(2)
+
+			const players = [connect(), connect(), connect()]
+			for (const player of players) {
+				player.join('room')
+			}
+			expect(subscriber.socket.ofType('group-rooms')).toHaveLength(2)
+
+			vi.advanceTimersByTime(250)
+			// Trailing edge: one broadcast with the final state.
+			expect(subscriber.socket.ofType('group-rooms')).toHaveLength(3)
+			expect(subscriber.socket.lastRooms).toEqual([
+				{ room: 'room', clients: 3 },
+			])
+
+			// A quiet window ends without a broadcast.
+			vi.advanceTimersByTime(250)
+			expect(subscriber.socket.ofType('group-rooms')).toHaveLength(3)
+
+			// The next change after the window is immediate again.
+			players[0].close()
+			expect(subscriber.socket.ofType('group-rooms')).toHaveLength(4)
+			expect(subscriber.socket.lastRooms).toEqual([
+				{ room: 'room', clients: 2 },
+			])
 		})
 
 		test('meta above the limit is dropped', () => {

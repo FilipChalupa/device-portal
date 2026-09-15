@@ -9,7 +9,10 @@ export type GroupOptions = {
 }
 
 export type SubscribeToGroupOptions = GroupOptions & {
-	/** Called with the full room list on connect and after every change. */
+	/**
+	 * Called with the full room list on connect and after changes. The server
+	 * coalesces bursts of changes, so several may arrive as one call.
+	 */
 	onRooms: (rooms: GroupRoom[]) => void
 	/**
 	 * Called when the subscription socket drops. The subscription reconnects
