@@ -31,6 +31,7 @@ jobs:
         run: |
           npm version ${{ steps.get_version.outputs.VERSION }} --no-git-tag-version --workspaces
           npm pkg set "dependencies.@device-portal/client=^${{ steps.get_version.outputs.VERSION }}" --workspace packages/react
+          npm pkg set "dependencies.@device-portal/client=^${{ steps.get_version.outputs.VERSION }}" --workspace packages/server
 
       - name: Build packages
         run: |
