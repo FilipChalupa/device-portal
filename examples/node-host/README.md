@@ -18,4 +18,13 @@ and is passed to `Host` through the `webrtc` option. The package is an
 optional dependency: if its native build is unavailable on your platform, the
 rest of the monorepo still installs and only this example does not run.
 
+Newer npm (11+) may refuse to run the package's install script until it is
+approved — the install then warns that `node-datachannel` is not covered by
+`allowScripts`. Approve it and reinstall:
+
+```sh
+npm install-scripts approve node-datachannel
+npm ci
+```
+
 Environment: `SERVER_URL` (default `ws://localhost:8080`), `ROOM`.
