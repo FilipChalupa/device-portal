@@ -81,6 +81,42 @@ const ConsumerComponent = () => {
 }
 ```
 
+### Public rooms (lobby)
+
+A provider can list its room under a `group`; `useGroupRooms` subscribes to the
+live list of such rooms — enough for a lobby of public game servers. Each entry
+carries the number of connected `clients`, the provider's `maxClients` and the
+`meta` JSON the provider published.
+
+```jsx
+import { useDevicePortalProvider, useGroupRooms } from '@device-portal/react'
+
+const GameHost = () => {
+	useDevicePortalProvider('arena-42', {
+		value: 'welcome',
+		group: 'my-game',
+		meta: { name: 'Arena' },
+		maxClients: 4,
+	})
+	return <h1>Hosting Arena</h1>
+}
+
+const Lobby = ({ onJoin }) => {
+	const { rooms, isConnected } = useGroupRooms('my-game')
+	if (rooms === null) return <p>Loading…</p>
+	return (
+		<ul>
+			{rooms.map(({ room, clients, maxClients, meta }) => (
+				<li key={room}>
+					{meta?.name ?? room} — {clients}/{maxClients ?? '∞'}{' '}
+					<button onClick={() => onJoin(room)}>Join</button>
+				</li>
+			))}
+		</ul>
+	)
+}
+```
+
 ### Per-peer Values
 
 Instead of broadcasting the same value to all consumers, you can pass a function that returns a different value for each peer:

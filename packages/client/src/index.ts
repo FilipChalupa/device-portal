@@ -1,6 +1,8 @@
 export * from './constants'
 export * from './delay'
+export * from './groups'
 export * from './settings'
+export { type WebRtcOption } from './utilities/environment'
 export * from './transports/DirectTransport'
 export * from './transports/WebSocketSignaling'
 export * from './transports/Host'

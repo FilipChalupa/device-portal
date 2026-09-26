@@ -8,6 +8,11 @@ export type NodeSignalingServerOptions = Omit<
 	'upgradeWebSocket'
 >
 
+/**
+ * Signaling server wired to Node's HTTP server via `@hono/node-ws`. Returns
+ * the Hono `app` (extend it with more routes before starting) and `start`,
+ * which listens on the given port and resolves once it does.
+ */
 export function createNodeSignalingServer(
 	options: NodeSignalingServerOptions = {},
 ) {

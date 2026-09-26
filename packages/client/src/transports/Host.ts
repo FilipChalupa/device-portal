@@ -1,6 +1,11 @@
 import { PeerId, generatePeerId } from '../constants'
 import { delay } from '../delay'
 import { settings } from '../settings'
+import {
+	defaultBrowserDirect,
+	resolveRTCPeerConnection,
+	type WebRtcOption,
+} from '../utilities/environment'
 import { DirectTransport, type BrowserDirectOption } from './DirectTransport'
 import { WebSocketSignaling } from './WebSocketSignaling'
 
@@ -41,6 +46,9 @@ export class Host {
 	private readonly browserDirect: BrowserDirectOption
 	private readonly maxClients: number
 	private readonly negotiationTimeoutMilliseconds: number
+	private readonly group: string | undefined
+	private meta: unknown
+	private readonly webrtc: WebRtcOption | undefined
 
 	constructor(
 		private readonly room: string,
@@ -51,8 +59,23 @@ export class Host {
 			webSocketSignalingServer?: string | null
 			iceServers?: Array<RTCIceServer>
 			maxClients?: number
+			/** Defaults to `true` in browsers and `false` elsewhere. */
 			browserDirect?: BrowserDirectOption
 			peerId?: PeerId
+			/**
+			 * Lists the room publicly under this group on the signaling server so
+			 * `subscribeToGroup` / `fetchGroupRooms` can discover it, together with
+			 * `maxClients` and `meta`. Must not be empty.
+			 */
+			group?: string
+			/**
+			 * Arbitrary JSON published with the group listing, e.g. a game name.
+			 * The server drops it above its `maxMetaBytes` (1 kB by default).
+			 * Change it later with `setMeta`.
+			 */
+			meta?: unknown
+			/** WebRTC implementation for runtimes without a global one (Node). */
+			webrtc?: WebRtcOption
 			/**
 			 * How long an offered connection may sit without an open data channel
 			 * before it is discarded. Prevents a stalled negotiation (lost answer,
@@ -70,11 +93,17 @@ export class Host {
 				: (options.webSocketSignalingServer ??
 					settings.default.webSocketSignalingServer)
 		this.iceServers = options.iceServers ?? settings.default.iceServers
-		this.browserDirect = options.browserDirect ?? true
+		this.browserDirect = options.browserDirect ?? defaultBrowserDirect()
 		this.maxClients = options.maxClients ?? 1
 		this.negotiationTimeoutMilliseconds =
 			options.negotiationTimeoutMilliseconds ??
 			defaultNegotiationTimeoutMilliseconds
+		if (options.group === '') {
+			throw new Error('[Host] group must not be an empty string')
+		}
+		this.group = options.group
+		this.meta = options.meta
+		this.webrtc = options.webrtc
 		this.peerId = options.peerId ?? generatePeerId()
 
 		queueMicrotask(() => {
@@ -164,9 +193,30 @@ export class Host {
 				onIceCandidate: (candidate, from) =>
 					this.handleIceCandidate(candidate, from),
 			},
+			this.listing,
 		)
 
 		await this.webSocketSignaling.connect()
+	}
+
+	private get listing() {
+		if (this.group === undefined) {
+			return undefined
+		}
+		return {
+			group: this.group,
+			maxClients: this.maxClients,
+			...(this.meta === undefined ? {} : { meta: this.meta }),
+		}
+	}
+
+	/**
+	 * Updates the `meta` shown in the group listing without reconnecting.
+	 * Has no visible effect when the host was created without `group`.
+	 */
+	public setMeta(meta: unknown) {
+		this.meta = meta
+		this.webSocketSignaling?.setListing(this.listing)
 	}
 
 	private async ensureSignaling() {
@@ -319,6 +369,8 @@ export class Host {
 			this.closeClientConnection(existingClient)
 		}
 
+		// Resolved lazily: direct-only setups never need WebRTC at all.
+		const RTCPeerConnection = resolveRTCPeerConnection(this.webrtc)
 		const connection = new RTCPeerConnection({ iceServers: this.iceServers })
 		const channel = connection.createDataChannel(settings.channel.label)
 		const clientConnection: ClientConnection = {
@@ -419,7 +471,7 @@ export class Host {
 			await client.connection.setRemoteDescription(answer)
 			while (client.candidatesQueue.length > 0) {
 				const candidate = client.candidatesQueue.shift()!
-				await client.connection.addIceCandidate(new RTCIceCandidate(candidate))
+				await client.connection.addIceCandidate(candidate)
 			}
 		}
 	}
@@ -431,7 +483,7 @@ export class Host {
 		const client = this.connections.get(fromPeerId)
 		if (client) {
 			if (client.connection.remoteDescription) {
-				await client.connection.addIceCandidate(new RTCIceCandidate(candidate))
+				await client.connection.addIceCandidate(candidate)
 			} else {
 				client.candidatesQueue.push(candidate)
 			}

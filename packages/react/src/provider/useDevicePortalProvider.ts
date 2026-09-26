@@ -24,6 +24,13 @@ export type DevicePortalProviderOptions = {
 	maxClients?: number
 	/** Browser direct signaling options. */
 	browserDirect?: BrowserDirectOption
+	/** Lists the room under this group on the signaling server for `useGroupRooms`. */
+	group?: string
+	/**
+	 * Arbitrary JSON published with the group listing, e.g. a game name. Kept
+	 * under 1 kB. Changes are pushed to the listing without reconnecting.
+	 */
+	meta?: unknown
 }
 
 /**
@@ -48,6 +55,10 @@ export const useDevicePortalProvider = (
 
 	const valueRef = useRef(options.value)
 	valueRef.current = options.value
+	// Compared by content so an inline object literal does not re-send meta.
+	const metaKey = JSON.stringify(options.meta) ?? ''
+	const metaRef = useRef(options.meta)
+	metaRef.current = options.meta
 
 	useEffect(() => {
 		const newProvider = new Host(room, {
@@ -66,6 +77,8 @@ export const useDevicePortalProvider = (
 			webSocketSignalingServer: options.webSocketSignalingServer,
 			maxClients: options.maxClients,
 			browserDirect: options.browserDirect,
+			group: options.group,
+			meta: metaRef.current,
 			peerId: peerIdRef.current,
 		})
 		setProvider(newProvider)
@@ -82,7 +95,12 @@ export const useDevicePortalProvider = (
 		options.webSocketSignalingServer,
 		options.maxClients,
 		options.browserDirect,
+		options.group,
 	])
+
+	useEffect(() => {
+		provider?.setMeta(metaRef.current)
+	}, [metaKey, provider])
 
 	useEffect(() => {
 		if (options.value === undefined || !provider) return

@@ -10,6 +10,10 @@ This monorepo consists of:
 - **[@device-portal/client](./packages/client/README.md)**: Base WebRTC logic for Device Portal.
 - **[@device-portal/server](./packages/server/README.md)**: WebSocket-based signaling server for WebRTC.
 
+## Examples
+
+- **[examples/node-host](./examples/node-host/README.md)**: A game host running in Node that shows up in the Storybook lobby.
+
 ## Development
 
 Run development mode (starts both server and storybook):

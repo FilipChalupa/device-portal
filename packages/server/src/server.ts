@@ -28,6 +28,10 @@ export interface SignalingServerOptions {
 	cors?: boolean
 	/** Defaults to `console`. */
 	logger?: SignalingLogger
+	/** See `SignalingCoreOptions.maxMetaBytes`. */
+	maxMetaBytes?: number
+	/** See `SignalingCoreOptions.groupPublishThrottleMilliseconds`. */
+	groupPublishThrottleMilliseconds?: number
 }
 
 const toPeerSocket = (webSocket: WSContext) => ({
@@ -37,6 +41,11 @@ const toPeerSocket = (webSocket: WSContext) => ({
 	isOpen: () => webSocket.readyState === 1 /* WebSocket.OPEN */,
 })
 
+/**
+ * Builds the Hono app with the signaling routes (`/health`, `/v0/`,
+ * `/v0/groups/:group`) on top of the runtime's WebSocket upgrade helper. The
+ * caller serves `app.fetch`; nothing listens on its own.
+ */
 export function createSignalingServer(options: SignalingServerOptions) {
 	const { upgradeWebSocket } = options
 	const logger = options.logger ?? console
@@ -44,7 +53,11 @@ export function createSignalingServer(options: SignalingServerOptions) {
 
 	app.get('/health', (context) => context.text('OK'))
 
-	const core = createSignalingCore({ logger })
+	const core = createSignalingCore({
+		logger,
+		maxMetaBytes: options.maxMetaBytes,
+		groupPublishThrottleMilliseconds: options.groupPublishThrottleMilliseconds,
+	})
 
 	if (options.cors ?? true) {
 		app.use('/v0/*', cors())
@@ -77,6 +90,32 @@ export function createSignalingServer(options: SignalingServerOptions) {
 				},
 			}
 		}),
+	)
+
+	// A WebSocket upgrade subscribes to the group's room list; a plain GET
+	// returns the current list once. The upgrade helper falls through to the
+	// next handler when the request carries no Upgrade header.
+	app.get(
+		'/v0/groups/:group',
+		upgradeWebSocket((context) => {
+			const group = context.req.param('group')
+			let unsubscribe: (() => void) | undefined
+			return {
+				onOpen(event, webSocket) {
+					unsubscribe = core.subscribeToGroup(group, toPeerSocket(webSocket))
+				},
+				onClose() {
+					unsubscribe?.()
+				},
+				onError(event) {
+					logger.error(`Group subscription error for ${group}:`, event)
+				},
+			}
+		}),
+		(context) => {
+			const group = context.req.param('group')
+			return context.json({ group, rooms: core.getGroupRooms(group) })
+		},
 	)
 
 	return { app }

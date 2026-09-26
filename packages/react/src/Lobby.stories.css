@@ -1,0 +1,70 @@
+.lobby {
+	font-family: sans-serif;
+	max-width: 48rem;
+	margin-inline: auto;
+	display: grid;
+	gap: 1.5rem;
+}
+
+.lobby h1,
+.lobby h2 {
+	margin: 0;
+}
+
+.lobby-section {
+	border: 1px solid #ccc;
+	border-radius: 0.5rem;
+	padding: 1rem;
+	display: grid;
+	gap: 0.75rem;
+}
+
+.lobby-card {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.5rem 1rem;
+	padding: 0.5rem 0.75rem;
+	border-radius: 0.5rem;
+	background: #f3f3f3;
+}
+
+.lobby-card--full {
+	opacity: 0.6;
+}
+
+.lobby-card__name {
+	font-weight: bold;
+	flex: 1 1 8rem;
+}
+
+.lobby-status {
+	font-size: 0.85em;
+	color: #666;
+}
+
+.lobby-scores {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+	display: grid;
+	gap: 0.25rem;
+}
+
+.lobby-scores li {
+	display: flex;
+	justify-content: space-between;
+	padding: 0.25rem 0.5rem;
+	background: #fff;
+	border-radius: 0.25rem;
+}
+
+.lobby-scores li.me {
+	font-weight: bold;
+}
+
+.lobby-click {
+	font-size: 2em;
+	padding: 0.5em 1.5em;
+	cursor: pointer;
+}

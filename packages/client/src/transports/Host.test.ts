@@ -263,4 +263,54 @@ describe('Host reconnection', () => {
 		await new Promise((resolve) => setTimeout(resolve, 200))
 		expect(MockRTCPeerConnection.instances[0].closed).toBe(false)
 	})
+
+	test('lists the room in a group and uses the injected WebRTC implementation', async () => {
+		class InjectedRTCPeerConnection extends MockRTCPeerConnection {
+			static created = 0
+			constructor() {
+				super()
+				InjectedRTCPeerConnection.created++
+			}
+		}
+		installGlobal('RTCPeerConnection', undefined)
+
+		const host = new Host('host-room', {
+			browserDirect: false,
+			webSocketSignalingServer: 'ws://mock',
+			iceServers: [],
+			maxClients: 3,
+			group: 'games',
+			meta: { name: 'Arena' },
+			webrtc: {
+				RTCPeerConnection:
+					InjectedRTCPeerConnection as unknown as typeof RTCPeerConnection,
+			},
+		})
+		hosts.push(host)
+
+		await waitFor(() => MockWebSocket.instances.length === 1)
+		const socket = MockWebSocket.instances[0]
+		socket.open()
+		await waitFor(() => socket.sentOfType('join-room').length >= 1)
+		expect(socket.sentOfType('join-room')[0]).toEqual({
+			type: 'join-room',
+			room: 'host-room',
+			group: 'games',
+			maxClients: 3,
+			meta: { name: 'Arena' },
+		})
+
+		socket.receive({
+			id: 'joined-a',
+			type: 'peer-joined',
+			data: { peerId: 'client-a' },
+		})
+		await waitFor(() => socket.offersTo('client-a').length === 1)
+		expect(InjectedRTCPeerConnection.created).toBe(1)
+
+		host.setMeta({ name: 'Arena', status: 'running' })
+		expect(socket.sentOfType('update-listing')).toEqual([
+			{ type: 'update-listing', meta: { name: 'Arena', status: 'running' } },
+		])
+	})
 })

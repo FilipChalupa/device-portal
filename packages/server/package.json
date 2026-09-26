@@ -27,7 +27,7 @@
 		"build": "tsup",
 		"start": "node dist/main.js",
 		"dev": "concurrently 'tsup --watch' 'node --watch-path ./dist dist/main.js'",
-		"test": "tsc --noEmit"
+		"test": "tsc --noEmit && vitest run"
 	},
 	"repository": {
 		"type": "git",
@@ -58,6 +58,7 @@
 		"@types/node": "^20.0.0",
 		"concurrently": "^9.2.1",
 		"tsup": "^8.0.0",
-		"typescript": "^5.9.3"
+		"typescript": "^5.9.3",
+		"vitest": "^3.1.1"
 	}
 }

@@ -1,0 +1,16 @@
+{
+	"name": "@device-portal/example-node-host",
+	"version": "0.0.0",
+	"private": true,
+	"description": "Hosts a click-race game from Node so it shows up in the Storybook lobby.",
+	"type": "module",
+	"scripts": {
+		"start": "node host.mjs"
+	},
+	"dependencies": {
+		"@device-portal/client": "*"
+	},
+	"optionalDependencies": {
+		"node-datachannel": "^0.30.0"
+	}
+}

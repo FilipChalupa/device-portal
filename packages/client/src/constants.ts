@@ -21,9 +21,52 @@ export const BaseMessageSchema = z.object({
 	id: z.string().optional(),
 })
 
+/**
+ * Optional public listing of a room. A peer (typically the host) that joins
+ * with a `group` makes the room visible to group subscribers — see
+ * `GroupRoomsMessageSchema`. Rooms joined without a group are never listed.
+ */
+export const RoomListingSchema = z.object({
+	group: z.string().min(1),
+	/** Upper bound of clients the host accepts, if it has one. */
+	maxClients: z.number().int().positive().optional(),
+	/** Arbitrary JSON shown to group subscribers as-is, e.g. a game name. */
+	meta: z.unknown().optional(),
+})
+
+/**
+ * Sent by a peer to enter a room. The listing fields are only honoured
+ * together with `group`; `maxClients` and `meta` without it are ignored.
+ */
 export const JoinRoomMessageSchema = BaseMessageSchema.extend({
 	type: z.literal('join-room'),
 	room: z.string(),
+}).extend(RoomListingSchema.partial().shape)
+
+/**
+ * Sent by the peer that listed the room to change its `meta` without
+ * re-joining. Ignored for peers that did not list the room.
+ */
+export const UpdateListingMessageSchema = BaseMessageSchema.extend({
+	type: z.literal('update-listing'),
+	meta: z.unknown().optional(),
+})
+
+export const GroupRoomSchema = z.object({
+	room: z.string(),
+	/**
+	 * Open signaling connections in the room other than the one that listed it
+	 * (the host). While the host is connected this is the number of clients.
+	 */
+	clients: z.number().int().nonnegative(),
+	maxClients: z.number().int().positive().optional(),
+	meta: z.unknown().optional(),
+})
+
+export const GroupRoomsMessageSchema = BaseMessageSchema.extend({
+	type: z.literal('group-rooms'),
+	group: z.string(),
+	rooms: z.array(GroupRoomSchema),
 })
 
 export const RtcMessageSchema = BaseMessageSchema.extend({
@@ -75,6 +118,7 @@ export const DirectMessageSchema = BaseMessageSchema.extend({
 
 export const SignalingMessageSchema = z.discriminatedUnion('type', [
 	JoinRoomMessageSchema,
+	UpdateListingMessageSchema,
 	RtcMessageSchema,
 	IdentityMessageSchema,
 	PeerJoinedMessageSchema,
@@ -83,7 +127,11 @@ export const SignalingMessageSchema = z.discriminatedUnion('type', [
 	DirectMessageSchema,
 ])
 
+export type RoomListing = z.infer<typeof RoomListingSchema>
+export type GroupRoom = z.infer<typeof GroupRoomSchema>
+export type GroupRoomsMessage = z.infer<typeof GroupRoomsMessageSchema>
 export type JoinRoomMessage = z.infer<typeof JoinRoomMessageSchema>
+export type UpdateListingMessage = z.infer<typeof UpdateListingMessageSchema>
 export type RtcMessage = z.infer<typeof RtcMessageSchema>
 export type IdentityMessage = z.infer<typeof IdentityMessageSchema>
 export type PeerJoinedMessage = z.infer<typeof PeerJoinedMessageSchema>

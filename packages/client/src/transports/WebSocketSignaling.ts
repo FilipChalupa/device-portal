@@ -1,4 +1,9 @@
-import { PeerId, SignalingMessage, SignalingMessageSchema } from '../constants'
+import {
+	PeerId,
+	RoomListing,
+	SignalingMessage,
+	SignalingMessageSchema,
+} from '../constants'
 import { delay } from '../delay'
 import { getExponentialBackoffDelay } from '../utilities/backoff'
 
@@ -22,7 +27,22 @@ export class WebSocketSignaling {
 		private readonly serverUrl: string,
 		private peerId: PeerId,
 		private readonly callbacks: WebSocketSignalingCallbacks,
+		/** Lists the room in a group for `subscribeToGroup` consumers. */
+		private listing?: RoomListing,
 	) {}
+
+	/**
+	 * Replaces the listing. The `meta` change reaches the server right away
+	 * when the socket is open; otherwise the next `join-room` carries it.
+	 */
+	setListing(listing: RoomListing | undefined) {
+		this.listing = listing
+		if (listing && this.socket?.readyState === WebSocket.OPEN) {
+			this.socket.send(
+				JSON.stringify({ type: 'update-listing', meta: listing.meta }),
+			)
+		}
+	}
 
 	get isConnected() {
 		return this.socket?.readyState === WebSocket.OPEN
@@ -79,7 +99,9 @@ export class WebSocketSignaling {
 
 	announceRoom() {
 		if (this.socket?.readyState === WebSocket.OPEN) {
-			this.socket.send(JSON.stringify({ type: 'join-room', room: this.room }))
+			this.socket.send(
+				JSON.stringify({ type: 'join-room', room: this.room, ...this.listing }),
+			)
 		}
 	}
 
