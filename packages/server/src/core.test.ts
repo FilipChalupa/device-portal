@@ -346,20 +346,20 @@ describe('signaling core', () => {
 			expect(subscription.accepted).toBe(true)
 
 			const socket = new FakeSocket()
-			expect(core.handleOpen(socket, '1.2.3.4')).toBeUndefined()
+			expect(core.handleOpen(socket, '1.2.3.4')).toBeNull()
 			expect(socket.closedWith).toBe(1008)
 			expect(subscribe('g', '1.2.3.4').accepted).toBe(false)
 			// Other clients and sockets without a key are unaffected.
-			expect(core.handleOpen(new FakeSocket(), '5.6.7.8')).toBeDefined()
-			expect(core.handleOpen(new FakeSocket())).toBeDefined()
+			expect(core.handleOpen(new FakeSocket(), '5.6.7.8')).not.toBeNull()
+			expect(core.handleOpen(new FakeSocket())).not.toBeNull()
 
 			// Unsubscribing twice frees a single slot only.
 			subscription.unsubscribe()
 			subscription.unsubscribe()
 			first.close()
-			expect(connect('1.2.3.4').peerId).toBeDefined()
+			expect(connect('1.2.3.4').peerId).not.toBeNull()
 			expect(subscribe('g', '1.2.3.4').accepted).toBe(true)
-			expect(core.handleOpen(new FakeSocket(), '1.2.3.4')).toBeUndefined()
+			expect(core.handleOpen(new FakeSocket(), '1.2.3.4')).toBeNull()
 		})
 	})
 })

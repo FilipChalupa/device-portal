@@ -83,25 +83,26 @@ export function createSignalingServer(options: SignalingServerOptions) {
 		'/v0/',
 		upgradeWebSocket((context) => {
 			const clientKey = getClientKey(context)
-			let peerId: PeerId | undefined
+			// Stays null until the socket opens, and for a refused connection.
+			let peerId: PeerId | null = null
 			return {
 				onOpen(event, webSocket) {
 					peerId = core.handleOpen(toPeerSocket(webSocket), clientKey)
 				},
 				onMessage(event) {
-					if (peerId === undefined) {
+					if (peerId === null) {
 						return
 					}
 					core.handleMessage(peerId, event.data as string)
 				},
 				onClose() {
-					if (peerId === undefined) {
+					if (peerId === null) {
 						return
 					}
 					core.handleClose(peerId)
 				},
 				onError(event) {
-					if (peerId === undefined) {
+					if (peerId === null) {
 						return
 					}
 					core.handleError(peerId, event)
@@ -118,7 +119,7 @@ export function createSignalingServer(options: SignalingServerOptions) {
 		upgradeWebSocket((context) => {
 			const group = context.req.param('group')
 			const clientKey = getClientKey(context)
-			let unsubscribe: (() => void) | undefined
+			let unsubscribe: (() => void) | null = null
 			return {
 				onOpen(event, webSocket) {
 					unsubscribe = core.subscribeToGroup(

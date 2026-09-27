@@ -63,13 +63,10 @@ export interface SignalingCoreOptions {
 export interface SignalingCore {
 	/**
 	 * Registers a new socket, sends it its identity and returns the peer id.
-	 * Returns `undefined` (and closes the socket with 1008) when `clientKey`
+	 * Returns `null` (and closes the socket with 1008) when `clientKey`
 	 * already holds `maxSocketsPerClient` sockets.
 	 */
-	handleOpen: (
-		socket: SignalingPeerSocket,
-		clientKey?: string,
-	) => PeerId | undefined
+	handleOpen: (socket: SignalingPeerSocket, clientKey?: string) => PeerId | null
 	/** Processes one raw text frame from the peer. Invalid input is logged. */
 	handleMessage: (peerId: PeerId, rawData: string) => void
 	/** Removes the peer from its room and notifies the remaining peers. */
@@ -81,14 +78,14 @@ export interface SignalingCore {
 	/**
 	 * Sends the current room list of the group to the socket immediately and
 	 * again after every change. Returns the unsubscribe function, or
-	 * `undefined` (closing the socket with 1008) when the group name is too
+	 * `null` (closing the socket with 1008) when the group name is too
 	 * long or `clientKey` is over `maxSocketsPerClient`.
 	 */
 	subscribeToGroup: (
 		group: string,
 		socket: SignalingPeerSocket,
 		clientKey?: string,
-	) => (() => void) | undefined
+	) => (() => void) | null
 }
 
 type Room = {
@@ -329,7 +326,7 @@ export function createSignalingCore(
 		handleOpen(socket, clientKey) {
 			if (!acquireClientSocket(clientKey)) {
 				refuse(socket, `too many connections from ${clientKey}`)
-				return undefined
+				return null
 			}
 			const peerId = generatePeerId()
 			peers.set(peerId, socket)
@@ -495,11 +492,11 @@ export function createSignalingCore(
 		subscribeToGroup(group, socket, clientKey) {
 			if (group.length > maxNameLength) {
 				refuse(socket, `group name over ${maxNameLength} characters`)
-				return undefined
+				return null
 			}
 			if (!acquireClientSocket(clientKey)) {
 				refuse(socket, `too many connections from ${clientKey}`)
-				return undefined
+				return null
 			}
 			let subscribers = groupSubscribers.get(group)
 			if (!subscribers) {
