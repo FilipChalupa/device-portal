@@ -30,4 +30,5 @@ if (portString) {
 	}
 }
 
-start(port)
+// HOST defaults to all IPv4 interfaces; `::` listens on IPv4 and IPv6.
+start(port, process.env.HOST || undefined)

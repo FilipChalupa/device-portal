@@ -12,7 +12,8 @@ You can run the server with the following command:
 npx @device-portal/server
 ```
 
-The server will run on `ws://localhost:8080` by default.
+The server will run on `ws://localhost:8080` by default. Set `PORT` to change the
+port and `HOST` to change the listening address (e.g. `::` for IPv4 and IPv6).
 
 ## Endpoints
 

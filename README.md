@@ -22,3 +22,12 @@ Run development mode (starts both server and storybook):
 npm ci
 npm run dev
 ```
+
+## Tests
+
+```sh
+npm test            # unit tests of all packages
+npm run build       # e2e runs against the built Storybook and server
+npm run -w @device-portal/e2e install-browsers  # once
+npm run test:e2e    # Playwright: Lobby story and a Node-hosted game in Chromium
+```
