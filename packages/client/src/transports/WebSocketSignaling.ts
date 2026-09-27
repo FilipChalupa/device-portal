@@ -32,14 +32,18 @@ export class WebSocketSignaling {
 	) {}
 
 	/**
-	 * Replaces the listing. The `meta` change reaches the server right away
-	 * when the socket is open; otherwise the next `join-room` carries it.
+	 * Replaces the listing. `meta` and `clients` reach the server right away
+	 * when the socket is open; otherwise the next `join-room` carries them.
 	 */
 	setListing(listing: RoomListing | undefined) {
 		this.listing = listing
 		if (listing && this.socket?.readyState === WebSocket.OPEN) {
 			this.socket.send(
-				JSON.stringify({ type: 'update-listing', meta: listing.meta }),
+				JSON.stringify({
+					type: 'update-listing',
+					meta: listing.meta,
+					clients: listing.clients,
+				}),
 			)
 		}
 	}

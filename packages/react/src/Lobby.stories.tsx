@@ -26,11 +26,15 @@ type Story = StoryObj<typeof meta>
 
 type Leaderboard = Array<{ peerId: PeerId; score: number }>
 
-/** The name a host published in `meta`, falling back to the room id. */
-const displayName = (room: GroupRoom) =>
-	typeof room.meta === 'object' && room.meta !== null && 'name' in room.meta
-		? String(room.meta.name)
-		: room.room
+/** What every host in this demo publishes as its listing `meta`. */
+type GameMeta = { name: string }
+
+/**
+ * The name a host published, falling back to the room id. `meta` is typed
+ * but not validated, so a foreign host in the same group could send anything.
+ */
+const displayName = (room: GroupRoom<GameMeta>) =>
+	typeof room.meta?.name === 'string' ? room.meta.name : room.room
 
 // Everything goes through the signaling server even between tabs of one
 // browser, so the counts in the lobby match what you see on the page.
@@ -42,7 +46,7 @@ const HostedGame: FunctionComponent<{
 }> = ({ room, onStop }) => {
 	const [name, setName] = useState(`Game ${room.slice(-4)}`)
 	const [scores, setScores] = useState<Record<PeerId, number>>({})
-	const { peers } = useDevicePortalProvider(room, {
+	const { peers } = useDevicePortalProvider<GameMeta>(room, {
 		value: JSON.stringify(toLeaderboard(scores)),
 		onMessageFromConsumer: (_message, peerId) => {
 			setScores((previous) => ({
@@ -159,7 +163,7 @@ const Play: FunctionComponent<{ room: string; onLeave: () => void }> = ({
 }
 
 const PublicGames: FunctionComponent = () => {
-	const { rooms, isConnected } = useGroupRooms(group, {
+	const { rooms, isConnected } = useGroupRooms<GameMeta>(group, {
 		webSocketSignalingServer,
 	})
 	const [joinedRoom, setJoinedRoom] = useState<string | null>(null)

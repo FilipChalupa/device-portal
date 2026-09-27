@@ -86,7 +86,9 @@ const ConsumerComponent = () => {
 A provider can list its room under a `group`; `useGroupRooms` subscribes to the
 live list of such rooms — enough for a lobby of public game servers. Each entry
 carries the number of connected `clients`, the provider's `maxClients` and the
-`meta` JSON the provider published.
+`meta` JSON the provider published. Pass a type to both hooks
+(`useDevicePortalProvider<GameMeta>`, `useGroupRooms<GameMeta>`) to type `meta`;
+it is not validated at runtime, so treat it as untrusted input.
 
 ```jsx
 import { useDevicePortalProvider, useGroupRooms } from '@device-portal/react'

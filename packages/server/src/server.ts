@@ -1,5 +1,5 @@
 import { PeerId } from '@device-portal/client'
-import { Hono } from 'hono'
+import { Context, Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { UpgradeWebSocket, WSContext } from 'hono/ws'
 import { createSignalingCore, SignalingLogger } from './core'
@@ -32,6 +32,17 @@ export interface SignalingServerOptions {
 	maxMetaBytes?: number
 	/** See `SignalingCoreOptions.groupPublishThrottleMilliseconds`. */
 	groupPublishThrottleMilliseconds?: number
+	/** See `SignalingCoreOptions.maxNameLength`. */
+	maxNameLength?: number
+	/** See `SignalingCoreOptions.maxSocketsPerClient`. */
+	maxSocketsPerClient?: number
+	/**
+	 * Identifies the client of an upgrade request for `maxSocketsPerClient`,
+	 * typically by IP address. Runtime-specific — see `getConnInfo` of your
+	 * Hono adapter; behind a proxy read the forwarded address instead. Without
+	 * it no per-client limit applies. `createNodeSignalingServer` sets one.
+	 */
+	getClientKey?: (context: Context) => string | undefined
 }
 
 const toPeerSocket = (webSocket: WSContext) => ({
@@ -39,6 +50,9 @@ const toPeerSocket = (webSocket: WSContext) => ({
 		webSocket.send(data)
 	},
 	isOpen: () => webSocket.readyState === 1 /* WebSocket.OPEN */,
+	close: (code: number, reason: string) => {
+		webSocket.close(code, reason)
+	},
 })
 
 /**
@@ -57,18 +71,22 @@ export function createSignalingServer(options: SignalingServerOptions) {
 		logger,
 		maxMetaBytes: options.maxMetaBytes,
 		groupPublishThrottleMilliseconds: options.groupPublishThrottleMilliseconds,
+		maxNameLength: options.maxNameLength,
+		maxSocketsPerClient: options.maxSocketsPerClient,
 	})
+	const getClientKey = options.getClientKey ?? (() => undefined)
 
 	if (options.cors ?? true) {
 		app.use('/v0/*', cors())
 	}
 	app.get(
 		'/v0/',
-		upgradeWebSocket(() => {
+		upgradeWebSocket((context) => {
+			const clientKey = getClientKey(context)
 			let peerId: PeerId | undefined
 			return {
 				onOpen(event, webSocket) {
-					peerId = core.handleOpen(toPeerSocket(webSocket))
+					peerId = core.handleOpen(toPeerSocket(webSocket), clientKey)
 				},
 				onMessage(event) {
 					if (peerId === undefined) {
@@ -99,10 +117,15 @@ export function createSignalingServer(options: SignalingServerOptions) {
 		'/v0/groups/:group',
 		upgradeWebSocket((context) => {
 			const group = context.req.param('group')
+			const clientKey = getClientKey(context)
 			let unsubscribe: (() => void) | undefined
 			return {
 				onOpen(event, webSocket) {
-					unsubscribe = core.subscribeToGroup(group, toPeerSocket(webSocket))
+					unsubscribe = core.subscribeToGroup(
+						group,
+						toPeerSocket(webSocket),
+						clientKey,
+					)
 				},
 				onClose() {
 					unsubscribe?.()

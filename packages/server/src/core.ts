@@ -21,6 +21,8 @@ export const noopLogger: SignalingLogger = {
 export interface SignalingPeerSocket {
 	send: (data: string) => void
 	isOpen: () => boolean
+	/** Used to turn away connections over a limit. Without it they are ignored. */
+	close?: (code: number, reason: string) => void
 }
 
 export interface SignalingCoreOptions {
@@ -38,6 +40,19 @@ export interface SignalingCoreOptions {
 	 * change. Defaults to 250.
 	 */
 	groupPublishThrottleMilliseconds?: number
+	/**
+	 * Longest accepted room or group name in characters. Longer `join-room`
+	 * messages are ignored and group subscriptions are refused. Defaults to 128.
+	 */
+	maxNameLength?: number
+	/**
+	 * Most sockets (signaling connections and group subscriptions together)
+	 * one client may hold open, keyed by the `clientKey` passed to
+	 * `handleOpen` / `subscribeToGroup` — typically the IP address. Sockets
+	 * opened without a key are not limited. `Infinity` disables the limit.
+	 * Defaults to 32.
+	 */
+	maxSocketsPerClient?: number
 }
 
 /**
@@ -46,8 +61,15 @@ export interface SignalingCoreOptions {
  * Hono.
  */
 export interface SignalingCore {
-	/** Registers a new socket, sends it its identity and returns the peer id. */
-	handleOpen: (socket: SignalingPeerSocket) => PeerId
+	/**
+	 * Registers a new socket, sends it its identity and returns the peer id.
+	 * Returns `undefined` (and closes the socket with 1008) when `clientKey`
+	 * already holds `maxSocketsPerClient` sockets.
+	 */
+	handleOpen: (
+		socket: SignalingPeerSocket,
+		clientKey?: string,
+	) => PeerId | undefined
 	/** Processes one raw text frame from the peer. Invalid input is logged. */
 	handleMessage: (peerId: PeerId, rawData: string) => void
 	/** Removes the peer from its room and notifies the remaining peers. */
@@ -58,9 +80,15 @@ export interface SignalingCore {
 	getGroupRooms: (group: string) => GroupRoom[]
 	/**
 	 * Sends the current room list of the group to the socket immediately and
-	 * again after every change. Returns the unsubscribe function.
+	 * again after every change. Returns the unsubscribe function, or
+	 * `undefined` (closing the socket with 1008) when the group name is too
+	 * long or `clientKey` is over `maxSocketsPerClient`.
 	 */
-	subscribeToGroup: (group: string, socket: SignalingPeerSocket) => () => void
+	subscribeToGroup: (
+		group: string,
+		socket: SignalingPeerSocket,
+		clientKey?: string,
+	) => (() => void) | undefined
 }
 
 type Room = {
@@ -71,6 +99,10 @@ type Room = {
 
 const defaultMaxMetaBytes = 1024
 const defaultGroupPublishThrottleMilliseconds = 250
+const defaultMaxNameLength = 128
+const defaultMaxSocketsPerClient = 32
+/** WebSocket close code for a policy violation. */
+const policyViolation = 1008
 
 /**
  * Creates the in-memory signaling core: rooms, peer-to-peer message
@@ -84,12 +116,17 @@ export function createSignalingCore(
 	const groupPublishThrottleMilliseconds =
 		options.groupPublishThrottleMilliseconds ??
 		defaultGroupPublishThrottleMilliseconds
+	const maxNameLength = options.maxNameLength ?? defaultMaxNameLength
+	const maxSocketsPerClient =
+		options.maxSocketsPerClient ?? defaultMaxSocketsPerClient
 
 	const peers = new Map<PeerId, SignalingPeerSocket>()
 	const rooms = new Map<string, Room>()
 	const peerRooms = new Map<PeerId, string>()
 	const groupRooms = new Map<string, Set<string>>()
 	const groupSubscribers = new Map<string, Set<SignalingPeerSocket>>()
+	const socketsPerClient = new Map<string, number>()
+	const peerClientKeys = new Map<PeerId, string>()
 	/** Groups inside a throttle window; `dirty` means a broadcast is owed. */
 	const groupThrottles = new Map<
 		string,
@@ -104,6 +141,36 @@ export function createSignalingCore(
 		socket.send(JSON.stringify(payload))
 	}
 
+	/** Counts a new socket of the client; `false` when it is over the limit. */
+	const acquireClientSocket = (clientKey: string | undefined) => {
+		if (clientKey === undefined) {
+			return true
+		}
+		const count = socketsPerClient.get(clientKey) ?? 0
+		if (count >= maxSocketsPerClient) {
+			return false
+		}
+		socketsPerClient.set(clientKey, count + 1)
+		return true
+	}
+
+	const releaseClientSocket = (clientKey: string | undefined) => {
+		if (clientKey === undefined) {
+			return
+		}
+		const count = (socketsPerClient.get(clientKey) ?? 1) - 1
+		if (count <= 0) {
+			socketsPerClient.delete(clientKey)
+		} else {
+			socketsPerClient.set(clientKey, count)
+		}
+	}
+
+	const refuse = (socket: SignalingPeerSocket, reason: string) => {
+		logger.error(`Refusing connection: ${reason}`)
+		socket.close?.(policyViolation, reason)
+	}
+
 	const getGroupRooms = (group: string): GroupRoom[] => {
 		const listed: GroupRoom[] = []
 		for (const roomName of groupRooms.get(group) ?? []) {
@@ -111,10 +178,13 @@ export function createSignalingCore(
 			if (!room?.listing) {
 				continue
 			}
-			const { hostPeerId, maxClients, meta } = room.listing
+			const { hostPeerId, maxClients, meta, clients } = room.listing
 			listed.push({
 				room: roomName,
-				clients: room.peers.size - (room.peers.has(hostPeerId) ? 1 : 0),
+				// Hosts before 0.3 do not report their count; fall back to the
+				// open signaling connections, which include waiting peers.
+				clients:
+					clients ?? room.peers.size - (room.peers.has(hostPeerId) ? 1 : 0),
 				...(maxClients === undefined ? {} : { maxClients }),
 				...(meta === undefined ? {} : { meta }),
 			})
@@ -256,9 +326,16 @@ export function createSignalingCore(
 	}
 
 	return {
-		handleOpen(socket) {
+		handleOpen(socket, clientKey) {
+			if (!acquireClientSocket(clientKey)) {
+				refuse(socket, `too many connections from ${clientKey}`)
+				return undefined
+			}
 			const peerId = generatePeerId()
 			peers.set(peerId, socket)
+			if (clientKey !== undefined) {
+				peerClientKeys.set(peerId, clientKey)
+			}
 			logger.log(`WebSocket connection opened: ${peerId}`)
 			socket.send(JSON.stringify({ type: 'identity', data: { peerId } }))
 			return peerId
@@ -286,6 +363,15 @@ export function createSignalingCore(
 			switch (message.type) {
 				case 'join-room': {
 					const roomName = message.room
+					if (
+						roomName.length > maxNameLength ||
+						(message.group?.length ?? 0) > maxNameLength
+					) {
+						logger.error(
+							`Peer ${peerId} sent a room or group name over ${maxNameLength} characters`,
+						)
+						return
+					}
 					// Re-joining the same room is intentional: clients re-announce
 					// themselves on the open socket to restart stalled negotiations,
 					// so peer-joined is sent again. Switching rooms leaves the old one.
@@ -302,12 +388,22 @@ export function createSignalingCore(
 					room.peers.add(peerId)
 					logger.log(`Peer ${peerId} joined room: ${roomName}`)
 
-					if (message.group !== undefined) {
+					const listedBySomeoneElse =
+						room.listing !== undefined && room.listing.hostPeerId !== peerId
+					if (message.group !== undefined && listedBySomeoneElse) {
+						// The listing belongs to the connected host until it leaves;
+						// the peer still joins the room, just without taking it over.
+						logger.error(
+							`Peer ${peerId} tried to list room ${roomName}, which another peer already lists`,
+						)
+					}
+					if (message.group !== undefined && !listedBySomeoneElse) {
 						setListing(roomName, room, {
 							group: message.group,
 							hostPeerId: peerId,
 							maxClients: message.maxClients,
 							meta: acceptMeta(peerId, message.meta),
+							clients: message.clients,
 						})
 					} else if (isNewInRoom) {
 						publishGroup(room.listing?.group)
@@ -351,6 +447,7 @@ export function createSignalingCore(
 					setListing(roomName, room, {
 						...room.listing,
 						meta: acceptMeta(peerId, message.meta),
+						clients: message.clients ?? room.listing.clients,
 					})
 					break
 				}
@@ -387,13 +484,23 @@ export function createSignalingCore(
 		handleClose(peerId) {
 			leaveRoom(peerId)
 			peers.delete(peerId)
+			releaseClientSocket(peerClientKeys.get(peerId))
+			peerClientKeys.delete(peerId)
 			logger.log(`WebSocket connection closed: ${peerId}`)
 		},
 		handleError(peerId, error) {
 			logger.error(`WebSocket error for ${peerId}:`, error)
 		},
 		getGroupRooms,
-		subscribeToGroup(group, socket) {
+		subscribeToGroup(group, socket, clientKey) {
+			if (group.length > maxNameLength) {
+				refuse(socket, `group name over ${maxNameLength} characters`)
+				return undefined
+			}
+			if (!acquireClientSocket(clientKey)) {
+				refuse(socket, `too many connections from ${clientKey}`)
+				return undefined
+			}
 			let subscribers = groupSubscribers.get(group)
 			if (!subscribers) {
 				subscribers = new Set()
@@ -402,7 +509,13 @@ export function createSignalingCore(
 			subscribers.add(socket)
 			logger.log(`Group subscription opened: ${group}`)
 			socket.send(groupRoomsPayload(group))
+			let isSubscribed = true
 			return () => {
+				if (!isSubscribed) {
+					return
+				}
+				isSubscribed = false
+				releaseClientSocket(clientKey)
 				subscribers.delete(socket)
 				if (subscribers.size === 0) {
 					groupSubscribers.delete(group)

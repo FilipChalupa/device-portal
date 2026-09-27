@@ -69,8 +69,9 @@ client.send('I received your message!')
 
 A host can list its room under a `group` so other peers can discover it — for
 example a lobby of public game servers. The signaling server publishes every
-listed room together with the number of connected clients, the host's
-`maxClients` and an optional `meta` JSON (kept under 1 kB).
+listed room together with the number of clients connected to the host (peers
+waiting for a free slot are not counted), the host's `maxClients` and an
+optional `meta` JSON (kept under 1 kB).
 
 ```typescript
 import { Host, fetchGroupRooms, subscribeToGroup } from '@device-portal/client'
@@ -96,6 +97,10 @@ const rooms = await fetchGroupRooms('my-game')
 // Change what the listing shows without reconnecting
 host.setMeta({ name: 'Arena', map: 'desert', status: 'in progress' })
 ```
+
+`meta` can be typed — `new Host<GameMeta>(…)`, `subscribeToGroup<GameMeta>(…)`,
+`fetchGroupRooms<GameMeta>(…)`. The type is not checked at runtime: any host in
+the group can publish anything, so validate `meta` before trusting it.
 
 Rooms without a `group` are never listed. A room disappears from its group
 as soon as its host disconnects.

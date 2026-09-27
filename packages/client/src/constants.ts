@@ -32,6 +32,12 @@ export const RoomListingSchema = z.object({
 	maxClients: z.number().int().positive().optional(),
 	/** Arbitrary JSON shown to group subscribers as-is, e.g. a game name. */
 	meta: z.unknown().optional(),
+	/**
+	 * Clients connected to the host, reported by the host itself. Peers
+	 * waiting for a free slot are not counted. When absent (hosts older than
+	 * 0.3) the server counts the open signaling connections instead.
+	 */
+	clients: z.number().int().nonnegative().optional(),
 })
 
 /**
@@ -44,17 +50,19 @@ export const JoinRoomMessageSchema = BaseMessageSchema.extend({
 }).extend(RoomListingSchema.partial().shape)
 
 /**
- * Sent by the peer that listed the room to change its `meta` without
- * re-joining. Ignored for peers that did not list the room.
+ * Sent by the peer that listed the room to update its listing without
+ * re-joining. `meta` replaces the previous value (absent clears it);
+ * absent `clients` keeps the previous count. Ignored for other peers.
  */
 export const UpdateListingMessageSchema = BaseMessageSchema.extend({
 	type: z.literal('update-listing'),
 	meta: z.unknown().optional(),
+	clients: z.number().int().nonnegative().optional(),
 })
 
 export const GroupRoomSchema = z.object({
 	room: z.string(),
-	/** Open signaling connections in the room other than the host's. */
+	/** Clients connected to the host, not counting peers waiting for a slot. */
 	clients: z.number().int().nonnegative(),
 	maxClients: z.number().int().positive().optional(),
 	meta: z.unknown().optional(),
@@ -125,7 +133,15 @@ export const SignalingMessageSchema = z.discriminatedUnion('type', [
 ])
 
 export type RoomListing = z.infer<typeof RoomListingSchema>
-export type GroupRoom = z.infer<typeof GroupRoomSchema>
+/**
+ * A room listed in a group. `Meta` types the host-provided `meta`; it is not
+ * validated — the server relays whatever the host sent, so treat it as
+ * untrusted input when rendering.
+ */
+export type GroupRoom<Meta = unknown> = Omit<
+	z.infer<typeof GroupRoomSchema>,
+	'meta'
+> & { meta?: Meta }
 export type GroupRoomsMessage = z.infer<typeof GroupRoomsMessageSchema>
 export type JoinRoomMessage = z.infer<typeof JoinRoomMessageSchema>
 export type UpdateListingMessage = z.infer<typeof UpdateListingMessageSchema>

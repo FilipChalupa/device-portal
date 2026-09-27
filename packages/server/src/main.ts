@@ -8,7 +8,11 @@ import { createNodeSignalingServer } from './node'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
-const { app, start } = createNodeSignalingServer()
+const { app, start } = createNodeSignalingServer({
+	// Set TRUST_PROXY=1 when running behind a reverse proxy (e.g. Render) so
+	// per-client limits see the real client address.
+	trustProxy: process.env.TRUST_PROXY === '1',
+})
 
 const storybookPath = resolve(__dirname, '../../react/storybook-static')
 if (existsSync(storybookPath)) {

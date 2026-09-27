@@ -8,12 +8,12 @@ export type GroupOptions = {
 	webSocketSignalingServer?: string
 }
 
-export type SubscribeToGroupOptions = GroupOptions & {
+export type SubscribeToGroupOptions<Meta = unknown> = GroupOptions & {
 	/**
 	 * Called with the full room list on connect and after changes. The server
 	 * coalesces bursts of changes, so several may arrive as one call.
 	 */
-	onRooms: (rooms: GroupRoom[]) => void
+	onRooms: (rooms: GroupRoom<Meta>[]) => void
 	/**
 	 * Called when the subscription socket drops. The subscription reconnects
 	 * on its own with exponential backoff and calls `onRooms` again.
@@ -25,13 +25,14 @@ const groupUrl = (serverUrl: string, group: string) =>
 	`${serverUrl.replace(/\/+$/, '')}/v0/groups/${encodeURIComponent(group)}`
 
 /**
- * Lists the rooms of a group once. A room is listed while the host that
+ * Lists the rooms of a group once. `Meta` types the hosts' `meta` without
+ * validating it — see `GroupRoom`. A room is listed while the host that
  * joined it with `group` stays connected to the signaling server.
  */
-export async function fetchGroupRooms(
+export async function fetchGroupRooms<Meta = unknown>(
 	group: string,
 	options: GroupOptions = {},
-): Promise<GroupRoom[]> {
+): Promise<GroupRoom<Meta>[]> {
 	const serverUrl =
 		options.webSocketSignalingServer ??
 		settings.default.webSocketSignalingServer
@@ -48,16 +49,16 @@ export async function fetchGroupRooms(
 	if (!result.success) {
 		throw new Error(`Invalid group rooms response: ${result.error.message}`)
 	}
-	return result.data.rooms
+	return result.data.rooms as GroupRoom<Meta>[]
 }
 
 /**
  * Subscribes to the live room list of a group over a WebSocket. Returns the
  * unsubscribe function.
  */
-export function subscribeToGroup(
+export function subscribeToGroup<Meta = unknown>(
 	group: string,
-	options: SubscribeToGroupOptions,
+	options: SubscribeToGroupOptions<Meta>,
 ): () => void {
 	const serverUrl =
 		options.webSocketSignalingServer ??
@@ -88,7 +89,7 @@ export function subscribeToGroup(
 				console.error('[Group] Invalid message:', result.error)
 				return
 			}
-			options.onRooms(result.data.rooms)
+			options.onRooms(result.data.rooms as GroupRoom<Meta>[])
 		}
 		socket.onerror = (error) => {
 			console.error('[Group] Error:', error)

@@ -11,7 +11,7 @@ import { useEffect, useRef, useState } from 'react'
 /**
  * Configuration options for the Device Portal Provider.
  */
-export type DevicePortalProviderOptions = {
+export type DevicePortalProviderOptions<Meta = unknown> = {
 	/** The value to share with connected consumers. A function receives the peerId and can return a per-peer value. */
 	value?: string | ((peerId: PeerId) => string)
 	/** URL of the signaling server, or null to disable. */
@@ -30,7 +30,7 @@ export type DevicePortalProviderOptions = {
 	 * Arbitrary JSON published with the group listing, e.g. a game name. Kept
 	 * under 1 kB. Changes are pushed to the listing without reconnecting.
 	 */
-	meta?: unknown
+	meta?: Meta
 }
 
 /**
@@ -40,11 +40,11 @@ export type DevicePortalProviderOptions = {
  * @param options - Provider configuration options.
  * @returns An object containing the list of connected peers and the underlying Provider instance.
  */
-export const useDevicePortalProvider = (
+export const useDevicePortalProvider = <Meta = unknown>(
 	room: string,
-	options: DevicePortalProviderOptions = {},
+	options: DevicePortalProviderOptions<Meta> = {},
 ) => {
-	const [provider, setProvider] = useState<Host | null>(null)
+	const [provider, setProvider] = useState<Host<Meta> | null>(null)
 	const [peers, setPeers] = useState<PeerId[]>([])
 	const onMessageFromConsumerRef = useRef(options.onMessageFromConsumer)
 	onMessageFromConsumerRef.current = options.onMessageFromConsumer
@@ -61,7 +61,7 @@ export const useDevicePortalProvider = (
 	metaRef.current = options.meta
 
 	useEffect(() => {
-		const newProvider = new Host(room, {
+		const newProvider = new Host<Meta>(room, {
 			onMessage: (value, peerId) => {
 				onMessageFromConsumerRef.current?.(value, peerId)
 			},

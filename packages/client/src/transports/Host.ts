@@ -26,7 +26,7 @@ const defaultNegotiationTimeoutMilliseconds = 15_000
  * It automatically initiates connections with joining peers and manages
  * multiple concurrent client connections.
  */
-export class Host {
+export class Host<Meta = unknown> {
 	private isDestroyed = false
 	private peerId: PeerId
 	private directTransport: DirectTransport | null = null
@@ -47,7 +47,9 @@ export class Host {
 	private readonly maxClients: number
 	private readonly negotiationTimeoutMilliseconds: number
 	private readonly group: string | undefined
-	private meta: unknown
+	private meta: Meta | undefined
+	/** Client count last sent to the signaling server. */
+	private reportedClients: number | undefined
 	private readonly webrtc: WebRtcOption | undefined
 
 	constructor(
@@ -73,7 +75,7 @@ export class Host {
 			 * The server drops it above its `maxMetaBytes` (1 kB by default).
 			 * Change it later with `setMeta`.
 			 */
-			meta?: unknown
+			meta?: Meta
 			/** WebRTC implementation for runtimes without a global one (Node). */
 			webrtc?: WebRtcOption
 			/**
@@ -176,6 +178,8 @@ export class Host {
 		// Replace, never accumulate: a previous instance keeps reconnecting on
 		// its own, and two live sockets would hold two different peer identities.
 		this.webSocketSignaling?.destroy()
+		const listing = this.listing
+		this.reportedClients = listing?.clients
 		this.webSocketSignaling = new WebSocketSignaling(
 			this.room,
 			this.webSocketSignalingServer,
@@ -193,10 +197,24 @@ export class Host {
 				onIceCandidate: (candidate, from) =>
 					this.handleIceCandidate(candidate, from),
 			},
-			this.listing,
+			listing,
 		)
 
 		await this.webSocketSignaling.connect()
+	}
+
+	/**
+	 * Clients with an open data channel or a direct link. Peers waiting for a
+	 * free slot or still negotiating are not counted.
+	 */
+	private get connectedClients() {
+		let count = this.directTransport?.directPeers.size ?? 0
+		for (const client of this.connections.values()) {
+			if (client.channel.readyState === 'open') {
+				count++
+			}
+		}
+		return count
 	}
 
 	private get listing() {
@@ -206,17 +224,36 @@ export class Host {
 		return {
 			group: this.group,
 			maxClients: this.maxClients,
+			clients: this.connectedClients,
 			...(this.meta === undefined ? {} : { meta: this.meta }),
 		}
 	}
 
+	/** Sends the listing to the server when the connected count changed. */
+	private reportListing() {
+		const listing = this.listing
+		if (!listing || listing.clients === this.reportedClients) {
+			return
+		}
+		this.reportedClients = listing.clients
+		this.webSocketSignaling?.setListing(listing)
+	}
+
+	private notifyPeersChange() {
+		this.onPeersChange?.(this.peers)
+		this.reportListing()
+	}
+
 	/**
-	 * Updates the `meta` shown in the group listing without reconnecting.
+	 * Updates the `meta` shown in the group listing without reconnecting;
+	 * `undefined` removes it.
 	 * Has no visible effect when the host was created without `group`.
 	 */
-	public setMeta(meta: unknown) {
+	public setMeta(meta: Meta | undefined) {
 		this.meta = meta
-		this.webSocketSignaling?.setListing(this.listing)
+		const listing = this.listing
+		this.reportedClients = listing?.clients
+		this.webSocketSignaling?.setListing(listing)
 	}
 
 	private async ensureSignaling() {
@@ -261,7 +298,7 @@ export class Host {
 		}
 
 		this.onPeerConnected?.(peerId)
-		this.onPeersChange?.(this.peers)
+		this.notifyPeersChange()
 	}
 
 	private async handleWebRTCPeerJoined(peerId: PeerId) {
@@ -309,7 +346,7 @@ export class Host {
 		this.pendingPeers.add(peerId)
 		try {
 			await this.createAndSendOffer(peerId)
-			this.onPeersChange?.(this.peers)
+			this.notifyPeersChange()
 		} finally {
 			this.pendingPeers.delete(peerId)
 		}
@@ -322,10 +359,10 @@ export class Host {
 		if (client) {
 			this.closeClientConnection(client)
 			this.connections.delete(peerId)
-			this.onPeersChange?.(this.peers)
+			this.notifyPeersChange()
 			this.processWaitingPeers()
 		} else {
-			this.onPeersChange?.(this.peers)
+			this.notifyPeersChange()
 		}
 
 		if (this.shouldConnectToWebSocket()) {
@@ -353,7 +390,7 @@ export class Host {
 			this.pendingPeers.add(nextPeerId)
 			try {
 				await this.createAndSendOffer(nextPeerId)
-				this.onPeersChange?.(this.peers)
+				this.notifyPeersChange()
 			} finally {
 				this.pendingPeers.delete(nextPeerId)
 			}
@@ -407,7 +444,7 @@ export class Host {
 				if (this.connections.get(toPeerId) === clientConnection) {
 					this.closeClientConnection(clientConnection)
 					this.connections.delete(toPeerId)
-					this.onPeersChange?.(this.peers)
+					this.notifyPeersChange()
 					this.processWaitingPeers()
 				}
 			}
@@ -420,6 +457,7 @@ export class Host {
 				clientConnection.negotiationWatchdog = null
 			}
 			this.onPeerConnected?.(toPeerId)
+			this.reportListing()
 			if (clientConnection.value) {
 				channel.send(clientConnection.value.value)
 			}
@@ -450,7 +488,7 @@ export class Host {
 			console.log(`[Host] Negotiation with ${toPeerId} timed out, discarding.`)
 			this.closeClientConnection(clientConnection)
 			this.connections.delete(toPeerId)
-			this.onPeersChange?.(this.peers)
+			this.notifyPeersChange()
 			this.processWaitingPeers()
 		}, this.negotiationTimeoutMilliseconds)
 	}

@@ -12,8 +12,13 @@ You can run the server with the following command:
 npx @device-portal/server
 ```
 
-The server will run on `ws://localhost:8080` by default. Set `PORT` to change the
-port and `HOST` to change the listening address (e.g. `::` for IPv4 and IPv6).
+The server will run on `ws://localhost:8080` by default.
+
+| Variable      | Description                                                                                                                               |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `PORT`        | Listening port, default `8080`.                                                                                                           |
+| `HOST`        | Listening address, default all IPv4 interfaces; `::` for IPv4 and IPv6.                                                                   |
+| `TRUST_PROXY` | `1` behind a reverse proxy (Render, Fly, nginx): per-client limits use the first `X-Forwarded-For` address. Never set it without a proxy. |
 
 ## Endpoints
 
@@ -26,16 +31,37 @@ port and `HOST` to change the listening address (e.g. `::` for IPv4 and IPv6).
 
 A room is listed in a group while the peer that joined it with `group` (the
 host) stays connected; when the host leaves, the listing goes with it even if
-clients are still waiting in the room. Each entry is
-`{ room, clients, maxClients?, meta? }` — `clients` counts open signaling
-connections other than the host's, `maxClients` and `meta` are whatever the
-host declared. `meta` above `maxMetaBytes` (default 1024, UTF-8) is dropped.
-The host can replace `meta` at any time with an `update-listing` message.
+clients are still waiting in the room. Only that host can change the listing;
+other peers joining with `group` enter the room without taking it over.
+
+Each entry is `{ room, clients, maxClients?, meta? }`. `clients` is the number
+of clients connected to the host as the host reports it — peers waiting for a
+free slot are not counted (hosts before 0.3 do not report it; the server then
+counts open signaling connections other than the host's). `maxClients` and
+`meta` are whatever the host declared; `meta` above `maxMetaBytes` (default
+1024, UTF-8) is dropped and is relayed unvalidated, so render it as untrusted
+input. The host updates `meta` and `clients` with `update-listing` messages.
 
 Broadcasts to group subscribers are throttled per group
 (`groupPublishThrottleMilliseconds`, default 250): the first change goes out
 immediately and further changes within the window arrive as one broadcast at
 its end, so a burst of joins does not send the full list once per join.
+
+## Limits
+
+A public server keeps state for anyone who connects, so the core bounds it:
+
+| Option                             | Default | Effect                                                                                     |
+| ---------------------------------- | ------- | ------------------------------------------------------------------------------------------ |
+| `maxNameLength`                    | 128     | Longer room or group names: `join-room` is ignored, a group subscription is closed (1008). |
+| `maxSocketsPerClient`              | 32      | Signaling sockets and group subscriptions per client together; more are closed (1008).     |
+| `maxMetaBytes`                     | 1024    | Larger `meta` is dropped from the listing.                                                 |
+| `groupPublishThrottleMilliseconds` | 250     | Minimum spacing of room-list broadcasts per group.                                         |
+
+A client is identified by `getClientKey(context)`. `createNodeSignalingServer`
+uses the TCP peer address, or the first `X-Forwarded-For` entry with
+`trustProxy: true`. When embedding on another runtime, pass your own (e.g. from
+Hono's `getConnInfo` of your adapter); without it no per-client limit applies.
 
 ## Embedding in another application
 
@@ -47,7 +73,7 @@ On Bun:
 
 ```ts
 import { createSignalingServer } from '@device-portal/server'
-import { createBunWebSocket } from 'hono/bun'
+import { createBunWebSocket, getConnInfo } from 'hono/bun'
 
 const { upgradeWebSocket, websocket } = createBunWebSocket()
 const { app } = createSignalingServer({
@@ -57,6 +83,7 @@ const { app } = createSignalingServer({
 	logger: console, // or any { log, error } implementation, e.g. noopLogger
 	maxMetaBytes: 1024, // optional cap on the room meta published to groups
 	groupPublishThrottleMilliseconds: 250, // optional, coalesces group broadcasts
+	getClientKey: (context) => getConnInfo(context).remote.address, // limits per IP
 })
 
 Bun.serve({ fetch: app.fetch, websocket, port: 8080 })

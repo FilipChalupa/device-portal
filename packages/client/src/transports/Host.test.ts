@@ -297,6 +297,7 @@ describe('Host reconnection', () => {
 			room: 'host-room',
 			group: 'games',
 			maxClients: 3,
+			clients: 0,
 			meta: { name: 'Arena' },
 		})
 
@@ -310,7 +311,50 @@ describe('Host reconnection', () => {
 
 		host.setMeta({ name: 'Arena', status: 'running' })
 		expect(socket.sentOfType('update-listing')).toEqual([
-			{ type: 'update-listing', meta: { name: 'Arena', status: 'running' } },
+			{
+				type: 'update-listing',
+				meta: { name: 'Arena', status: 'running' },
+				clients: 0,
+			},
 		])
+	})
+
+	test('reports only clients with an open channel, not waiting peers', async () => {
+		const host = new Host('host-room', {
+			browserDirect: false,
+			webSocketSignalingServer: 'ws://mock',
+			iceServers: [],
+			maxClients: 1,
+			group: 'games',
+		})
+		hosts.push(host)
+		await waitFor(() => MockWebSocket.instances.length === 1)
+		const socket = MockWebSocket.instances[0]
+		socket.open()
+		await waitFor(() => socket.sentOfType('join-room').length >= 1)
+		const reported = () =>
+			socket.sentOfType('update-listing').map((message) => message.clients)
+
+		for (const peerId of ['client-a', 'client-b']) {
+			socket.receive({
+				id: `joined-${peerId}`,
+				type: 'peer-joined',
+				data: { peerId },
+			})
+		}
+		await waitFor(() => socket.offersTo('client-a').length === 1)
+		// Negotiating and waiting peers do not count yet.
+		expect(reported()).toEqual([])
+
+		MockRTCPeerConnection.instances[0].dataChannel!.open()
+		await waitFor(() => reported().length === 1)
+		expect(reported()).toEqual([1])
+
+		socket.receive({
+			id: 'left-a',
+			type: 'peer-left',
+			data: { peerId: 'client-a' },
+		})
+		await waitFor(() => reported().at(-1) === 0)
 	})
 })
