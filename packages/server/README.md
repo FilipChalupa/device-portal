@@ -23,8 +23,9 @@ The server will run on `ws://localhost:8080` by default.
 | `WS /v0/groups/:group`  | Pushes `{ type: 'group-rooms', group, rooms }` on connect and after every change. |
 | `GET /v0/groups/:group` | Returns `{ group, rooms }` once.                                                  |
 
-A room is listed in a group while at least one signaling connection is open in
-it and a peer (the host) joined it with `group`. Each entry is
+A room is listed in a group while the peer that joined it with `group` (the
+host) stays connected; when the host leaves, the listing goes with it even if
+clients are still waiting in the room. Each entry is
 `{ room, clients, maxClients?, meta? }` — `clients` counts open signaling
 connections other than the host's, `maxClients` and `meta` are whatever the
 host declared. `meta` above `maxMetaBytes` (default 1024, UTF-8) is dropped.

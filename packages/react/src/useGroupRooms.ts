@@ -9,7 +9,7 @@ export type UseGroupRoomsOptions = {
 /**
  * Subscribes to the live list of rooms a signaling server lists under
  * `group`. Rooms appear when their provider was created with the same `group`
- * and disappear once nobody is connected to them.
+ * and disappear as soon as that provider disconnects.
  *
  * @returns `rooms` — `null` until the first list arrives, then the current
  *   list; `isConnected` — whether the subscription socket is up.

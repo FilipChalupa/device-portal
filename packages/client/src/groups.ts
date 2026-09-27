@@ -25,8 +25,8 @@ const groupUrl = (serverUrl: string, group: string) =>
 	`${serverUrl.replace(/\/+$/, '')}/v0/groups/${encodeURIComponent(group)}`
 
 /**
- * Lists the rooms of a group once. Rooms are listed while at least one
- * signaling connection is open in them and their host joined with `group`.
+ * Lists the rooms of a group once. A room is listed while the host that
+ * joined it with `group` stays connected to the signaling server.
  */
 export async function fetchGroupRooms(
 	group: string,

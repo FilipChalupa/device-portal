@@ -54,10 +54,7 @@ export const UpdateListingMessageSchema = BaseMessageSchema.extend({
 
 export const GroupRoomSchema = z.object({
 	room: z.string(),
-	/**
-	 * Open signaling connections in the room other than the one that listed it
-	 * (the host). While the host is connected this is the number of clients.
-	 */
+	/** Open signaling connections in the room other than the host's. */
 	clients: z.number().int().nonnegative(),
 	maxClients: z.number().int().positive().optional(),
 	meta: z.unknown().optional(),

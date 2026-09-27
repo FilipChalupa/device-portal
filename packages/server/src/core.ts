@@ -65,7 +65,7 @@ export interface SignalingCore {
 
 type Room = {
 	peers: Set<PeerId>
-	/** Set by the peer that joined with a group; kept until the room empties. */
+	/** Set by the peer that joined with a group; dropped when that peer leaves. */
 	listing?: RoomListing & { hostPeerId: PeerId }
 }
 
@@ -244,6 +244,11 @@ export function createSignalingCore(
 
 		if (room.peers.size === 0) {
 			rooms.delete(roomName)
+			setListing(roomName, room, undefined)
+		} else if (room.listing?.hostPeerId === peerId) {
+			// A room without the peer that listed it is not joinable — the
+			// remaining clients only wait for a host that is gone. A host that
+			// reconnects lists the room again with its new identity.
 			setListing(roomName, room, undefined)
 		} else {
 			publishGroup(room.listing?.group)

@@ -98,7 +98,7 @@ host.setMeta({ name: 'Arena', map: 'desert', status: 'in progress' })
 ```
 
 Rooms without a `group` are never listed. A room disappears from its group
-once nobody is connected to it.
+as soon as its host disconnects.
 
 ### Running outside the browser
 

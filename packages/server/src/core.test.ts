@@ -113,18 +113,33 @@ describe('signaling core', () => {
 			expect(subscriber.socket.lastRooms).toEqual([])
 		})
 
-		test('the listing survives the host leaving while clients stay', () => {
-			const { core, connect } = setup()
+		test('the listing disappears with its host even while clients stay', () => {
+			const { core, connect, subscribe } = setup()
+			const subscriber = subscribe('g')
 			const host = connect()
 			const client = connect()
 			host.join('room', { group: 'g', maxClients: 1 })
 			client.join('room')
 			host.close()
+			expect(core.getGroupRooms('g')).toEqual([])
+			expect(subscriber.socket.lastRooms).toEqual([])
+
+			// A reconnecting host lists the room again under its new identity.
+			const returningHost = connect()
+			returningHost.join('room', { group: 'g', maxClients: 1 })
 			expect(core.getGroupRooms('g')).toEqual([
 				{ room: 'room', clients: 1, maxClients: 1 },
 			])
+		})
+
+		test('a client leaving keeps the listing', () => {
+			const { core, connect } = setup()
+			const host = connect()
+			const client = connect()
+			host.join('room', { group: 'g' })
+			client.join('room')
 			client.close()
-			expect(core.getGroupRooms('g')).toEqual([])
+			expect(core.getGroupRooms('g')).toEqual([{ room: 'room', clients: 0 }])
 		})
 
 		test('re-listing under another group moves the room', () => {
